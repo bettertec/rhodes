@@ -355,6 +355,7 @@ public class TabbedMainView implements MainView {
 	}
 	
 	private void processTabHostColors(TabHost tabHost, int SelectedColor, boolean useSelectedColor) {
+		tabHost.getTabWidget().setStripEnabled(false); 
 		
 		for (int i = 0; i < tabHost.getTabWidget().getChildCount(); i++) { 
 			if ((i == tabHost.getCurrentTab()) && useSelectedColor) {
