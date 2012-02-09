@@ -408,10 +408,12 @@ def init_extensions(startdir, dest)
   $app_config["extensions"].each do |extname|  
     extpath = nil
     extpaths.each do |p|
+      if p
       ep = File.join(p, extname)
       if File.exists? ep
         extpath = ep
         break
+      end
       end
     end    
 
@@ -1252,10 +1254,12 @@ namespace "run" do
         
             extpath = nil
             extpaths.each do |p|
+             if p
               ep = File.join(p, extname)
               if File.exists? ep
                 extpath = ep
                 break
+              end
               end
             end
 

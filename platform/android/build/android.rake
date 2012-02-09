@@ -31,12 +31,33 @@ require 'pathname'
 USE_OWN_STLPORT = false
 #USE_TRACES = # see androidcommon.h
 
+ANDROID_API_LEVEL_TO_MARKET_VERSION = {}
+ANDROID_MARKET_VERSION_TO_API_LEVEL = {}
+{
+    2 => "1.1",
+    3 => "1.5",
+    4 => "1.6",
+    5 => "2.0",
+    6 => "2.0.1",
+    7 => "2.1",
+    8 => "2.2",
+    9 => "2.3.1",
+    10 => "2.3.3",
+    11 => "3.0",
+    12 => "3.1",
+    13 => "3.2",
+    14 => "4.0"
+  }.each do |k,v|
+  ANDROID_API_LEVEL_TO_MARKET_VERSION[k] = v
+  ANDROID_MARKET_VERSION_TO_API_LEVEL[v] = k
+end
+
 def get_market_version(apilevel)
-  AndroidTools.get_market_version(apilevel)
+  ANDROID_API_LEVEL_TO_MARKET_VERSION[apilevel]
 end
 
 def get_api_level(version)
-  AndroidTools.get_api_level(version)
+  ANDROID_MARKET_VERSION_TO_API_LEVEL[version]
 end
 
 JAVA_PACKAGE_NAME = 'com.rhomobile.rhodes'
@@ -60,8 +81,7 @@ ANDROID_PERMISSIONS = {
   'calendar' => ['READ_CALENDAR', 'WRITE_CALENDAR'],
   'sdcard' => 'WRITE_EXTERNAL_STORAGE',
   'push' => proc do |manifest| add_push(manifest) end,
-  'motorola' => ['SYSTEM_ALERT_WINDOW', 'BROADCAST_STICKY', proc do |manifest| add_motosol_sdk(manifest) end],
-  'motoroladev' => ['SYSTEM_ALERT_WINDOW', 'BROADCAST_STICKY', proc do |manifest| add_motosol_sdk(manifest) end],
+  'motorola' => nil,
   'webkit_browser' => nil
 }
 
@@ -110,14 +130,6 @@ def add_push(manifest)
   end
 end
 
-def add_motosol_sdk(manifest)
-  uses_library = REXML::Element.new 'uses-library'
-  uses_library.add_attribute 'android:name', 'com.motorolasolutions.scanner'
-  manifest.elements.each('application') do |app|
-    app.add uses_library
-  end  
-end
-
 def set_app_name_android(newname)
   puts "set_app_name"
   $stdout.flush
@@ -163,22 +175,17 @@ def set_app_name_android(newname)
 
   caps_proc = []
   # Default permissions. Need to be always enabled.
-  caps = ['INTERNET', 'PERSISTENT_ACTIVITY', 'WAKE_LOCK']
+  caps = ['INTERNET', 'PERSISTENT_ACTIVITY', 'WAKE_LOCK', 'SYSTEM_ALERT_WINDOW']
   $app_config["capabilities"].each do |cap|
     cap = ANDROID_PERMISSIONS[cap]
     next if cap.nil?
-    cap = [cap] unless cap.is_a? Array
-
-    cap.each do |cap_item|
-      if cap_item.is_a? Proc
-        caps_proc << cap_item
-        next
-      end
-      if cap_item.is_a? String
-        caps << cap_item
-        next
-      end
+    if cap.is_a? Proc
+      caps_proc << cap
+      next
     end
+    cap = [cap] if cap.is_a? String
+    cap = [] unless cap.is_a? Array
+    caps += cap
   end
   caps.uniq!
 
@@ -578,11 +585,7 @@ namespace "config" do
     $app_config["capabilities"] += ANDROID_CAPS_ALWAYS_ENABLED
     $app_config["capabilities"].map! { |cap| cap.is_a?(String) ? cap : nil }.delete_if { |cap| cap.nil? }
     $use_google_addon_api = true unless $app_config["capabilities"].index("push").nil?
-    
-    unless $app_config['capabilities'].index('motorola').nil? and $app_config['capabilities'].index('motoroladev').nil?
-      $use_motosol_barcode_api = true if $app_config['extensions'].index('barcode') or $app_config['extensions'].index('barcode-moto')
-      raise 'Cannot use Motorola SDK addon and Google SDK addon together!' if $use_google_addon_api
-    end
+    $use_motosol_barcode_api = false #true unless $app_config["extensions"].index("barcode").nil?
  
     $applog_path = nil
     $applog_file = $app_config["applog"]
@@ -789,6 +792,8 @@ namespace "build" do
       $app_config["extensions"].each do |ext|
         puts "#{ext} is processing..."
         $app_config["extpaths"].each do |p|
+		if p ###################
+		
           extpath = File.join(p, ext, 'ext')
 
           puts "Checking extpath: #{extpath}"
@@ -855,6 +860,7 @@ namespace "build" do
             # to prevent to build 2 extensions with same name
             break
           end # exists?
+		end ##################
         end # $app_config["extpaths"].each
       end # $app_config["extensions"].each
     end #task :extensions
@@ -1420,7 +1426,7 @@ namespace "build" do
       classpath = $androidjar
       classpath += $path_separator + $gapijar unless $gapijar.nil?
       classpath += $path_separator + $motosol_jar unless $motosol_jar.nil?
-      classpath += $path_separator + File.join($tmpdir, 'Rhodes')
+      classpath += $path_separator + "#{$tmpdir}/Rhodes"
       Dir.glob(File.join($extensionsdir, "*.jar")).each do |f|
         classpath += $path_separator + f
       end
@@ -1435,11 +1441,11 @@ namespace "build" do
         puts 'ext_build.files not found - no additional java files'
       end
 
-      java_compile(File.join($tmpdir, 'Rhodes'), classpath, javafilelists)
+      java_compile($tmpdir+'/Rhodes', classpath, javafilelists)
 
       files = []
       Dir.glob(File.join($extensionsdir, "*.jar")).each do |f|
-        puts Jake.run($jarbin, ["xf", f], File.join($tmpdir, 'Rhodes'))
+        puts Jake.run($jarbin, ["xf", f], File.join($tmpdir, "Rhodes"))
         unless $?.success?
           puts "Error running jar (xf)"
           exit 1
@@ -1908,7 +1914,7 @@ namespace "run" do
         $avdname = $appavdname
       end
 
-      createavd = "\"#{$androidbin}\" create avd --name #{$avdname} --target #{$avdtarget} --sdcard 128M "
+      createavd = "\"#{$androidbin}\" create avd --name #{$avdname} --target #{$avdtarget} --sdcard 32M "
       system("echo no | #{createavd}") unless File.directory?( File.join(ENV['HOME'], ".android", "avd", "#{$avdname}.avd" ) )
 
       if $use_google_addon_api
