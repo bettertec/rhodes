@@ -38,6 +38,13 @@
             android:screenOrientation="unspecified"
             android:configChanges="orientation"
          />
+		<activity
+            android:name="com.rhomobile.rhodes.AlertChooseActivity"
+            android:theme="@android:style/Theme.Dialog"
+            android:screenOrientation="unspecified"
+            android:configChanges="orientation"
+            android:launchMode="singleInstance"
+         />
 
         
         <activity
