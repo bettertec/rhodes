@@ -34,7 +34,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 public class PushReceiver extends BroadcastReceiver {
-    private static final boolean DEBUG = false;
+    private static final boolean DEBUG = true;
 
     private static final String TAG = PushReceiver.class.getSimpleName();
 
@@ -75,6 +75,7 @@ public class PushReceiver extends BroadcastReceiver {
 	}
 	
 	private void handleMessage(Context context, Intent intent) {
+		Log.d(TAG, "PushReceiver: received");
 		Bundle extras = intent.getExtras();
 
         if (DEBUG) {

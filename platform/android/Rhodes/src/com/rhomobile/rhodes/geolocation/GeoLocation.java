@@ -46,6 +46,7 @@ public class GeoLocation {
 			ret = RhoConf.getInt(inactivityTimeoutName) * 1000;
 
 		if (ret <= upd) {
+			
 			ret = upd*10;
 			Logger.W(TAG, "Inactivity time out less then position update period, override configured value: " + ret);
 		}
@@ -57,7 +58,7 @@ public class GeoLocation {
 		if (updatePeriod != -1) {
 			return updatePeriod; 
 		}
-		if (RhoConf.isExist(updatePeriodName)) {
+		if (RhoConf.isExist(updatePeriodName) && RhoConf.getInt(updatePeriodName) > 0) {
 			long ret = RhoConf.getInt(updatePeriodName) * 1000;
 			return ret;
 		} else

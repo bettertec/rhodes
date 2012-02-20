@@ -34,11 +34,19 @@
         
         <activity
             android:name="com.rhomobile.rhodes.alert.PopupActivity"
-            android:theme="@style/PopupTheme"
+            android:theme="@android:style/Theme.Dialog"
             android:screenOrientation="unspecified"
             android:configChanges="orientation"
          />
-
+<!--             android:theme="@style/PopupTheme" -->         
+         <!-- for show alert !-->
+        <activity
+            android:name="com.rhomobile.rhodes.AlertChooseActivity"
+            android:theme="@android:style/Theme.Dialog"
+            android:screenOrientation="unspecified"
+            android:configChanges="orientation"
+            android:launchMode="singleInstance"
+         />
         
         <activity
             android:name="com.rhomobile.rhodes.camera.FileList"

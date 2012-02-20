@@ -45,6 +45,7 @@ import java.util.Vector;
 
 import com.rhomobile.rhodes.RhodesApplication.AppState;
 import com.rhomobile.rhodes.alert.Alert;
+import com.rhomobile.rhodes.alert.PopupActivity;
 import com.rhomobile.rhodes.alert.StatusNotification;
 import com.rhomobile.rhodes.event.EventStore;
 import com.rhomobile.rhodes.file.RhoFileApi;
@@ -66,6 +67,8 @@ import com.rhomobile.rhodes.util.ContextFactory;
 import com.rhomobile.rhodes.util.PerformOnUiThread;
 import com.rhomobile.rhodes.util.PhoneId;
 import com.rhomobile.rhodes.util.Utils;
+
+import com.rhomobile.rhodes.AlertChooseActivity;
 
 import android.app.AlertDialog;
 import android.app.Notification;
@@ -103,7 +106,7 @@ public class RhodesService extends Service {
 	
 	private static final String TAG = RhodesService.class.getSimpleName();
 	
-	private static final boolean DEBUG = false;
+	private static final boolean DEBUG = true;
 	
 	public static final String INTENT_EXTRA_PREFIX = "com.rhomobile.rhodes.";
 	
@@ -433,17 +436,42 @@ public class RhodesService extends Service {
                             @Override
                             public void run()
                             {
+                                Log.i(TAG, "ActiveApp - process message: " + RhodesApplication.AppState.AppStarted);
                                 handlePushMessage(extras);
                             }
                         });
+//                    Log.i(TAG, "ActiveApp -run manualy - process message: " + RhodesApplication.AppState.AppStarted);
+//                    handlePushMessage(extras);
+                  
 				break;
 			default:
 				Log.w(TAG, "Unknown command type received from " + source + ": " + type);
 			}
 		}
+		else if (source.equals(AlertChooseActivity.INTENT_SOURCE)) {
+			
+			String buttonClicked = intent.getStringExtra("BUTTON_CLICKED");
+			Bundle originalExtras = intent.getBundleExtra(INTENT_EXTRA_PREFIX + "PARENT_EXTRA");
+			originalExtras.putString("action", originalExtras.getString("action")+":background_processed");
+			
+			Log.d(TAG, "command received from " + source + ": " + buttonClicked);
+			if(buttonClicked.equals("OK")){
+				Log.i(TAG, "OK Button clicked: ");
+				handlePushMessage(originalExtras);
+				Log.i(TAG, "re-run action");
+				bringToFront();
+				
+				
+				
+			}else if(buttonClicked.equals("NO")){
+				Log.i(TAG, "Cancel Button clicked: ");
+				//Do nothing
+			}
+		}
 	}
 	
 	public void startServiceForeground(int id, Notification notification) {
+        Log.i(TAG, "'startServiceForeground'");
 		if (mStartForeground != null) {
 			try {
 				mStartForeground.invoke(this, new Object[] {Integer.valueOf(id), notification});
@@ -1157,27 +1185,50 @@ public class RhodesService extends Service {
 
         Logger.D(TAG, "Received PUSH message: " + data);
         if (callPushCallback(data)) {
-            Logger.T(TAG, "Push message completely handled in callback");
+            Logger.D(TAG, "Push message completely handled in callback");
             return;
         }
+        Logger.D(TAG, "Push message NOT completely handled in callback");
 
         final String alert = extras.getString("alert");
-        final String from = extras.getString("from");
-
-        boolean statusNotification = false;
-        if (Push.PUSH_NOTIFICATIONS.equals(NOTIFICATION_ALWAYS))
-            statusNotification = true;
-        else if (Push.PUSH_NOTIFICATIONS.equals(NOTIFICATION_BACKGROUND))
-            statusNotification = !RhodesApplication.canHandleNow(RhodesApplication.AppState.AppActivated);
+        final String action = extras.getString("action");
         
-        if (statusNotification) {
-            Intent intent = new Intent(getContext(), RhodesActivity.class);
-            StatusNotification.simpleNotification(TAG, 0, getContext(), intent, "PUSH message from: " + from, alert);
-        }
+        
+//        final String from = extras.getString("from");
+//        boolean statusNotification = false;
+//        if (Push.PUSH_NOTIFICATIONS.equals(NOTIFICATION_ALWAYS))
+//            statusNotification = true;
+//        else if (Push.PUSH_NOTIFICATIONS.equals(NOTIFICATION_BACKGROUND))
+//            statusNotification = !RhodesApplication.canHandleNow(RhodesApplication.AppState.AppActivated);
+//        
+//        Log.i(TAG, "notification_always?");
+//        Log.i(TAG, NOTIFICATION_ALWAYS);
 
-		if (alert != null) {
-			Logger.D(TAG, "PUSH: Alert: " + alert);
-            Alert.showPopup(alert);
+        
+//        if (statusNotification) {
+//            Logger.D(TAG, "add statusbar notification");
+//            Intent intent = new Intent(getContext(), RhodesActivity.class);
+//            StatusNotification.simpleNotification(TAG, 0, getContext(), intent, "PUSH message from: " + from, alert);
+//        }
+        
+        Logger.D(TAG, "Action:" + action);
+        Logger.D(TAG, "Alert:" + alert);
+        Logger.D(TAG, "Try to Start PopupBackground");
+		if (action.equals("load:ride_notific")  && alert != null) {
+			String title = extras.getString("title");
+			if(title == null) title = "BetterTaxi";
+			
+            Logger.D(TAG, "Start PopupBackground");
+            Intent dialogIntent = new Intent(getContext(), AlertChooseActivity.class);
+            dialogIntent.putExtra(INTENT_EXTRA_PREFIX + "title", title);
+            dialogIntent.putExtra(INTENT_EXTRA_PREFIX + "message", alert);
+            dialogIntent.putExtra(INTENT_EXTRA_PREFIX + "PARENT_EXTRA", extras);
+            dialogIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getApplication().startActivity(dialogIntent);
+            
+            
+			//Logger.D(TAG, "PUSH: Alert: " + alert);
+            //Alert.showPopup(alert);
 		}
 		final String sound = extras.getString("sound");
 		if (sound != null) {
