@@ -707,7 +707,7 @@
 				OutputFile="$(OutDir)/rhodes.exe"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="$(OutDir)"
-				GenerateDebugInformation="false"
+				GenerateDebugInformation="true"
 				SubSystem="0"
 				StackReserveSize="196608"
 				StackCommitSize="4096"
@@ -3869,6 +3869,10 @@
 			<Filter
 				Name="common"
 				>
+				<File
+					RelativePath=".\rho\common\ExtManager.cpp"
+					>
+				</File>
 				<File
 					RelativePath=".\rho\common\RhoClassFactory.cpp"
 					>

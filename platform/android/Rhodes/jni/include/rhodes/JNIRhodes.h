@@ -38,6 +38,7 @@
 #include <logging/RhoLog.h>
 
 #ifndef RHO_NO_RUBY
+//This include is required for rhojava.inc below
 #include <genconfig.h>
 #endif
 

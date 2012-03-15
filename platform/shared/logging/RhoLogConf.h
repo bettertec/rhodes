@@ -55,8 +55,7 @@ class LogSettings{
 //    String      m_strLogConfFilePath;
     unsigned int m_nMaxLogFileSize;
 
-	String      m_strLogHost;
-    String      m_strLogPort;
+	String      m_strLogURL;
 
     bool        m_bLogPrefix;
 
@@ -99,10 +98,9 @@ public:
     bool isLogPrefix()const{ return m_bLogPrefix;}
 	void setLogPrefix(bool bLogPrefix){ m_bLogPrefix = bLogPrefix; }
 
-	const String& getLogHost() const { return m_strLogHost; }
-	void setLogHost(const char* szLogHost) { m_strLogHost = rho::String(szLogHost); }
+	const String& getLogURL() const { return m_strLogURL; }
+	void setLogURL(const char* szLogURL) { m_strLogURL = rho::String(szLogURL); }
 
-	const String& getLogPort() const { return m_strLogPort; }
 	void initRemoteLog();
 	void closeRemoteLog();
 
@@ -150,8 +148,8 @@ inline rho::LogSettings& LOGCONF(){ return rho::g_LogSettings; }
 extern "C"{
 #endif //__cplusplus
 
-void rho_logconf_Init(const char* szRootPath, const char* szLogPort);
-void rho_logconf_Init_with_separate_user_path(const char* szRootPath, const char* szLogPort, const char* szUserPath);
+void rho_logconf_Init(const char* szLogPath, const char* szRootPath, const char* szLogPort);
+void rho_logconf_Init_with_separate_user_path(const char* szLogPath, const char* szRootPath, const char* szLogPort, const char* szUserPath);
 
 char* rho_logconf_getText();
 int   rho_logconf_getTextPos();

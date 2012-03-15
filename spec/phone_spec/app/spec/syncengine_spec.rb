@@ -101,19 +101,19 @@ describe "SyncEngine_test" do
     Rho::RhoConfig.bulksync_state='1'    
     
   end
-
+  
 if !defined?(RHO_WP7)
   it "should database_full_reset_ex raise an exception" do  
     exc = false
     begin
-        Rhom::Rhom.database_full_reset_ex( :models => [getProduct_str], :reset_client_info => true )    
+       Rhom::Rhom.database_full_reset_ex( :models => [getProduct_str], :reset_client_info => true )    
     rescue => e
         exc = true
     end
     
     exc.should be_true
   end
-end
+end  
 
   it "should database_full_reset_ex support different parameters" do
     Rhom::Rhom.database_full_reset_ex()
@@ -860,6 +860,46 @@ end
 
     item2 = getProduct.find(item.object)
     item2.vars.should_not be_nil
+  end
+  
+  it "should not sync non-exist properties from freezed model" do
+    SyncEngine.logged_in.should == 1
+  
+    res = ::Rho::RhoSupport::parse_query_parameters getCustomer.sync( "/app/Settings/sync_notify")
+    res['status'].should == 'ok'
+    res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+  
+    cust = getCustomer().find(:first, :conditions => {:first => 'CustTest2'} )
+    cust.should_not be_nil
+
+    Rhom::Rhom.database_full_reset
+    Rho::RhoConfig.bulksync_state='1'
+    
+    cust1 = getCustomer().find(:first)
+    cust1.should be_nil
+
+    saved_src = Rho::RhoConfig.sources[getCustomer_str()]
+    begin
+        if !$spec_settings[:schema_model]
+            Rho::RhoConfig.sources[getCustomer_str()]['freezed'] = true
+        else
+            Rho::RhoConfig.sources[getCustomer_str()]['schema']['property'].delete('first')
+        end
+        ::Rho::RHO.init_sync_source_properties(Rho::RhoConfig::sources.values)
+        
+        res2 = ::Rho::RhoSupport::parse_query_parameters getCustomer.sync( "/app/Settings/sync_notify")
+        res2['status'].should == 'ok'
+        res2['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+
+        cust_all = getCustomer().find(:all)
+        cust_all.should_not be_nil
+        cust_all.size.should > 0
+
+        cust2 = getCustomer().find(:first, :conditions => {:first => 'CustTest2'} )
+        cust2.should be_nil
+    ensure
+        Rho::RhoConfig.sources[getCustomer_str()] = saved_src
+    end
   end
 
   it "should logout" do

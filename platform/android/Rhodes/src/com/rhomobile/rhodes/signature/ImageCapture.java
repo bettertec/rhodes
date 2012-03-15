@@ -56,7 +56,7 @@ public class ImageCapture extends BaseActivity implements OnClickListener
 	private String callbackUrl;
 	private String imageFormat;
 	
-	private SimpleDateFormat timeStampFormat = new SimpleDateFormat("yyyyMMddHHmmssSS");
+	private static SimpleDateFormat timeStampFormat = new SimpleDateFormat("yyyyMMddHHmmssSS");
 
 	private SignatureView surfaceView;
 	private SurfaceHolder surfaceHolder;
@@ -70,7 +70,7 @@ public class ImageCapture extends BaseActivity implements OnClickListener
 		//Logger.D(TAG, "$$$$$$$$$$$$$$$$$$$$$$$$  onCreate");
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		//getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-		getWindow().setFormat(PixelFormat.TRANSLUCENT);
+		//getWindow().setFormat(PixelFormat.TRANSLUCENT);
 		setContentView(AndroidR.layout.signature);
 		
 		Bundle extras = getIntent().getExtras();
@@ -91,7 +91,9 @@ public class ImageCapture extends BaseActivity implements OnClickListener
 		int penColor = extras.getInt(com.rhomobile.rhodes.signature.Signature.INTENT_EXTRA_PREFIX + "penColor");
 		float penWidth = extras.getFloat(com.rhomobile.rhodes.signature.Signature.INTENT_EXTRA_PREFIX + "penWidth");
 		int bgColor = extras.getInt(com.rhomobile.rhodes.signature.Signature.INTENT_EXTRA_PREFIX + "bgColor");
-		surfaceView.setupView(penColor, penWidth, bgColor);
+		surfaceView.isTransparency = false;
+		surfaceView.setupView(penColor | 0xFF000000, penWidth, bgColor | 0xFF000000);
+		surfaceView.invalidate();
 	}
 
 	@Override
@@ -141,13 +143,12 @@ public class ImageCapture extends BaseActivity implements OnClickListener
 	}
 	
 
-	
-	private void takeSignature() {
+	public static void takeSignature(String callback, String imgFormat, Bitmap bitmap) {
 		try {
 			String file_ext = "jpg";
 			String file_type = "image/jpeg";
 			Bitmap.CompressFormat compress_format = Bitmap.CompressFormat.JPEG;
-			if (imageFormat.equals("png")) {
+			if (imgFormat.equals("png")) {
 				file_ext = "png";
 				file_type = "image/png";
 				compress_format = Bitmap.CompressFormat.PNG;
@@ -168,7 +169,7 @@ public class ImageCapture extends BaseActivity implements OnClickListener
 			String filePath = dir + "/" + filename + "." + file_ext;
 			OutputStream osOwn = new FileOutputStream(filePath);
 			
-			Bitmap bitmap = surfaceView.makeBitmap();
+			//Bitmap bitmap = surfaceView.makeBitmap();
 	
 			//bitmap.compress(compress_format, 100, osCommon);		
 			//osCommon.flush();
@@ -178,11 +179,16 @@ public class ImageCapture extends BaseActivity implements OnClickListener
 			osOwn.flush();
 			osOwn.close();
 			
-			Signature.doCallback(callbackUrl, filePath);
+			Signature.doCallback(callback, filePath);
 		} catch (Exception ex) {
 			Logger.E(TAG, ex.getMessage());
 		}
 	
+		
+	}
+	
+	private void takeSignature() {
+		takeSignature(callbackUrl, imageFormat, surfaceView.makeBitmap());
 	}
 
 

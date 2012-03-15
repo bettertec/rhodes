@@ -52,7 +52,7 @@ LogSettings::LogSettings(){
     m_nMaxLogFileSize = 0; 
     m_bLogPrefix = true; 
 
-    //m_strLogHost = "PPP_PEER";
+    m_strLogURL = "";
 
     m_pFileSink = new CLogFileSink(*this);
     m_pOutputSink = new CLogOutputSink(*this);
@@ -78,7 +78,8 @@ void LogSettings::closeRemoteLog()
 
 void LogSettings::initRemoteLog()
 {
-#if defined( OS_PLATFORM_MOTCE ) && !defined (APP_BUILD_CAPABILITY_BARCODE)
+
+#if defined( OS_PLATFORM_MOTCE )// && !defined (APP_BUILD_CAPABILITY_BARCODE)
     //TODO: remote log prevent loading app - stuck on loading.png when no barcode. very strange!
     OSVERSIONINFO osv = {0};
 	osv.dwOSVersionInfoSize = sizeof(osv);
@@ -86,10 +87,9 @@ void LogSettings::initRemoteLog()
 		return;
 #endif
 
-	m_strLogHost = RHOCONF().getString("rhologhost"); 
-	m_strLogPort = RHOCONF().getString("rhologport"); 
+	m_strLogURL = RHOCONF().getString("rhologurl"); 
 
-	if(!m_pSocketSink && m_strLogHost != "" && m_strLogPort != "")
+	if(!m_pSocketSink && m_strLogURL != "")
 		m_pSocketSink = new CLogSocketSink(*this);
 }
 
@@ -251,15 +251,15 @@ extern "C" {
 using namespace rho;
 using namespace rho::common;
 
-void rho_logconf_Init_with_separate_user_path(const char* szRootPath, const char* szLogPort, const char* szUserPath)
+void rho_logconf_Init_with_separate_user_path(const char* szLogPath, const char* szRootPath, const char* szLogPort, const char* szUserPath)
 {
     
 #ifdef RHODES_EMULATOR
-    String strRootPath = szRootPath;
+    String strRootPath = szLogPath;
     strRootPath += RHO_EMULATOR_DIR"/";
     rho::common::CFilePath oLogPath( strRootPath );
 #else
-    rho::common::CFilePath oLogPath( szRootPath );
+    rho::common::CFilePath oLogPath( szLogPath );
 #endif
     
     //Set defaults
@@ -286,8 +286,8 @@ void rho_logconf_Init_with_separate_user_path(const char* szRootPath, const char
     LOGCONF().loadFromConf(RHOCONF());
 }
     
-void rho_logconf_Init(const char* szRootPath, const char* szLogPort){
-    rho_logconf_Init_with_separate_user_path(szRootPath, szLogPort, szRootPath);
+void rho_logconf_Init(const char* szLogPath, const char* szRootPath, const char* szLogPort){
+    rho_logconf_Init_with_separate_user_path(szLogPath, szRootPath, szLogPort, szRootPath);
 }
 
 char* rho_logconf_getText() {

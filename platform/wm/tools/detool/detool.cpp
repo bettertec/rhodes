@@ -33,7 +33,7 @@
 #include "LogServer.h"
 
 #define RHOSETUP_DLL "rhosetup.dll"
-
+#define RE2_RUNTIME TEXT("\\Program Files\\RhoElements2\\RhoElements2.exe")
 
 TCHAR *app_name = NULL;
 
@@ -492,7 +492,7 @@ enum {
     DEPLOY_EMU_WEBKIT
 };
 
-int copyExecutable (TCHAR *file_name, TCHAR *app_dir)
+int copyExecutable (TCHAR *file_name, TCHAR *app_dir, bool use_shared_runtime)
 {
 	TCHAR exe_fullpath[MAX_PATH];
 	int retval = 0;
@@ -505,7 +505,7 @@ int copyExecutable (TCHAR *file_name, TCHAR *app_dir)
 	_tcscpy(exe_fullpath, app_dir);
 	_tcscat(exe_fullpath, _T("\\"));
 	_tcscat(exe_fullpath, app_name);
-	_tcscat(exe_fullpath, _T(".exe"));
+	_tcscat(exe_fullpath, (use_shared_runtime ? _T(".lnk") : _T(".exe")));
 
 	hSrc = CreateFile(file_name, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (INVALID_HANDLE_VALUE == hSrc) {
@@ -764,6 +764,20 @@ void connectWMDC() {
 	}
 }
 
+bool str_ends_with(const TCHAR* str, const TCHAR* suffix)
+{
+	if( str == NULL || suffix == NULL )
+		return 0;
+
+	size_t str_len = wcslen(str);
+	size_t suffix_len = wcslen(suffix);
+
+	if(suffix_len > str_len)
+		return 0;
+
+	return (_wcsnicmp( str + str_len - suffix_len, suffix, suffix_len ) == 0);
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 	TCHAR *emu_name = NULL;
@@ -778,6 +792,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	//WIN32_FIND_DATAW findData;
 	int new_copy = 0;
 	int deploy_type;
+	bool use_shared_runtime = false;
 
 	USES_CONVERSION;
 
@@ -794,7 +809,9 @@ int _tmain(int argc, _TCHAR* argv[])
 			emu_name = argv[2];
 			cab_file = argv[3];
 			app_name = argv[4];
-			log_port = argv[5];
+			//log_port = argv[5];
+			if (strcmp(T2A(argv[5]), "1") == 0)
+				use_shared_runtime = true;
 			deploy_type = DEPLOY_EMUCAB;
 		}
 
@@ -815,7 +832,9 @@ int _tmain(int argc, _TCHAR* argv[])
         else {
             cab_file = argv[2];
             app_name = argv[3];
-            log_port = argv[4];
+            //log_port = argv[4];
+			if (strcmp(T2A(argv[4]), "1") == 0)
+				use_shared_runtime = true;
             deploy_type = DEPLOY_DEVCAB;
         }
 	} else if (argc == 4) { // log
@@ -828,13 +847,15 @@ int _tmain(int argc, _TCHAR* argv[])
         else if (strcmp(T2A(argv[1]), "wk-dev") == 0)  {
             deploy_type = DEPLOY_DEV_WEBKIT;
             src_path = argv[2];
-            app_name = argv[3];            
+            app_name = argv[3];
         }
 	}
 	else {
 		usage();
 		return EXIT_FAILURE;
 	}
+	if ((!use_shared_runtime) && app_exe)
+		use_shared_runtime = str_ends_with(app_exe, L".lnk");
 
 	TCHAR app_dir[MAX_PATH];
 	_tcscpy(app_dir, TEXT("\\Program Files\\"));
@@ -871,7 +892,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 				hFind = CeFindFirstFile(app_dir, &findData);
 				if (INVALID_HANDLE_VALUE == hFind) {
-					_tprintf( TEXT("Application directory on device was no found\n"));
+					_tprintf( TEXT("Application directory on device was not found\n"));
 					
 					new_copy = 1;
 
@@ -895,7 +916,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 				hFind = CeFindFirstFile(remote_bundle_path, &findData);
 				if (INVALID_HANDLE_VALUE == hFind) {
-					_tprintf( TEXT("Bundle directory on device was no found\n"));
+					_tprintf( TEXT("Bundle directory on device was not found\n"));
 	
 					if (!CeCreateDirectory(remote_bundle_path, NULL)) {
 						printf ("Failed to create bundle directory\n");
@@ -904,7 +925,7 @@ int _tmain(int argc, _TCHAR* argv[])
 				}
 				FindClose( hFind);
 
-				int retval = copyExecutable (app_exe, app_dir);
+				int retval = copyExecutable (app_exe, app_dir, use_shared_runtime);
 				if (retval != EXIT_SUCCESS) {
 					printf ("Failed to copy application executable\n");
 					if (retval == 32) {
@@ -924,15 +945,23 @@ int _tmain(int argc, _TCHAR* argv[])
 				emuBringToFront(emu_name);
 
 				_tprintf( TEXT("Starting application..."));
-				_tcscpy(params_buf, TEXT("\\Program Files\\"));
-				_tcscat(params_buf, app_name);
-				_tcscat(params_buf, _T("\\"));
-				_tcscat(params_buf, app_name);
-				_tcscat(params_buf, _T(".exe"));
-
-				TCHAR params[128];
-				_tcscpy(params, _T("-log="));
-				_tcscat(params, log_port);
+				TCHAR params[MAX_PATH];
+				params[0] = 0;
+				if (use_shared_runtime) {
+					_tcscpy(params_buf, RE2_RUNTIME);
+					_tcscpy(params, _T("-approot='\\Program Files\\"));
+					_tcscat(params, app_name);
+					_tcscat(params, _T("'"));
+				} else {
+					_tcscpy(params_buf, TEXT("\\Program Files\\"));
+					_tcscat(params_buf, app_name);
+					_tcscat(params_buf, _T("\\"));
+					_tcscat(params_buf, app_name);
+					_tcscat(params_buf, _T(".exe"));
+				}
+				//_tcscpy(params, _T("-log="));
+				//_tcscat(params, log_port);
+				_tprintf( TEXT("%s %s\n"), params_buf, params);
 
 				if(!wceRunProcess(T2A(params_buf), T2A(params))) {
 					_tprintf( TEXT("FAILED\n"));
@@ -1007,15 +1036,23 @@ int _tmain(int argc, _TCHAR* argv[])
 			emuBringToFront(emu_name);
 
 			_tprintf( TEXT("Starting application..."));
-			_tcscpy(params_buf, TEXT("\\Program Files\\"));
-			_tcscat(params_buf, app_name);
-			_tcscat(params_buf, _T("\\"));
-			_tcscat(params_buf, app_name);
-			_tcscat(params_buf, _T(".exe"));
-
-			TCHAR params[128];
-			_tcscpy(params, _T("-log="));
-			_tcscat(params, log_port);
+			TCHAR params[MAX_PATH];
+			params[0] = 0;
+			if (use_shared_runtime) {
+				_tcscpy(params_buf, RE2_RUNTIME);
+				_tcscpy(params, _T("-approot='\\Program Files\\"));
+				_tcscat(params, app_name);
+				_tcscat(params, _T("'"));
+			} else {
+				_tcscpy(params_buf, TEXT("\\Program Files\\"));
+				_tcscat(params_buf, app_name);
+				_tcscat(params_buf, _T("\\"));
+				_tcscat(params_buf, app_name);
+				_tcscat(params_buf, _T(".exe"));
+			}
+			//_tcscat(params, _T("-log="));
+			//_tcscat(params, log_port);
+			_tprintf( TEXT("%s %s\n"), params_buf, params);
 
 			if(!wceRunProcess(T2A(params_buf), T2A(params))) {
 				_tprintf( TEXT("FAILED\n"));
@@ -1050,7 +1087,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		hFind = CeFindFirstFile(app_dir, &findData);
 		if (INVALID_HANDLE_VALUE == hFind) {
-			_tprintf( TEXT("Application directory on device was no found\n"));
+			_tprintf( TEXT("Application directory on device was not found\n"));
 					
 			new_copy = 1;
 
@@ -1074,7 +1111,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		hFind = CeFindFirstFile(remote_bundle_path, &findData);
 		if (INVALID_HANDLE_VALUE == hFind) {
-			_tprintf( TEXT("Bundle directory on device was no found\n"));
+			_tprintf( TEXT("Bundle directory on device was not found\n"));
 	
 			if (!CeCreateDirectory(remote_bundle_path, NULL)) {
 				printf ("Failed to create bundle directory\n");
@@ -1083,8 +1120,7 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 		FindClose( hFind);
 
-		
-		int retval = copyExecutable (app_exe, app_dir);
+		int retval = copyExecutable (app_exe, app_dir, use_shared_runtime);
 		if (retval != EXIT_SUCCESS) {
 			printf ("Failed to copy application executable\n");
 			if (retval == 32) {
@@ -1104,16 +1140,23 @@ int _tmain(int argc, _TCHAR* argv[])
 		Sleep(2 * 1000);
 
 		_tprintf( TEXT("Starting application..."));
-		_tcscpy(params_buf, TEXT("\\Program Files\\"));
-		_tcscat(params_buf, app_name);
-		_tcscat(params_buf, _T("\\"));
-		_tcscat(params_buf, app_name);
-		_tcscat(params_buf, _T(".exe"));
-		_tprintf( TEXT("%s\n"), params_buf);
-
-		TCHAR params[128];
-		_tcscpy(params, _T("-log="));
-		_tcscat(params, log_port);
+		TCHAR params[MAX_PATH];
+		params[0] = 0;
+		if (use_shared_runtime) {
+			_tcscpy(params_buf, RE2_RUNTIME);
+			_tcscpy(params, _T("-approot='\\Program Files\\"));
+			_tcscat(params, app_name);
+			_tcscat(params, _T("'"));
+		} else {
+			_tcscpy(params_buf, TEXT("\\Program Files\\"));
+			_tcscat(params_buf, app_name);
+			_tcscat(params_buf, _T("\\"));
+			_tcscat(params_buf, app_name);
+			_tcscat(params_buf, _T(".exe"));
+		}
+		//_tcscat(params, _T("-log="));
+		//_tcscat(params, log_port);
+		_tprintf( TEXT("%s %s\n"), params_buf, params);
 
 		if(!wceRunProcess(T2A(params_buf), T2A(params))) {
 			_tprintf( TEXT("FAILED\n"));
@@ -1183,15 +1226,23 @@ int _tmain(int argc, _TCHAR* argv[])
 			connectWMDC();
 
 			_tprintf( TEXT("Starting application..."));
-			_tcscpy(params_buf, TEXT("\\Program Files\\"));
-			_tcscat(params_buf, app_name);
-			_tcscat(params_buf, _T("\\"));
-			_tcscat(params_buf, app_name);
-			_tcscat(params_buf, _T(".exe"));
-
-            TCHAR params[128];
-            _tcscpy(params, _T("-log="));
-			_tcscat(params, log_port);
+			TCHAR params[MAX_PATH];
+			params[0] = 0;
+			if (use_shared_runtime) {
+				_tcscpy(params_buf, RE2_RUNTIME);
+				_tcscpy(params, _T("-approot='\\Program Files\\"));
+				_tcscat(params, app_name);
+				_tcscat(params, _T("'"));
+			} else {
+				_tcscpy(params_buf, TEXT("\\Program Files\\"));
+				_tcscat(params_buf, app_name);
+				_tcscat(params_buf, _T("\\"));
+				_tcscat(params_buf, app_name);
+				_tcscat(params_buf, _T(".exe"));
+			}
+			//_tcscat(params, _T("-log="));
+			//_tcscat(params, log_port);
+			_tprintf( TEXT("%s %s\n"), params_buf, params);
 
 			if(!wceRunProcess (T2A(params_buf), T2A(params))) {
 				_tprintf( TEXT("FAILED\n"));
@@ -1224,7 +1275,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
         hFind = CeFindFirstFile(app_dir, &findData);
         if (INVALID_HANDLE_VALUE == hFind) {
-            _tprintf( TEXT("Application directory on device was no found\n"));
+            _tprintf( TEXT("Application directory on device was not found\n"));
 
             new_copy = 1;
 
@@ -1284,7 +1335,7 @@ int _tmain(int argc, _TCHAR* argv[])
             } else {
                 hFind = CeFindFirstFile(app_dir, &findData);
                 if (INVALID_HANDLE_VALUE == hFind) {
-                    _tprintf( TEXT("Application directory on device was no found\n"));
+                    _tprintf( TEXT("Application directory on device was not found\n"));
 
                     new_copy = 1;
 

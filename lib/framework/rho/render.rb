@@ -32,7 +32,7 @@ module Rho
   class RhoController
     begin
       is_translator_exist = true
-      is_translator_exist = Rho::file_exist?( File.join(__rhoGetCurrentDir(), 'lib/rhodes_translator' + RHO_RB_EXT) ) if !defined?( RHODES_EMULATOR )
+      is_translator_exist = Rho::file_exist?( File.join(__rhoGetRuntimeDir(), 'lib/rhodes_translator' + RHO_RB_EXT) ) if !defined?( RHODES_EMULATOR )
           
       if is_translator_exist
         require 'rhodes_translator'
@@ -113,6 +113,14 @@ module Rho
         #puts "meta deleted"
     end
     
+    def __get_model
+        model = nil
+        begin
+            model = Object.const_get(@request['model'].to_sym()) if Object.const_defined?(@request['model'].to_sym() )
+        rescue Exception => exc
+        end
+    end
+    
     def render(options = nil)
       if @params['rho_callback']
         rho_error( "render call in callback. Call WebView.navigate instead" ) 
@@ -128,12 +136,17 @@ module Rho
       action = options[:action] if options[:action]
       action = @request['action'].nil? ? default_action : @request['action'] unless action
 
-      if $".include?( "rhodes_translator") and @request['model'] != nil
-        model = nil
-        model = Object.const_get(@request['model'].to_sym) if Object.const_defined?(@request['model'].to_sym)
+      if @request['model'] != nil
+        
+        model = __get_model()
+            
         if model && model.respond_to?( :metadata ) and model.metadata != nil
+          if $".include?( "rhodes_translator")
             metaenabled = model.metadata[action.to_s] != nil
-        end    
+          else
+            rho_error( "unable to load rhodes_translator gem." )
+          end
+        end
       end
 
       if not options[:string].nil?

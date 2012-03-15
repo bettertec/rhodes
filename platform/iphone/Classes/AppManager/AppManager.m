@@ -53,6 +53,8 @@
 static bool UnzipApplication(const char* appRoot, const void* zipbuf, unsigned int ziplen);
 //const char* RhoGetRootPath();
 
+VALUE rho_sys_has_wifi_network();
+VALUE rho_sys_has_cell_network();
 
 
 BOOL isPathIsSymLink(NSFileManager *fileManager, NSString* path) {
@@ -404,7 +406,7 @@ BOOL isPathIsSymLink(NSFileManager *fileManager, NSString* path) {
 #endif
 	}
     
-	rho_logconf_Init_with_separate_user_path(rho_native_rhopath(), "", rho_native_rhouserpath());
+	rho_logconf_Init_with_separate_user_path(rho_native_rhopath(), rho_native_rhopath(), "", rho_native_rhouserpath());
 	rho_rhodesapp_create_with_separate_user_path(rho_native_rhopath(), rho_native_rhouserpath());
 	RAWLOG_INFO("Rhodes started");
 }
@@ -491,6 +493,11 @@ const char* rho_native_rhopath()
 	}
 	
 	return root;
+}
+
+const char* rho_native_reruntimepath()
+{
+    return rho_native_rhopath();
 }
 
 const char* rho_native_rhouserpath() 
@@ -717,6 +724,10 @@ int rho_sysimpl_get_property(char* szPropName, VALUE* resValue)
     }
     else if (strcasecmp("has_network", szPropName) == 0)
         {*resValue = rho_sys_has_network(); return 1; }
+    else if (strcasecmp("has_wifi_network", szPropName) == 0)
+    {*resValue = rho_sys_has_wifi_network(); return 1; }
+    else if (strcasecmp("has_cell_network", szPropName) == 0)
+    {*resValue = rho_sys_has_cell_network(); return 1; }
     else if (strcasecmp("has_camera", szPropName) == 0) {
         int has_camera = [UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera];
         *resValue = rho_ruby_create_boolean(has_camera);

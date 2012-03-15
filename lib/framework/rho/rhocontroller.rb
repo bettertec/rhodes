@@ -52,8 +52,8 @@ module Rho
 
     def default_action
       return Hash['GET','show','PUT','update','POST','update',
-        'DELETE','delete'][@request['request-method']] unless @request['id'].nil?
-      return Hash['GET','index','POST','create'][@request['request-method']]
+        'DELETE','delete'][@request['request-method'].upcase] unless @request['id'].nil?
+      return Hash['GET','index','POST','create'][@request['request-method'].upcase]
     end
 
     def self.process_rho_object(params)
@@ -61,7 +61,17 @@ module Rho
         hashObjs = params['__rho_object']
         
         hashObjs.each do |name,index|
-            params[name] = __rhoGetCallbackObject(index.to_i())
+            if name == '__rho_inline'
+                params.merge!( __rhoGetCallbackObject(index.to_i()) )
+                
+                barcodeModule = Object.const_get('Barcode') if Object.const_defined?('Barcode')
+                if barcodeModule && barcodeModule.respond_to?( :rho_process_moto_callback )
+                    barcodeModule.rho_process_moto_callback(params)
+                end
+                
+            else
+                params[name] = __rhoGetCallbackObject(index.to_i())
+            end    
         end
         
         params.delete('__rho_object')

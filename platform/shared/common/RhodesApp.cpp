@@ -105,6 +105,7 @@ private:
     void processCommand(IQueueCommand* pCmd);
 
     static char const *toString(int type);
+    void   callCallback(const String& strCallback);
 
 private:
     callback_t m_expected;
@@ -148,6 +149,41 @@ void CAppCallbacksQueue::call(CAppCallbacksQueue::callback_t type)
 {
     addQueueCommand(new Command(type));
 }*/
+
+void CAppCallbacksQueue::callCallback(const String& strCallback)
+{
+    String strUrl = RHODESAPP().getBaseUrl();
+    strUrl += strCallback;
+    NetResponse resp = getNetRequest().pullData( strUrl, null );
+    if ( !resp.isOK() )
+    {
+        boolean bTryAgain = false;
+#if defined( __SYMBIAN32__ ) || defined( OS_ANDROID )
+        if ( String_startsWith( strUrl, "http://localhost:" ) )
+        {
+            RHODESAPP().setBaseUrl("http://127.0.0.1:");
+            bTryAgain = true;
+        }
+#else
+        if ( String_startsWith( strUrl, "http://127.0.0.1:" ) )
+        {
+            RHODESAPP().setBaseUrl("http://localhost:");
+            bTryAgain = true;
+        }
+#endif
+
+        if ( bTryAgain )
+        {
+            LOG(INFO) + "Change base url and try again.";
+            strUrl = RHODESAPP().getBaseUrl();
+            strUrl += strCallback;
+            resp = getNetRequest().pullData( strUrl, null );
+        }
+
+        if ( !resp.isOK() )
+            LOG(ERROR) + strCallback + " call failed. Code: " + resp.getRespCode() + "; Error body: " + resp.getCharData();
+    }
+}
 
 void CAppCallbacksQueue::processCommand(IQueueCommand* pCmd)
 {
@@ -234,23 +270,13 @@ void CAppCallbacksQueue::processCommand(IQueueCommand* pCmd)
             break;
         case ui_created:
             {
-                String strUrl = RHODESAPP().getBaseUrl();
-                strUrl += "/system/uicreated";
-                NetResponse resp = getNetRequest().pullData( strUrl, null );
-                if ( !resp.isOK() )
-                    LOG(ERROR) + "activate app failed. Code: " + resp.getRespCode() + "; Error body: " + resp.getCharData();
-
+                callCallback("/system/uicreated");
                 m_expected = app_activated;
             }
             break;
         case app_activated:
             {
-                String strUrl = RHODESAPP().getBaseUrl();
-                strUrl += "/system/activateapp";
-                NetResponse resp = getNetRequest().pullData( strUrl, null );
-                if ( !resp.isOK() )
-                    LOG(ERROR) + "activate app failed. Code: " + resp.getRespCode() + "; Error body: " + resp.getCharData();
-
+                callCallback("/system/activateapp");
                 m_expected = app_deactivated;
             }
             break;
@@ -261,12 +287,12 @@ void CAppCallbacksQueue::processCommand(IQueueCommand* pCmd)
     m_commands.clear();
 }
 
-/*static*/ CRhodesApp* CRhodesApp::Create(const String& strRootPath, const String& strUserPath)
+/*static*/ CRhodesApp* CRhodesApp::Create(const String& strRootPath, const String& strUserPath, const String& strRuntimePath)
 {
     if ( m_pInstance != null) 
         return (CRhodesApp*)m_pInstance;
 
-    m_pInstance = new CRhodesApp(strRootPath, strUserPath);
+    m_pInstance = new CRhodesApp(strRootPath, strUserPath, strRuntimePath);
 
     String push_pin = RHOCONF().getString("push_pin");
     if(!push_pin.empty())
@@ -286,14 +312,15 @@ void CAppCallbacksQueue::processCommand(IQueueCommand* pCmd)
 
 }
 
-CRhodesApp::CRhodesApp(const String& strRootPath, const String& strUserPath)
-    :CRhodesAppBase(strRootPath, strUserPath)
+CRhodesApp::CRhodesApp(const String& strRootPath, const String& strUserPath, const String& strRuntimePath)
+    :CRhodesAppBase(strRootPath, strUserPath, strRuntimePath)
 {
     m_bExit = false;
     m_bDeactivationMode = false;
     m_bRestartServer = false;
     m_bSendingLog = false;
     //m_activateCounter = 0;
+    m_pExtManager = 0;
 
     m_appCallbacksQueue = new CAppCallbacksQueue();
 
@@ -591,6 +618,56 @@ void CRhodesApp::callBarcodeCallback(String strCallbackUrl, const String& strBar
     runCallbackInThread(strCallbackUrl, strBody);
 }
 
+void CRhodesApp::callCallbackWithData(String strCallbackUrl, String strBody, const String& strCallbackData, bool bWaitForResponse) 
+{
+    strCallbackUrl = canonicalizeRhoUrl(strCallbackUrl);
+
+    strBody += "&rho_callback=1";
+
+    if (strCallbackData.length() > 0 )
+    {
+        if ( !String_startsWith( strCallbackData, "&" ) )
+            strBody += "&";
+
+        strBody += strCallbackData;
+    }
+
+    if (bWaitForResponse)
+        getNetRequest().pushData( strCallbackUrl, strBody, null );
+    else
+        runCallbackInThread(strCallbackUrl, strBody);
+}
+
+extern "C" VALUE rjson_tokener_parse(const char *str, char** pszError );
+
+class CJsonResponse : public rho::ICallbackObject
+{
+    String m_strJson;
+public:
+    CJsonResponse(const char* szJson) : m_strJson(szJson) { }
+    virtual unsigned long getObjectValue()
+    {
+        char* szError = 0;
+        unsigned long valBody = rjson_tokener_parse(m_strJson.c_str(), &szError);
+        if ( valBody != 0 )
+            return valBody;
+
+        LOG(ERROR) + "Incorrect json body.Error:" + (szError ? szError : "");
+        if ( szError )
+            free(szError);
+
+        return rho_ruby_get_NIL();
+    }
+};
+
+void CRhodesApp::callCallbackWithJsonBody( const char* szCallback, const char* szCallbackBody, const char* szCallbackData, bool bWaitForResponse)
+{
+    String strBody;
+    strBody = addCallbackObject( new CJsonResponse( szCallbackBody ), "__rho_inline" );
+
+    callCallbackWithData(szCallback, strBody, szCallbackData, bWaitForResponse );
+}
+
 void CRhodesApp::callCameraCallback(String strCallbackUrl, const String& strImagePath, 
     const String& strError, boolean bCancel ) 
 {
@@ -780,11 +857,12 @@ void CRhodesApp::initHttpServer()
 {
     String strAppRootPath = getRhoRootPath();
     String strAppUserPath = getRhoUserPath();
+    String strRuntimePath = getRhoRuntimePath();
 #ifndef RHODES_EMULATOR
     strAppRootPath += "apps";
 #endif
 
-    m_httpServer = new net::CHttpServer(atoi(getFreeListeningPort()), strAppRootPath, strAppUserPath);
+    m_httpServer = new net::CHttpServer(atoi(getFreeListeningPort()), strAppRootPath, strAppUserPath, strRuntimePath);
     m_httpServer->register_uri("/system/geolocation", rubyext::CGeoLocation::callback_geolocation);
     m_httpServer->register_uri("/system/syncdb", callback_syncdb);
     m_httpServer->register_uri("/system/redirect_to", callback_redirect_to);
@@ -856,7 +934,7 @@ int CRhodesApp::determineFreeListeningPort()
         serv_addr.sin_len = sizeof(serv_addr);
 #endif
         serv_addr.sin_family = AF_INET;
-        serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+        serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
         serv_addr.sin_port = htons((short)listenPort);
         
         LOG(INFO) + "Trying to bind of " + listenPort + " port...";
@@ -870,7 +948,7 @@ int CRhodesApp::determineFreeListeningPort()
                 serv_addr.sin_len = sizeof(serv_addr);
 #endif
                 serv_addr.sin_family = AF_INET;
-                serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+                serv_addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
                 serv_addr.sin_port = htons(0);
 
                 LOG(INFO) + "Trying to bind on dynamic port...";
@@ -1082,6 +1160,11 @@ boolean CRhodesApp::isOnStartPage()
 const String& CRhodesApp::getBaseUrl()
 {
     return m_strHomeUrl;
+}
+
+void CRhodesApp::setBaseUrl(const String& strBaseUrl)
+{
+    m_strHomeUrl = strBaseUrl + getFreeListeningPort();
 }
 
 const String& CRhodesApp::getOptionsUrl()
@@ -1416,12 +1499,17 @@ int	rho_http_snprintf(char *buf, size_t buflen, const char *fmt, ...)
 	
 void rho_rhodesapp_create(const char* szRootPath)
 {
-    rho::common::CRhodesApp::Create(szRootPath, szRootPath);
+    rho::common::CRhodesApp::Create(szRootPath, szRootPath, szRootPath);
 }
 
 void rho_rhodesapp_create_with_separate_user_path(const char* szRootPath, const char* szUserPath)
 {
-    rho::common::CRhodesApp::Create(szRootPath, szUserPath);
+    rho::common::CRhodesApp::Create(szRootPath, szUserPath, szRootPath);
+}
+
+void rho_rhodesapp_create_with_separate_runtime(const char* szRootPath, const char* szRuntimePath)
+{
+    rho::common::CRhodesApp::Create(szRootPath, szRootPath, szRuntimePath);
 }
     
     
@@ -1670,12 +1758,3 @@ int rho_rhodesapp_canstartapp(const char* szCmdLine, const char* szSeparators)
 }
 
 } //extern "C"
-
-
-
-
-
-
-
-
-

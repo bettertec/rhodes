@@ -28,24 +28,47 @@ package com.rhomobile.rhodes.signature;
 
 import java.io.File;
 import java.util.Map;
-import java.util.Vector;
 
 import android.content.Intent;
+import android.view.ViewGroup;
+import android.webkit.WebView;
+import android.widget.AbsoluteLayout;
 
 import com.rhomobile.rhodes.Logger;
 import com.rhomobile.rhodes.RhodesActivity;
 import com.rhomobile.rhodes.RhodesAppOptions;
 import com.rhomobile.rhodes.RhodesService;
+import com.rhomobile.rhodes.extmanager.IRhoExtension;
+import com.rhomobile.rhodes.util.ContextFactory;
 import com.rhomobile.rhodes.util.PerformOnUiThread;
+import com.rhomobile.rhodes.util.Utils;
 
-public class Signature {
+import com.rhomobile.rhodes.extmanager.AbstractRhoExtension;
+import com.rhomobile.rhodes.extmanager.IRhoExtData;
+import com.rhomobile.rhodes.extmanager.IRhoExtension;
+import com.rhomobile.rhodes.extmanager.IRhoExtManager;
+import com.rhomobile.rhodes.extmanager.RhoExtManager;
 
-	private static final String TAG = "Signature";
+public class Signature extends AbstractRhoExtension implements IRhoExtension {
+
+	static final String TAG = "Signature";
 	
 	public static final String INTENT_EXTRA_PREFIX = RhodesService.INTENT_EXTRA_PREFIX + "signature.";
 	
-	private static void reportFail(String name, Exception e) {
-		Logger.E(TAG, "Call of \"" + name + "\" failed: " + e.getMessage());
+	private static final String SIGNATURE_EXT = "signature_ext";
+	
+	private static SignatureView ourInlineSignatureView = null;
+	
+	private static Signature ourInstance = null;
+	
+	public SignatureProperties mProperties = null;
+	
+	private static final boolean ENABLE_LOGGING = true;
+	
+	public static void reportMsg(String msg) {
+		if (ENABLE_LOGGING) {
+			Utils.platformLog("SignatureCapture", msg);
+		}
 	}
 	
 	private static void init() {
@@ -55,71 +78,56 @@ public class Signature {
 	}
 	
 	private static class Picture implements Runnable {
-		private String url;
 		private Class<?> klass;
-		private String imageFormat;
-		private int penColor;
-		private float penWidth;
-		private int bgColor;
 		
-		public Picture(String u, Class<?> c, String _imageFormat, int _penColor, float _penWidth, int _bgColor) {
-			url = u;
+		public Picture(Class<?> c) {
 			klass = c;
-			imageFormat = _imageFormat;
-			penColor = _penColor;
-			penWidth = _penWidth;
-			bgColor = _bgColor;
 		}
 		
 		public void run() {
 			init();
-			RhodesActivity ra = RhodesActivity.getInstance();
+			RhodesActivity ra = RhodesActivity.safeGetInstance();
 			Intent intent = new Intent(ra, klass);
-			intent.putExtra(INTENT_EXTRA_PREFIX + "callback", url);
-			intent.putExtra(INTENT_EXTRA_PREFIX + "imageFormat", imageFormat);
-			intent.putExtra(INTENT_EXTRA_PREFIX + "penColor", penColor);
-			intent.putExtra(INTENT_EXTRA_PREFIX + "penWidth", penWidth);
-			intent.putExtra(INTENT_EXTRA_PREFIX + "bgColor", bgColor);
+			intent.putExtra(INTENT_EXTRA_PREFIX + "callback", getSharedInstance().mProperties.callbackUrl);
+			intent.putExtra(INTENT_EXTRA_PREFIX + "imageFormat", getSharedInstance().mProperties.imageFormat);
+			intent.putExtra(INTENT_EXTRA_PREFIX + "penColor", getSharedInstance().mProperties.penColor);
+			intent.putExtra(INTENT_EXTRA_PREFIX + "penWidth", getSharedInstance().mProperties.penWidth);
+			intent.putExtra(INTENT_EXTRA_PREFIX + "bgColor", getSharedInstance().mProperties.bgColor);
 			ra.startActivity(intent);
 		}
 	};
 	
-	public static void takeSignature(String url, Object params) {
-		try {
-			String imageFormat = "png";
-			int penColor = 0xFF66009A;
-			float penWidth = 2;
-			int bgColor = 0xFFFFFFFF;
-			
-			if (params instanceof Map<?,?>) {
-				Map<Object,Object> settings = (Map<Object,Object>)params;
-				
-				Object imgFrmtObj = settings.get("imageFormat");
-				if ((imgFrmtObj != null) && (imgFrmtObj instanceof String)) {
-					imageFormat = new String(((String)imgFrmtObj));
-				}
-				
-				Object penColorObj = settings.get("penColor");
-				if ((penColorObj != null) && (penColorObj instanceof String)) {
-					penColor = Integer.parseInt((String)penColorObj) | 0xFF000000;
-				}
-					
-				Object penWidthObj = settings.get("penWidth");
-				if ((penWidthObj != null) && (penWidthObj instanceof String)) {
-					penWidth = Float.parseFloat((String)penWidthObj);
-				}
+	private static void processParams(Object params) {
+		if (params == null) {
+			return;
+		}
+		if (params instanceof Map<?,?>) {
+			Map<Object,Object> settings = (Map<Object,Object>)params;
 
-				Object bgColorObj = settings.get("bgColor");
-				if ((bgColorObj != null) && (bgColorObj instanceof String)) {
-					bgColor = Integer.parseInt((String)bgColorObj) | 0xFF000000;
+			int prop_count = SignatureProperties.PROPERTIES_LIST.length;
+			int i;
+			for (i = 0; i < prop_count; i++) {
+				String prop_name = SignatureProperties.PROPERTIES_LIST[i];
+				Object valueObj = settings.get(prop_name);
+				if (valueObj != null) {
+					getSharedInstance().mProperties.setPropertyByName(prop_name, new String(((String)valueObj)));
 				}
 			}
-			
-			Runnable runnable = new Picture(url, ImageCapture.class, imageFormat, penColor, penWidth, bgColor);
-			PerformOnUiThread.exec(runnable, false);
+		}
+	}
+	
+	
+	public static void takeSignature(String url, Object params) {
+		try {
+			processParams(params);
+			getSharedInstance().mProperties.penColor = getSharedInstance().mProperties.penColor | 0xFF000000;
+			getSharedInstance().mProperties.bgColor = getSharedInstance().mProperties.bgColor | 0xFF000000;
+			getSharedInstance().mProperties.setPropertyByName(SignatureProperties.CALLBACK, url);
+			Runnable runnable = new Picture(ImageCapture.class);
+			PerformOnUiThread.exec(runnable);
 		}
 		catch (Exception e) {
-			reportFail("takeSignature", e);
+			Logger.E(TAG, e);
 		}
 	}
 
@@ -132,6 +140,141 @@ public class Signature {
 		callback(callbackUrl, fp, "", fp.length() == 0);
 	}
 
+    public static void inline_signature_visible(int visible, Object params) {
+        inlineSignatureVisible(RhoExtManager.getInstance(), (visible != 0), params);
+    }
+
+    public static void inlineSignatureVisible(final IRhoExtManager extManager, boolean visible, Object params) {
+		if (!visible) {
+			inlineSignatureHide(extManager);
+			return;
+		}
+		
+		processParams(params);
+		
+		PerformOnUiThread.exec( new Runnable () {
+			public void run() {
+				reportMsg(" $$$ Start make of Signature View");
+				
+				ViewGroup wv = (ViewGroup)extManager.getWebView();
+				if ((wv != null) && (ourInlineSignatureView != null)) {
+					wv.removeView(ourInlineSignatureView);
+					ourInlineSignatureView = null;
+				}
+				
+				ourInlineSignatureView = new SignatureView(ContextFactory.getUiContext(), null);
+				
+				{
+					if ((getSharedInstance().mProperties.bgColor & 0xFF000000) != 0xFF000000) {
+						//ourInlineSignatureView.setVisibility(View.INVISIBLE);
+						ourInlineSignatureView.isTransparency = true;
+					}
+					ourInlineSignatureView.setupView(	getSharedInstance().mProperties.penColor, 
+							getSharedInstance().mProperties.penWidth, 
+							getSharedInstance().mProperties.bgColor);
+					ourInlineSignatureView.setLayoutParams(
+							new AbsoluteLayout.LayoutParams(	getSharedInstance().mProperties.width, 
+																getSharedInstance().mProperties.height, 
+																getSharedInstance().mProperties.left, 
+																getSharedInstance().mProperties.top));
+					
+				}
+				
+				wv.addView(ourInlineSignatureView);
+				wv.bringChildToFront(ourInlineSignatureView);	
+				ourInlineSignatureView.requestFocus();
+				ourInlineSignatureView.bringToFront();
+				ourInlineSignatureView.invalidate();
+				
+				//wv.invalidate();
+				
+				reportMsg(" $$$ Finish make of Signature View");
+			}
+		});
+	}
+	
+	public static void inline_signature_capture(String callback_url) {
+		if (ourInlineSignatureView != null) {
+			ImageCapture.takeSignature(callback_url, getSharedInstance().mProperties.imageFormat, ourInlineSignatureView.makeBitmap());
+		}
+		inlineSignatureHide(RhoExtManager.getInstance());
+	}
+	
+	public static void inline_signature_clear() {
+	    inlineSignatureClear(RhoExtManager.getInstance());
+	}
+	
+	public static void inlineSignatureClear(IRhoExtManager extmanager) {
+		PerformOnUiThread.exec( new Runnable () {
+			public void run() {
+				if (ourInlineSignatureView != null) {
+					ourInlineSignatureView.doClear();
+					//RhodesService.getInstance().getMainView().getWebView(-1).getView().invalidate();
+					//ViewGroup wv = (WebView)RhodesService.getInstance().getMainView().getWebView(-1).getView();
+					//if (wv != null) {
+					//	wv.invalidate();
+					//}
+					
+				}
+			}
+		});
+	}
+	
+	public static void inlineSignatureHide(final IRhoExtManager extManager) {
+		PerformOnUiThread.exec( new Runnable () {
+			public void run() {
+				if (ourInlineSignatureView != null) {
+					ViewGroup wv = (ViewGroup)extManager.getWebView();
+					if (wv != null) {
+						wv.removeView(ourInlineSignatureView);
+						ourInlineSignatureView = null;
+					}
+				}
+			}
+		});
+	}
+	
+	@Override
+	public void onBeforeNavigate(IRhoExtManager extManager, String url, IRhoExtData data) {
+		inlineSignatureHide(extManager);
+	}
+	
+	@Override
+	public void onSetProperty(IRhoExtManager extManager, String name, String value, IRhoExtData data) {
+		if ((name == null) || (value == null)) {
+			return;
+		}
+		mProperties.setPropertyByName(name, value);
+		if ("Visibility".equalsIgnoreCase(name)) {
+			if ("Visible".equalsIgnoreCase(value)) {
+				// show
+				inlineSignatureVisible(extManager, true, null);
+			}
+			else {
+				// hide;
+				inlineSignatureHide(extManager);
+			}
+		}
+		else if ("Clear".equalsIgnoreCase(name)) {
+			// clear
+			inlineSignatureClear(extManager);
+		}
+	}
+	
+	public static Signature getSharedInstance() {
+		if (ourInstance == null) {
+			ourInstance = new Signature();
+			ourInstance.mProperties = new SignatureProperties();
+		}
+		return ourInstance;
+	}
+	
+	public static void registerSignatureCaptureExtension() {
+		RhoExtManager.getInstance().registerExtension(SIGNATURE_EXT, getSharedInstance());
+	}
+	
 	public static native void callback(String callbackUrl, String filePath, String error, boolean cancelled);
 
 }
+
+

@@ -52,7 +52,7 @@ public:
 
 private:
 
-    CRhodesApp(const String& strRootPath, const String& strUserPath);
+    CRhodesApp(const String& strRootPath, const String& strUserPath, const String& strRuntimePath);
     boolean m_bExit, m_bRestartServer;
 
     String m_strListeningPorts;
@@ -61,7 +61,6 @@ private:
     CSplashScreen m_oSplashScreen;
     CAppMenu m_oAppMenu;
     CRhoTimer m_oTimer;
-    CExtManager m_oExtManager;
 
     String m_strLoadingPagePath, m_strLoadingPngPath;
     String m_strStartUrl, m_strOptionsUrl, m_strRhobundleReloadUrl;//, m_strFirstStartUrl;
@@ -86,11 +85,12 @@ private:
 
     common::CAutoPtr<common::CThreadQueue> m_appCallbacksQueue;
     boolean m_bSendingLog;
+    CExtManager* m_pExtManager;
 
 public:
     ~CRhodesApp(void);
 
-    static CRhodesApp* Create(const String& strRootPath, const String& strUserPath);
+    static CRhodesApp* Create(const String& strRootPath, const String& strUserPath, const String& strRuntimePath);
     static void Destroy();
     static CRhodesApp* getInstance(){ return (CRhodesApp*)m_pInstance; }
     void startApp();
@@ -105,6 +105,7 @@ public:
 
     const String& getRhobundleReloadUrl();
     const String& getBaseUrl();
+    void  setBaseUrl(const String& strBaseUrl);
     const String& getStartUrl();
     const String& getOptionsUrl();
     const String& getCurrentUrl(int index = 0);
@@ -125,6 +126,8 @@ public:
     StringW getAppNameW();
 
     void callBarcodeCallback(String strCallbackUrl, const String& strBarcode, bool isError);
+    void callCallbackWithData(String strCallbackUrl, String strBody, const String& strCallbackData, bool bWaitForResponse);
+    void callCallbackWithJsonBody( const char* szCallback, const char* szCallbackBody, const char* szCallbackData, bool bWaitForResponse);
     void callCameraCallback(String strCallbackUrl, const String& strImagePath, const String& strError, boolean bCancel );
     void callSignatureCallback(String strCallbackUrl, const String& strSignaturePath, const String& strError, boolean bCancel );
     void callDateTimeCallback(String strCallbackUrl, long lDateTime, const char* szData, int bCancel );
@@ -138,7 +141,9 @@ public:
     CAppMenu& getAppMenu (void) { return m_oAppMenu; }
     CSplashScreen& getSplashScreen(){return m_oSplashScreen;}
     CRhoTimer&     getTimer(){ return m_oTimer; }
-    CExtManager&   getExtManager(){ return m_oExtManager; }
+
+    void setExtManager( CExtManager* pExtManager ){m_pExtManager = pExtManager; }
+    CExtManager&   getExtManager(){ return *m_pExtManager; }
 
     boolean sendLog(const String& strCallbackUrl);
 
@@ -192,6 +197,7 @@ extern "C" {
 	
 void rho_rhodesapp_create(const char* szRootPath);
 void rho_rhodesapp_create_with_separate_user_path(const char* szRootPath, const char* szUserPath);    
+void rho_rhodesapp_create_with_separate_runtime(const char* szRootPath, const char* szRuntimePath);    
 void rho_rhodesapp_start();	
 void rho_rhodesapp_destroy();
 	

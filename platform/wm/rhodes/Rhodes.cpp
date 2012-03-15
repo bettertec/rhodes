@@ -38,6 +38,8 @@
 #include "common/RhoFilePath.h"
 #include "common/app_build_capabilities.h"
 
+#include <algorithm>
+
 using namespace rho;
 using namespace rho::common;
 using namespace std;
@@ -57,9 +59,18 @@ extern "C" int rho_sys_check_rollback_bundle(const char* szRhoPath);
 
 #ifdef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
 class CEng;
+class CConfig;
 extern "C" CEng* rho_wmimpl_get_webkitbrowser(HWND hParentWnd, HINSTANCE hInstance);
+extern "C" CConfig* rho_wmimpl_get_webkitconfig();
 extern rho::IBrowserEngine* rho_wmimpl_get_webkitBrowserEngine(HWND hwndParent, HINSTANCE rhoAppInstance);
-
+extern "C" WCHAR* rho_wmimpl_get_configfilepath();
+extern "C" void rho_wmimpl_set_configfilepath(const char* path);
+extern "C" TCHAR* rho_wmimpl_get_startpage();
+extern "C" void rho_wmimpl_set_startpage(const char* path);
+extern "C" void rho_wmimpl_set_logpath(const TCHAR* path);
+extern "C" const char* rho_wmimpl_get_logpath();
+extern "C" const char* rho_wmimpl_get_logurl();
+extern "C" bool rho_wmimpl_get_fullscreen();
 #endif
 
 
@@ -90,6 +101,7 @@ struct CBarcodeInit
     CBarcodeInit()
     {
         m_bMC4900 = false;
+/*
         OSVERSIONINFO osv = {0};
 		osv.dwOSVersionInfoSize = sizeof(osv);
 		if (GetVersionEx(&osv))
@@ -98,7 +110,7 @@ struct CBarcodeInit
         RAWLOG_INFO1("CBarcodeInit : OS version :  %d", osv.dwMajorVersion);
 
         if ( m_bMC4900 )
-            rho_scanner_before_webkit();
+            rho_scanner_before_webkit();*/
     }
 
     static DWORD afterWebkit(LPVOID ){ rho_scanner_after_webkit(); return 0; }
@@ -116,8 +128,9 @@ class CRhodesModule : public CAtlExeModuleT< CRhodesModule >
 {
     static HINSTANCE m_hInstance;
     CMainWindow m_appWindow;
-    rho::String m_strRootPath, m_strRhodesPath, m_logPort;//, m_strDebugHost, m_strDebugPort;*/
+    rho::String m_strRootPath, m_strRhodesPath, m_logPort, m_strRuntimePath;//, m_strDebugHost, m_strDebugPort;*/
 	int m_nRestarting;
+    CExtManager m_oExtManager;
 
 #ifdef OS_WINDOWS
     String m_strHttpProxy;
@@ -126,7 +139,6 @@ class CRhodesModule : public CAtlExeModuleT< CRhodesModule >
 public :
     static HINSTANCE GetModuleInstance(){return m_hInstance;}
     static void SetModuleInstance(HINSTANCE hInstance){m_hInstance = hInstance;}
-
     HWND GetMainWindow() { return m_appWindow.m_hWnd;}
 	CMainWindow* GetMainWindowObject() { return &m_appWindow;}
 	CMainWindow& GetAppWindow() { return m_appWindow; }
@@ -141,6 +153,7 @@ public :
     HRESULT PreMessageLoop(int nShowCmd) throw();
     void RunMessageLoop( ) throw( );
     const rho::String& getRhoRootPath();
+    const rho::String& getRhoRuntimePath();
     void parseHttpProxyURI(const rho::String &http_proxy);
 };
 
@@ -189,6 +202,32 @@ bool CRhodesModule::ParseCommandLine(LPCTSTR lpCmdLine, HRESULT* pnRetCode ) thr
 				m_logPort = rho::String("11000");
 			}
 		}
+
+#if defined(APP_BUILD_CAPABILITY_MOTOROLA)
+        else if (wcsnicmp(lpszToken, _T("s"),1)==0)
+        {
+			String token = convertToStringA(lpszToken);
+			char* path = parseToken( token.c_str(), token.length() );
+			if (path) {
+				// RhoElements v1.0 compatibility mode
+                rho_wmimpl_set_startpage(path);
+				free(path);
+			}
+        }
+        else if (wcsnicmp(lpszToken, _T("c"),1)==0)
+        {
+			String token = convertToStringA(lpszToken);
+            char* path = parseToken( token.c_str(), token.length() );
+			if (path) {
+                token = path;
+                if (token.substr(0,7).compare("file://")==0)
+                    token.erase(0,7);
+				rho_wmimpl_set_configfilepath(token.c_str());
+				free(path);
+			}
+        }
+#endif // APP_BUILD_CAPABILITY_MOTOROLA
+
 #if defined(OS_WINDOWS)
 		else if (wcsncmp(lpszToken, _T("http_proxy_url"),14)==0) 
         {
@@ -258,6 +297,23 @@ bool CRhodesModule::ParseCommandLine(LPCTSTR lpCmdLine, HRESULT* pnRetCode ) thr
 				free(port);
 			}
 		} */
+#else
+        else if (wcsnicmp(lpszToken, _T("approot"),7)==0)
+        {
+            String token = convertToStringA(lpszToken);
+			char* path = parseToken( token.c_str(), token.length() );
+			if (path) {
+				// RhoElements v2.0 Shared Runtime command line parameter
+				m_strRootPath = path;
+                if (m_strRootPath.substr(0,7).compare("file://")==0)
+                    m_strRootPath.erase(0,7);
+                ::std::replace(m_strRootPath.begin(), m_strRootPath.end(), '\\', '/');
+                if (m_strRootPath.at(m_strRootPath.length()-1)!='/')
+                    m_strRootPath.append("/");
+                m_strRootPath.append("rho/");
+        	}
+			free(path);
+        }
 #endif
 		lpszToken = FindOneOf(lpszToken, szTokens);
 	}
@@ -319,7 +375,16 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
         return S_FALSE;
     }
 
-	rho_logconf_Init(m_strRootPath.c_str(), m_logPort.c_str());
+#if defined(APP_BUILD_CAPABILITY_MOTOROLA)
+    CConfig* conf = rho_wmimpl_get_webkitconfig();
+    rho_logconf_Init((rho_wmimpl_get_logpath()[0]==0 ? m_strRootPath.c_str() : rho_wmimpl_get_logpath()), m_strRootPath.c_str(), m_logPort.c_str());
+    if (rho_wmimpl_get_logurl()[0]!=0)
+        RHOCONF().setString("rhologurl", rho_wmimpl_get_logurl(), false);
+    if (rho_wmimpl_get_fullscreen())
+        RHOCONF().setBool("full_screen", true, false);
+#else
+    rho_logconf_Init(m_strRootPath.c_str(), m_strRootPath.c_str(), m_logPort.c_str());
+#endif // APP_BUILD_CAPABILITY_MOTOROLA
 
 #ifdef RHODES_EMULATOR
     RHOSIMCONF().setAppConfFilePath(CFilePath::join( m_strRootPath, RHO_EMULATOR_DIR"/rhosimconfig.txt").c_str());
@@ -396,7 +461,8 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
 		return S_FALSE;
     }
 
-    rho::common::CRhodesApp::Create(m_strRootPath, m_strRootPath);
+    rho::common::CRhodesApp::Create(m_strRootPath, m_strRootPath, m_strRuntimePath);
+    RHODESAPP().setExtManager( &m_oExtManager );
 
     DWORD dwStyle = WS_VISIBLE;
 
@@ -420,6 +486,14 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
         }
     }
 #endif
+
+#if defined(APP_BUILD_CAPABILITY_MOTOROLA)
+    if (rho_wmimpl_get_startpage()[0] != 0) {
+        String spath = convertToStringA(rho_wmimpl_get_startpage());
+        RHOCONF().setString("start_path", spath, false);
+    }
+#endif // APP_BUILD_CAPABILITY_MOTOROLA
+
 
     m_appWindow.InitMainWindow();
 #endif
@@ -520,6 +594,13 @@ void CRhodesModule::RunMessageLoop( ) throw( )
 const rho::String& CRhodesModule::getRhoRootPath()
 {
     if ( m_strRootPath.length() == 0 )
+        m_strRootPath = getRhoRuntimePath();
+    return m_strRootPath;
+}
+
+const rho::String& CRhodesModule::getRhoRuntimePath()
+{
+    if ( m_strRuntimePath.length() == 0 )
     {
         char rootpath[MAX_PATH];
         int len;
@@ -532,15 +613,15 @@ const rho::String& CRhodesModule::getRhoRootPath()
             rootpath[len+1]=0;
         }
 
-        m_strRootPath = rootpath;
-        m_strRootPath += "rho\\";
+        m_strRuntimePath = rootpath;
+        m_strRuntimePath += "rho\\";
 
-        for(unsigned int i = 0; i < m_strRootPath.length(); i++ )
-            if ( m_strRootPath.at(i) == '\\' )
-                m_strRootPath[i] = '/';
+        for(unsigned int i = 0; i < m_strRuntimePath.length(); i++ )
+            if ( m_strRuntimePath.at(i) == '\\' )
+                m_strRuntimePath[i] = '/';
     }
 
-    return m_strRootPath; 
+    return m_strRuntimePath; 
 }
 
 extern "C" int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
@@ -606,6 +687,11 @@ translate_char(char *p, int from, int to)
 extern "C" const char* rho_native_rhopath() 
 {
     return _AtlModule.getRhoRootPath().c_str();
+}
+
+extern "C" const char* rho_native_reruntimepath() 
+{
+    return _AtlModule.getRhoRuntimePath().c_str();
 }
 
 extern "C" HINSTANCE rho_wmimpl_get_appinstance()
@@ -711,7 +797,7 @@ char* parseToken( const char* start, int len ) {
 
     int i = 0;
     for( i = 0; i < len; i++ ){
-        if ( start[i] == '=' ){
+        if (( start[i] == '=' ) || ( start[i] == ':' ) || ( start[i] == ' ' )) {
             if ( i > 0 ){
                 int s = i-1;
                 for(; s >= 0 && start[s]==' '; s-- );

@@ -130,6 +130,14 @@ def add_push(manifest)
   end
 end
 
+def add_motosol_sdk(manifest)
+  uses_library = REXML::Element.new 'uses-library'
+  uses_library.add_attribute 'android:name', 'com.motorolasolutions.scanner'
+  manifest.elements.each('application') do |app|
+    app.add uses_library
+  end  
+end
+
 def set_app_name_android(newname)
   puts "set_app_name"
   $stdout.flush
@@ -344,10 +352,16 @@ namespace "config" do
   end
 
   task :android => :set_android_platform do
-  
+
     Rake::Task["config:common"].invoke
 
     $java = $config["env"]["paths"]["java"]
+
+    $neon_root = nil
+    $neon_root = $config["env"]["paths"]["neon"] unless $config["env"]["paths"].nil?
+    if !($app_config["paths"].nil? or $app_config["paths"]["neon"].nil?)
+      $neon_root = $app_config["paths"]["neon"]  
+    end
 
     $androidsdkpath = $config["env"]["paths"]["android"]
     unless File.exists? $androidsdkpath
@@ -751,27 +765,43 @@ namespace "build" do
       end
 
     end
-#    desc "Build RhoBundle for android"
-    task :rhobundle => ["config:android","build:bundle:noxruby",:extensions] do
-#      Rake::Task["build:bundle:noxruby"].execute
 
-      assets = File.join(Jake.get_absolute($androidpath), "Rhodes", "assets")
+    desc "Build RhoBundle for android"
+    task :rhobundle => ["config:android", :extensions] do
+    
+      Rake::Task["build:bundle:noxruby"].invoke
+
+      #assets = File.join(Jake.get_absolute($androidpath), "Rhodes", "assets")
+      assets = File.join $tmpdir, 'assets'
       rm_rf assets
       mkdir_p assets
       hash = nil
       ["apps", "db", "lib"].each do |d|
         cp_r File.join($srcdir, d), assets, :preserve => true
         # Calculate hash of directories
-        hash = get_dir_hash(File.join(assets, d), hash)
+        hash = get_dir_hash(File.join($srcdir, d), hash)
       end
-      File.open(File.join(assets, "hash"), "w") { |f| f.write(hash.hexdigest) }
+      File.open(File.join($srcdir, "hash"), "w") { |f| f.write(hash.hexdigest) }    
+      File.open(File.join($srcdir, "name"), "w") { |f| f.write($appname) }
+      Jake.build_file_map($srcdir, "rho.dat")
 
-      File.open(File.join(assets, "name"), "w") { |f| f.write($appname) }
-      
-      Jake.build_file_map(assets, "rho.dat")
+      ["apps", "db", "lib", "hash", "name", "rho.dat"].each do |d|
+        cp_r File.join($srcdir, d), assets, :preserve => true
+      end
+
     end
 
-    task :extensions => :genconfig do
+    desc "Build RhoBundle for Eclipse project"
+    task :eclipsebundle => "build:android:rhobundle" do
+      assets = File.join $tmpdir, 'assets'
+      eclipse_assets = File.join(Jake.get_absolute($androidpath), "Rhodes", "assets")
+      rm_rf eclipse_assets
+      cp_r assets, eclipse_assets, :preserve => true
+    end
+
+    task :extensions => ["config:android", :genconfig] do
+    
+      Rake::Task["build:bundle:noxruby"].invoke
 
       ENV['RHO_PLATFORM'] = 'android'
       ENV["ANDROID_NDK"] = $androidndkpath
@@ -781,6 +811,7 @@ namespace "build" do
       ENV["BUILD_DIR"] ||= $startdir + "/platform/android/build"
       ENV["RHO_INC"] = $appincdir
       ENV["RHO_ANDROID_TMP_DIR"] = $tmpdir
+      ENV["NEON_ROOT"] = $neon_root unless $neon_root.nil?
 
       ext_build_files = File.join($extensionsdir, "ext_build.files")
       if File.exist? ext_build_files
@@ -1466,8 +1497,19 @@ namespace "build" do
       end
     end
 
+    task :upgrade_package => :rhobundle do
+        #puts '$$$$$$$$$$$$$$$$$$'
+        #puts 'targetdir = '+$targetdir.to_s
+        #puts 'bindir = '+$bindir.to_s
+        android_targetdir = File.join($targetdir, 'android')
+        mkdir_p android_targetdir if not File.exists? android_targetdir
+        zip_file_path = File.join(android_targetdir, 'upgrade_bundle.zip')
+        Jake.build_file_map(File.join($srcdir, "apps"), "rhofilelist.txt")
+        Jake.zip_upgrade_bundle($bindir, zip_file_path)
+    end    
+    
     #desc "build all"
-    task :all => [:rhobundle, :rhodes]
+    task :all => ['build:android:rhobundle', :rhodes]
   end
 end
 
@@ -1488,7 +1530,7 @@ namespace "package" do
 
     manifest = $appmanifest
     resource = $appres
-    assets = Jake.get_absolute $androidpath + "/Rhodes/assets"
+    assets = File.join($tmpdir, 'assets')
     resourcepkg =  $bindir + "/rhodes.ap_"
 
     puts "Packaging Assets and Jars"
@@ -1504,8 +1546,6 @@ namespace "package" do
     end
 
     # Workaround: manually add files starting with '_' because aapt silently ignore such files when creating package
-    rm_rf File.join($tmpdir, "assets")
-    cp_r assets, $tmpdir
     Dir.glob(File.join($tmpdir, "assets/**/*")).each do |f|
       next unless File.basename(f) =~ /^_/
       relpath = Pathname.new(f).relative_path_from(Pathname.new($tmpdir)).to_s
@@ -1524,6 +1564,9 @@ namespace "package" do
     cp_r File.join($bindir, "libs", $confdir, $ndkabi, $ndkgccver, "librhodes.so"), File.join($tmpdir, "lib/armeabi")
     # Add extensions .so libraries
     Dir.glob($extensionsdir + "/lib*.so").each do |lib|
+      cp_r lib, File.join($tmpdir, "lib/armeabi")
+    end
+    Dir.glob($extensionsdir + '/noautoload/lib*.so').each do |lib|
       cp_r lib, File.join($tmpdir, "lib/armeabi")
     end
     $ext_android_additional_lib.each do |lib|
@@ -1744,7 +1787,11 @@ namespace "run" do
             io.each do |line|
                 #puts line
                 
-                end_spec = !Jake.process_spec_output(line) if line.valid_encoding?
+                if line.class.method_defined? "valid_encoding?" 
+                    end_spec = !Jake.process_spec_output(line) if line.valid_encoding?
+                else 
+                    end_spec = !Jake.process_spec_output(line)
+                end    
                 break if end_spec
             end
             
@@ -1903,55 +1950,64 @@ namespace "run" do
     def  run_emulator(options = {})
       apkfile = Jake.get_absolute $targetdir + "/" + $appname + "-debug.apk"
 
-      AndroidTools.kill_adb
+      #AndroidTools.kill_adb
       Jake.run($adb, ['start-server'], nil, true)
-      puts 'Sleep for 5 sec. waiting for "adb start-server"'
-      sleep 5
+      #puts 'Sleep for 5 sec. waiting for "adb start-server"'
+      #sleep 5
 
       AndroidTools.logcat_process()
 
-      if $appavdname != nil
-        $avdname = $appavdname
-      end
-
-      createavd = "\"#{$androidbin}\" create avd --name #{$avdname} --target #{$avdtarget} --sdcard 32M "
-      system("echo no | #{createavd}") unless File.directory?( File.join(ENV['HOME'], ".android", "avd", "#{$avdname}.avd" ) )
-
-      if $use_google_addon_api
-        avdini = File.join(ENV['HOME'], '.android', 'avd', "#{$avdname}.ini")
-        avd_using_gapi = true if File.new(avdini).read =~ /:Google APIs:/
-        unless avd_using_gapi
-          puts "Can not use specified AVD (#{$avdname}) because of incompatibility with Google APIs. Delete it and try again."
-          exit 1
-        end
-      end
-
       running = AndroidTools.is_emulator_running
-
       if !running
+
+        if $appavdname != nil
+          $avdname = $appavdname
+        end
+
+        createavd = "\"#{$androidbin}\" create avd --name #{$avdname} --target #{$avdtarget} --sdcard 32M "
+        system("echo no | #{createavd}") unless File.directory?( File.join(ENV['HOME'], ".android", "avd", "#{$avdname}.avd" ) )
+
+        if $use_google_addon_api
+          avdini = File.join(ENV['HOME'], '.android', 'avd', "#{$avdname}.ini")
+          avd_using_gapi = true if File.new(avdini).read =~ /:Google APIs:/
+          unless avd_using_gapi
+            puts "Can not use specified AVD (#{$avdname}) because of incompatibility with Google APIs. Delete it and try again."
+            exit 1
+          end
+        end
+
         # Start the emulator, check on it every 5 seconds until it's running
-        cmd = "\"#{$emulator}\" -cpu-delay 0 -no-boot-anim"
+        cmd = "\"#{$emulator}\" -cpu-delay 0"
         cmd << " -no-window" if options[:hidden]
         cmd << " -avd #{$avdname}"
         Thread.new { system(cmd) }
 
         puts "Waiting for emulator..."
-        puts Jake.run($adb, ['wait-for-device'] )
+        res = 'error'        
+        while res =~ /error/ do
+            sleep 5
+            res = Jake.run $adb, ['-e', 'wait-for-device']
+            puts res
+        end
 
-        puts "Waiting up to 180 seconds for emulator..."
+        puts "Waiting up to 600 seconds for emulator..."
         startedWaiting = Time.now
         adbRestarts = 1
-        while (Time.now - startedWaiting < 180 )
+        while (Time.now - startedWaiting < 600 )
           sleep 5
           now = Time.now
           started = false
+          booted = true
           Jake.run2 $adb, ["-e", "shell", "ps"], :system => false, :hideerrors => false do |line|
+            #puts line
+            booted = false if line =~ /bootanimation/
             started = true if line =~ /android\.process\.acore/
             true
           end
-          unless started
+          #puts "started: #{started}, booted: #{booted}"
+          unless started and booted
             printf("%.2fs: ",(now - startedWaiting))
-            if (now - startedWaiting) > (60 * adbRestarts)
+            if (now - startedWaiting) > (180 * adbRestarts)
               # Restart the adb server every 60 seconds to prevent eternal waiting
               puts "Appears hung, restarting adb server"
               AndroidTools.kill_adb

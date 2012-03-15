@@ -36,6 +36,7 @@ import com.rhomobile.rhodes.camera.Camera;
 import com.rhomobile.rhodes.mainview.MainView;
 import com.rhomobile.rhodes.mainview.SimpleMainView;
 import com.rhomobile.rhodes.mainview.SplashScreen;
+import com.rhomobile.rhodes.signature.Signature;
 import com.rhomobile.rhodes.util.PerformOnUiThread;
 import com.rhomobile.rhodes.util.Utils;
 
@@ -161,6 +162,9 @@ public class RhodesActivity extends BaseActivity {
         mSplashScreen = new SplashScreen(this);
         setMainView(mSplashScreen);
 
+        
+        Signature.registerSignatureCaptureExtension();
+        
 		processStartupListeners();
         {
         	Iterator<RhodesActivityListener> iterator = mListeners.iterator();
@@ -242,6 +246,10 @@ public class RhodesActivity extends BaseActivity {
         mIsInsideStartStop = true;
         
         RhodesApplication.stateChanged(RhodesApplication.UiState.MainActivityStarted);
+        
+        for(RhodesActivityListener listener: mListeners) {
+            listener.onStart(this);
+        }
 	}
 	
 	@Override
@@ -279,14 +287,20 @@ public class RhodesActivity extends BaseActivity {
 	{
 		super.onStop();
         Logger.D(TAG, "onStop");
+        for(RhodesActivityListener listener: mListeners) {
+            listener.onStop(this);
+        }
         mIsInsideStartStop = false;
 	}
 	
 	@Override
 	public void onDestroy() {
         Logger.D(TAG, "onDestroy");
+
+        for(RhodesActivityListener listener: mListeners) {
+            listener.onDestroy(this);
+        }
         
-        //TODO: Check is it really correct in case activity killed immediately after onPause()
         sInstance = null;
 		super.onDestroy();
 	}

@@ -81,12 +81,24 @@ void rho_webview_navigate_forward()
 
 const char* rho_webview_execute_js(const char* js, int index) 
 {
-    String strJS = "javascript:";
-    strJS += js;
+   // String strJS = "javascript:";
+    //strJS += js;
 
 	//RAWTRACEC1("Execute JS: %s", js);
 
-    rho_webview_navigate(strJS.c_str(), index);
+    //rho_webview_navigate(strJS.c_str(), index);
+    StringW strJsW;
+    convertToStringW(js, strJsW);
+
+#ifdef RHODES_EMULATOR
+    TNavigateData* nd = (TNavigateData*)malloc(sizeof(TNavigateData));
+    nd->index = index;
+    nd->url = _tcsdup(strJsW.c_str());
+    ::PostMessage( getMainWnd(), WM_COMMAND, IDM_EXECUTEJS, (LPARAM)nd );
+#else
+    ::PostMessage( getMainWnd(), WM_COMMAND, IDM_EXECUTEJS, (LPARAM)_tcsdup(strJsW.c_str()) );
+#endif
+
 	return "";
 }
 

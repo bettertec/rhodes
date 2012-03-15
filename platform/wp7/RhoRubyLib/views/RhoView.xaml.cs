@@ -1,30 +1,4 @@
-﻿/*------------------------------------------------------------------------
-* (The MIT License)
-* 
-* Copyright (c) 2008-2011 Rhomobile, Inc.
-* 
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-* 
-* The above copyright notice and this permission notice shall be included in
-* all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-* THE SOFTWARE.
-* 
-* http://rhomobile.com
-*------------------------------------------------------------------------*/
-
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -40,6 +14,7 @@ using System.Windows.Navigation;
 using IronRuby.Builtins;
 using rho.common;
 using System.IO;
+using System.Collections;
 
 namespace rho.views
 {
@@ -54,26 +29,28 @@ namespace rho.views
         private Stack<Uri> m_backHistory = new Stack<Uri>();
         private Stack<Uri> m_forwardHistory = new Stack<Uri>();
         /// <summary>
-        /// 
+        ///
         /// </summary>
         //private Hash m_menuItems = null;
         private Uri m_currentUri = null;
         private PhoneApplicationPage m_mainPage = null;
         private Grid m_layoutRoot = null;
-        public  PhoneApplicationPage MainPage { set { m_mainPage = value; } }
-        public  Grid MainPageLayoutRoot { set { m_layoutRoot = value; } }
+        public PhoneApplicationPage MainPage { set { m_mainPage = value; } }
+        public Grid MainPageLayoutRoot { set { m_layoutRoot = value; } }
         private String m_strAction = null;
         private bool m_reload = false;
         private bool m_loadFirstTime = true;
         private bool m_masterView = false;
-        
+        private int m_index = -1;
+        private bool m_callback = false;
+
         private const string AJAX_CONTEXT_PARAM = "_rho_callbackId";
         private const string JS_NOTIFY_CONSOLE_LOG = "console.log:";
         private const string JS_NOTIFY_CONSOLE_INFO = "console.info:";
         private const string JS_NOTIFY_CONSOLE_WARNING = "console.warn:";
         private const string JS_NOTIFY_CONSOLE_ERROR = "console.error:";
         private const string JS_NOTIFY_REQUEST = "request:";
-        private const string REQUEST_URL_SCHEME = "x-wmapp1:";
+        private const string REQUEST_URL_SCHEME_PREFIX = "x-wmapp";
 
         //TO DO history. each time we have to save our current state of rhodesapp in rhoview entity
         public Stack<Uri> BackHistory { set { m_backHistory = value; } }
@@ -92,9 +69,9 @@ namespace rho.views
             webBrowser1.Navigated += WebBrowser_OnNavigated;
             webBrowser1.ScriptNotify += WebBrowser_OnScriptNotify;
         }
-        
+
         public RhoView(PhoneApplicationPage mainPage, Grid layoutRoot, String strAction,
-                       bool reload, Brush webBkgColor)
+                       bool reload, Brush webBkgColor, int index)
         {
             InitializeComponent();
             webBrowser1.IsScriptEnabled = true;
@@ -108,14 +85,40 @@ namespace rho.views
             m_strAction = strAction;
             m_layoutRoot = layoutRoot;
             m_reload = reload;
+            m_index = index;
+            if (webBkgColor != null)
+                webBrowser1.Background = webBkgColor;
+        }
+
+        public void Init(PhoneApplicationPage mainPage, Grid layoutRoot, String strAction,
+                       bool reload, Brush webBkgColor, int index)
+        {
+            m_mainPage = mainPage;
+            m_strAction = strAction;
+            m_layoutRoot = layoutRoot;
+            m_reload = reload;
+            m_index = index;
             if (webBkgColor != null)
                 webBrowser1.Background = webBkgColor;
         }
 
         private CRhodesApp RHODESAPP() { return CRhodesApp.Instance; }
 
+        public void removeBrowser()
+        {
+            //webBrowser1.ScriptNotify -= WebBrowser_OnScriptNotify;
+            webBrowser1.IsScriptEnabled = false;
+        }
+
         private void WebBrowser_OnLoaded(object sender, RoutedEventArgs e)
         {
+            if (RHODESAPP().Tab != null && RHODESAPP().Tab.SelectedIndex != m_index) return;
+            if (RHODESAPP().m_transition)
+            {
+                RHODESAPP().m_transition = false;
+
+                return;
+            }
             OperatingSystem os = Environment.OSVersion;
             Version vs = os.Version;
             if (vs.Minor < 10) m_reload = true;
@@ -129,18 +132,18 @@ namespace rho.views
             RHODESAPP().BackHistory = m_backHistory;
             RHODESAPP().ForwardHistory = m_forwardHistory;
             RHODESAPP().CurrentUri = m_currentUri;
-            if ( ((!m_loadFirstTime && m_reload) || m_loadFirstTime) && m_strAction != null)
+            if (((!m_loadFirstTime && m_reload) || m_loadFirstTime) && m_strAction != null)
             {
                 if (m_loadFirstTime)
                     m_loadFirstTime = false;
-                bool callback = false;
+                //bool callback = false;
                 if (m_strAction.startsWith("callback:"))
                 {
                     m_strAction = m_strAction.substring(9);
-                    callback = true;
+                    m_callback = true;
                 }
                 m_strAction = RHODESAPP().canonicalizeRhoUrl(m_strAction);
-                if (callback)
+                if (m_callback)
                 {
                     RhoClassFactory.createNetRequest().pushData(m_strAction, "rho_callback=1", null);
                 }
@@ -151,7 +154,8 @@ namespace rho.views
 
         private void WebBrowser_OnNavigating(object sender, NavigatingEventArgs e)
         {
-            if (!RHODESAPP().HttpServer.processBrowserRequest(e.Uri, null))
+            var tabIndex = RHODESAPP().getTabIndexFor(sender);
+            if (!RHODESAPP().HttpServer.processBrowserRequest(e.Uri, null, tabIndex))
                 return;
 
             e.Cancel = true;
@@ -168,13 +172,22 @@ namespace rho.views
             if (-1 == idx)
                 return null;
 
-            string context = uri.substring(idx + 1);  // +1 due to the '=' sign after param name
+            string context = uri.substring(idx + 1); // +1 due to the '=' sign after param name
 
             idx = context.indexOf('&');
             if (-1 < idx)
                 context = context.substring(0, idx);
 
             return context;
+        }
+
+        private String pathFromUrl(String url)
+        {
+            if (0 == url.IndexOf(REQUEST_URL_SCHEME_PREFIX))
+            {
+                return url.substring(url.indexOf(":") + 1);
+            }
+            return url;
         }
 
         private void WebBrowser_OnScriptNotify(object sender, NotifyEventArgs e)
@@ -201,11 +214,49 @@ namespace rho.views
             {
                 string req = request.substring(JS_NOTIFY_REQUEST.length()).trim();
 
-                string ajaxContext = extractAjaxContext(req);
-                if (!RHODESAPP().HttpServer.processBrowserRequest(new Uri(req.substring(REQUEST_URL_SCHEME.length()), UriKind.Relative), ajaxContext))
+                IDictionary res = null;
+                try
                 {
-                    LOG.ERROR("External requests should be filtered in javascript");
+                    res = (IDictionary)fastJSON.RJSONTokener.JsonDecode(req);
                 }
+                catch (Exception ex)
+                {
+                    LOG.ERROR("JsonDecode", ex);
+                    throw ex;
+                }
+
+                if (null != res)
+                {
+                    string url = res["url"].ToString();
+                    string type = res["type"].ToString().toUpperCase();
+                    string contentType = res["contentType"].ToString();
+                    IDictionary headers = (IDictionary)res["headers"];
+                    headers["X-Requested-With"] = "XMLHttpRequest";
+                    IDictionary data = (IDictionary)res["data"];
+
+                    string httpUsername = (null == res["usename"]) ? null : res["usename"].ToString();
+                    string httpPassword = (null == res["password"]) ? null : res["password"].ToString();
+                    string ajaxContext = data[AJAX_CONTEXT_PARAM].ToString();
+
+                    int tabIdx = RHODESAPP().getTabIndexFor(sender);
+
+                    if (!RHODESAPP().HttpServer.processBrowserRequest(
+                        type,
+                        new Uri(pathFromUrl(url), UriKind.Relative),
+                        headers,
+                        data,
+                        ajaxContext,
+                        tabIdx
+                        ))
+                    {
+                        LOG.ERROR("External requests should be filtered in javascript");
+                    }
+                }
+                else
+                {
+                    LOG.ERROR("Empty request URI");
+                }
+
             }
         }
 
