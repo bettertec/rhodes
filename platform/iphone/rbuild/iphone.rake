@@ -475,8 +475,23 @@ namespace "config" do
     $tmpdir =  $bindir +"/tmp"
 
     $devroot = '/Developer' if $devroot.nil?
+    $iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim') if $iphonesim.nil?
+
 
     $xcodebuild = $devroot + "/usr/bin/xcodebuild"
+    
+    if !File.exists? $xcodebuild
+        $xcodebuild = "/Applications/Xcode.app/Contents/Developer" + "/usr/bin/xcodebuild"
+        $devroot = '/Applications/Xcode.app/Contents/Developer'
+        $iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim_43')
+    end
+    
+    if !File.exists? $xcodebuild
+        puts 'ERROR: can not found XCode command line tools'
+        puts 'Install XCode to default location' 
+        puts 'For XCode from 4.3 and later - you should install Command Line Tools package ! Open XCode - Preferences... - Downloads - Components - Command Line Tools'
+        exit 1
+    end
 
     $homedir = ENV['HOME']
     $simdir = "#{$homedir}/Library/Application Support/iPhone Simulator/"
@@ -763,8 +778,8 @@ namespace "run" do
       Thread.new {
             # run spec
             rhorunner = File.join($startdir, $config["build"]["iphonepath"],"build/#{$configuration}-iphonesimulator/rhorunner.app")
-            iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim')
-            commandis = iphonesim + ' launch "' + rhorunner + '" ' + $sdkver.gsub(/([0-9]\.[0-9]).*/,'\1') + ' ' + $emulatortarget + ' "' +log_name+'"'
+            #iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim')
+            commandis = $iphonesim + ' launch "' + rhorunner + '" ' + $sdkver.gsub(/([0-9]\.[0-9]).*/,'\1') + ' ' + $emulatortarget + ' "' +log_name+'"'
             puts 'use iphonesim tool - open iPhone Simulator and execute our application, also support device family (iphone/ipad)'
             puts 'execute command : ' + commandis
             system(commandis)
@@ -788,7 +803,13 @@ namespace "run" do
         
             io.each do |line|
                 puts line
-                $iphone_end_spec = !Jake.process_spec_output(line)
+                
+                if line.class.method_defined? "valid_encoding?" 
+                    $iphone_end_spec = !Jake.process_spec_output(line) if line.valid_encoding?
+                else 
+                    $iphone_end_spec = !Jake.process_spec_output(line)
+                end                    
+               
                 break if $iphone_end_spec
             end
             io.close
@@ -1099,10 +1120,8 @@ namespace "run" do
   desc "Builds everything, launches iphone simulator"
   task :iphone => :buildsim do
     
-    iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim')
-
     rhorunner = File.join($startdir, $config["build"]["iphonepath"],"build/#{$configuration}-iphonesimulator/rhorunner.app")
-    commandis = iphonesim + ' launch "' + rhorunner + '" ' + $sdkver.gsub(/([0-9]\.[0-9]).*/,'\1') + ' ' + $emulatortarget
+    commandis = $iphonesim + ' launch "' + rhorunner + '" ' + $sdkver.gsub(/([0-9]\.[0-9]).*/,'\1') + ' ' + $emulatortarget
 
     thr = Thread.new do
        puts 'start thread with execution of application' 

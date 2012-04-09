@@ -43,22 +43,22 @@ namespace rho.rubyext
         #region Private Instance & Singleton Methods
 
         [RubyMethodAttribute("navigate", RubyMethodAttributes.PublicSingleton)]
-        public static void Navigate(RubyModule/*!*/ self, [NotNull]String/*!*/ url, int index = 0)
+        public static void Navigate(RubyModule/*!*/ self, [NotNull]String/*!*/ url, int index = -1)
         {
         }
 
         [RubyMethodAttribute("refresh", RubyMethodAttributes.PublicSingleton)]
-        public static void Refresh(RubyModule/*!*/ self, int index = 0)
+        public static void Refresh(RubyModule/*!*/ self, int index = -1)
         {
         }
 
         [RubyMethodAttribute("execute_js", RubyMethodAttributes.PublicSingleton)]
-        public static void execute_js(RubyModule/*!*/ self, [NotNull]String/*!*/ strScript, int index = 0)
+        public static void execute_js(RubyModule/*!*/ self, [NotNull]String/*!*/ strScript, int index = -1, RubyArray vals = null)
         {
         }
 
         [RubyMethodAttribute("current_location", RubyMethodAttributes.PublicSingleton)]
-        public static String currentLocation(RubyModule/*!*/ self)
+        public static String currentLocation(RubyModule/*!*/ self, int index = -1)
         {
             return null;
         }

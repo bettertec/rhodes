@@ -36,13 +36,11 @@ import com.rhomobile.rhodes.Logger;
 import com.rhomobile.rhodes.RhodesActivity;
 import com.rhomobile.rhodes.RhodesApplication;
 import com.rhomobile.rhodes.util.PerformOnUiThread;
-import com.rhomobile.rhodes.util.Utils;
 import com.rhomobile.rhodes.webview.GoogleWebView;
-import com.rhomobile.rhodes.webview.WebView;
+import com.rhomobile.rhodes.webview.IRhoWebView;
 
-import android.app.Activity;
+import android.content.Context;
 import android.content.res.AssetManager;
-import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -59,7 +57,7 @@ public class SplashScreen implements MainView {
 	
 	private FrameLayout mView;
 	
-	private WebView mWebView;
+	private IRhoWebView mWebView;
 	
 	private native void nativeStart();
 	private native void nativeHide();
@@ -76,7 +74,7 @@ public class SplashScreen implements MainView {
 		mFirstNavigate = true;
 	}
 
-    private WebView createHtmlView(RhodesActivity context, AssetManager am) {
+    private IRhoWebView createHtmlView(RhodesActivity context, AssetManager am) {
 
         int type = 0;
         final String[][] urls = {{LOADING_ANDROID_PNG, LOADING_PNG}, {LOADING_PAGE}};
@@ -105,17 +103,19 @@ public class SplashScreen implements MainView {
         }
 
         // Now create WebView and load appropriate content there
-        WebView view = null;//new GoogleWebView(context);
+        IRhoWebView view = null;//new GoogleWebView(context);
         if (Capabilities.WEBKIT_BROWSER_ENABLED) {
+            Logger.D(TAG, "Creating Motorola WebKIT view");
             try {
-                Class<? extends WebView> viewClass = (Class<? extends WebView>)Class.forName("com.rhomobile.rhodes.webview.EkiohWebView");
-                Constructor<? extends WebView> viewCtor = viewClass.getConstructor(Activity.class);
-                view = viewCtor.newInstance(context);
+                Class<? extends IRhoWebView> viewClass = (Class<? extends IRhoWebView>)Class.forName("com.rhomobile.rhodes.webview.EkiohWebView");
+                Constructor<? extends IRhoWebView> viewCtor = viewClass.getConstructor(Context.class, Runnable.class);
+                view = viewCtor.newInstance(context, RhodesApplication.AppState.AppStarted.addObserver("MotorolaStartEngineObserver", true));
             } catch (Throwable e) {
                 Logger.E(TAG, e);
                 RhodesApplication.stop();
             }
         } else {
+            Logger.D(TAG, "Creating Google web view");
             final GoogleWebView googleWebView = new GoogleWebView(context);
             view = googleWebView;
             RhodesApplication.runWhen(RhodesApplication.AppState.AppStarted, new RhodesApplication.StateHandler(true) {
@@ -125,18 +125,18 @@ public class SplashScreen implements MainView {
                     googleWebView.applyWebSettings();
                 }
             });
+            switch (type) {
+            case 0:
+              view.loadDataWithBaseURL("file:///android_asset/", "<html><body style=\"margin:0px\"><img src=\""+ fn[type] + "\" height=\"100%\" width=\"100%\" border=\"0\"/></body></html>", "text/html", "utf-8", null);
+              break;
+            case 1:
+              view.loadUrl("file:///android_asset/" + fn[type]);
+              break;
+            default:
+              view.loadData("<html><title>Loading</title><body text='white' bgcolor='black'>Loading...</body></html>", "text/html", "utf-8");
+          }
         }
 
-        switch (type) {
-        case 0:
-            view.loadDataWithBaseURL("file:///android_asset/", "<html><body style=\"margin:0px\"><img src=\""+ fn[type] + "\" height=\"100%\" width=\"100%\" border=\"0\"/></body></html>", "text/html", "utf-8", null);
-            break;
-        case 1:
-            view.loadUrl("file:///android_asset/" + fn[type]);
-            break;
-        default:
-            view.loadData("<html><title>Loading</title><body text='white' bgcolor='black'>Loading...</body></html>", "text/html", "utf-8");
-        }
 
         return view;
     }
@@ -151,7 +151,7 @@ public class SplashScreen implements MainView {
 	}
 	
 	@Override
-	public WebView getWebView(int index) {
+	public IRhoWebView getWebView(int index) {
 		return mWebView;
 	}
 	
@@ -195,8 +195,8 @@ public class SplashScreen implements MainView {
 	}
 
     @Override
-    public WebView detachWebView() {
-        WebView v = null;
+    public IRhoWebView detachWebView() {
+        IRhoWebView v = null;
         if (mWebView != null) {
             mView.removeView(mWebView.getView());
             v = mWebView;
@@ -244,4 +244,10 @@ public class SplashScreen implements MainView {
 	@Override
 	public void removeNavBar() {
 	}
+    @Override
+    public void executeJS(String js, int index) {
+    }
+    @Override
+    public void stopNavigate(int index) {
+    }
 }

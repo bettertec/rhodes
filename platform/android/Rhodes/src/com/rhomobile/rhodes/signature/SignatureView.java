@@ -32,7 +32,9 @@ import java.util.Vector;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.PointF;
 import android.os.Bundle;
@@ -43,7 +45,9 @@ import android.view.MotionEvent;
 import java.io.Serializable;
 import java.io.IOException;
 
+
 import com.rhomobile.rhodes.Logger;
+import com.rhomobile.rhodes.util.PerformOnUiThread;
 
 class SignatureView extends SurfaceView implements SurfaceHolder.Callback {
 
@@ -51,7 +55,7 @@ class SignatureView extends SurfaceView implements SurfaceHolder.Callback {
 	public float penWidth;
 	public int bgColor;
 	
-	
+	public boolean isTransparency;
 	
 	private class PointSequence {
 		public Vector<PointF> mPoints = new Vector<PointF>();
@@ -114,14 +118,14 @@ class SignatureView extends SurfaceView implements SurfaceHolder.Callback {
     
     private Paint mPaint;
     
-   
+  
     public void doClear() {
     	// clear paths
     	mSequences.clear();
-    	doFullRedraw();
+    	doFullRedraw(mCanvas, mBitmap, true, true);
+    	invalidate();
     }
-	
-     
+	     
 	public void onRestoreInstanceState(Bundle savedInstanceState) {
 		SignatureViewState s = (SignatureViewState)savedInstanceState.getSerializable(mStateID);
 		mSequences = s.mSequences;
@@ -135,19 +139,39 @@ class SignatureView extends SurfaceView implements SurfaceHolder.Callback {
 		outState.putSerializable(mStateID, s);
 	}
 	
-	private void doFullRedraw() {
-		if (mCanvas == null) {
+	private void doFullRedraw(Canvas canvas, Bitmap bitmap, boolean useAlpha, boolean redrawOnScreen) {
+		if (canvas == null) {
 			return;
 		}
 		
         Paint paint = new Paint();
         paint.setAntiAlias(false);
-        paint.setARGB(	255, 
-        				(bgColor & 0xFF0000) >> 16, 
-        				(bgColor & 0xFF00) >> 8,
-        				(bgColor & 0xFF));
-   	 
-        mCanvas.drawRect(0, 0, mCanvas.getWidth(), mCanvas.getHeight(), paint);
+        
+        int a = (bgColor & 0xFF000000) >> 24;
+	        	
+	    if (isTransparency) {    	
+		    if (useAlpha) {
+		    	bitmap.eraseColor(bgColor);
+		    }
+		    else {
+		        a = 255;
+		    	bitmap.eraseColor(bgColor | 0xFF000000);
+			    //canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), paint);
+		    }
+	    }
+	    else {
+		    paint.setARGB(	a, 
+					(bgColor & 0xFF0000) >> 16, 
+					(bgColor & 0xFF00) >> 8,
+					(bgColor & 0xFF));
+	 
+		    canvas.drawRect(0, 0, canvas.getWidth(), canvas.getHeight(), paint);
+	    }
+	    
+    	//bitmap.eraseColor(Color.argb(	a,
+		//								(bgColor & 0xFF0000) >> 16, 
+		//								(bgColor & 0xFF00) >> 8,
+		//								(bgColor & 0xFF)));
         
         // draw path
         int s;
@@ -159,7 +183,7 @@ class SignatureView extends SurfaceView implements SurfaceHolder.Callback {
 	        		PointF prev = ps.mPoints.elementAt(p-1);
 	        		PointF cur = ps.mPoints.elementAt(p);
 	        		if ((prev != null) && (cur != null)) {
-	        			mCanvas.drawLine(prev.x, prev.y, cur.x, cur.y, mPaint);
+	        			canvas.drawLine(prev.x, prev.y, cur.x, cur.y, mPaint);
 	        		}
 	        	}
         	}
@@ -174,52 +198,112 @@ class SignatureView extends SurfaceView implements SurfaceHolder.Callback {
         		}
         	}
         }
-        
+        {   
+        	PointSequence ps = mCurrentSequence;
+        	if ((ps != null) && (ps.mPoints != null)) {
+	        	for (p = 1; p < ps.mPoints.size(); p++) {
+	        		PointF prev = ps.mPoints.elementAt(p-1);
+	        		PointF cur = ps.mPoints.elementAt(p);
+	        		if ((prev != null) && (cur != null)) {
+	        			canvas.drawLine(prev.x, prev.y, cur.x, cur.y, mPaint);
+	        		}
+	        	}
+        	}
+        	else {
+        		if (ps == null) {
+        			//Logger.D(TAG, "##################  ps == null !");
+        		}
+        		else {
+	        		if (ps.mPoints == null) {
+	        			//Logger.D(TAG, "##################  ps.mPoints == null !");
+	        		}
+        		}
+        	}
+        }
         // update screen
-	     Canvas c = null;
-	     try {
-	         c = getHolder().lockCanvas(null);
-	         synchronized (getHolder()) {
-	             c.drawBitmap(mBitmap, 0, 0, null);
-	         }
-	     } finally {
-	         if (c != null) {
-	        	 getHolder().unlockCanvasAndPost(c);
-	         }
-	     }    	 
+        if (redrawOnScreen && (!isTransparency)) {
+        	Canvas c = null;
+		     try {
+		         c = getHolder().lockCanvas(null);
+		         synchronized (getHolder()) {
+		             c.drawBitmap(bitmap, 0, 0, null);
+		         }
+		     } finally {
+		         if (c != null) {
+		        	 getHolder().unlockCanvasAndPost(c);
+		         }
+		     }
+        }
+        else {
+        	if (redrawOnScreen && isTransparency) {
+        		invalidate();
+        	}
+        }
 	}
     
 	private void doDrawSegment(float x1, float y1, float x2, float y2) {
 	     Canvas c = null;
 	     Rect rect = new Rect((int)(x1-1),(int)(y1-1),(int)(x1+1),(int)(y1+1));
 	     rect.union((int)(x2-1),(int)(y2-1),(int)(x2+1),(int)(y2+1));
+	     ///*
 	     try {
+	      
 	         c = getHolder().lockCanvas(rect);
 	         synchronized (getHolder()) {
-	             mCanvas.drawLine(x1,y1,x2,y2,mPaint);
-	             c.drawBitmap(mBitmap, rect, rect, null);
+	        	 if ((mCanvas != null) && (mBitmap != null)) {
+		        	 mCanvas.drawLine(x1,y1,x2,y2,mPaint);
+		             //c.drawLine(x1,y1,x2,y2,mPaint);
+		             //mCanvas.drawLine(x1,y1,x2,y2,mPaint);
+		        	 if (!isTransparency) {
+		        		 c.drawBitmap(mBitmap, rect, rect, null);
+		        	 }
+	        	 }
 	         }
 	     } finally {
 	         if (c != null) {
 	        	 getHolder().unlockCanvasAndPost(c);
 	         }
-	     }    	 
-		
+	     }
+	     //*/    	 
+		invalidate(rect);
 	}
     
-	
 	public void setupView(int _penColor, float _penWidth, int _bgColor) {
 		penColor = _penColor;
 		penWidth = _penWidth;
 		bgColor = _bgColor;
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
-        mPaint.setColor(0xFF000000 | penColor);
+        mPaint.setColor(Color.argb(	(penColor & 0xFF000000) >> 24,
+					        		(penColor & 0xFF0000) >> 16,
+					        		(penColor & 0xFF00) >> 8,
+					        		penColor & 0xFF));
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setStrokeJoin(Paint.Join.ROUND);
         mPaint.setStrokeCap(Paint.Cap.ROUND);
         mPaint.setStrokeWidth(penWidth);
-        doFullRedraw();
+        
+        Signature.reportMsg("$$$   setupView()");
+        Signature.reportMsg("$$$        penColor = "+String.valueOf(penColor));
+        Signature.reportMsg("$$$        bgColor = "+String.valueOf(bgColor));
+        
+    	setDrawingCacheEnabled(false);
+        if (isTransparency) {
+        	setZOrderOnTop(true);
+        	getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        	setBackgroundColor(0);
+        }
+        doFullRedraw(mCanvas, mBitmap, true, true);    
+        
+        if (isTransparency) {
+	        PerformOnUiThread.exec(new Runnable() {
+	        	public void run() {
+	        		//invalidate();//
+	        		//setVisibility(VISIBLE);
+	        		doDrawSegment(-10,-10,-11,-11);
+	        	}
+	        },10);
+        }
 	}
     
     public SignatureView(Context context, AttributeSet attrs) {
@@ -232,6 +316,7 @@ class SignatureView extends SurfaceView implements SurfaceHolder.Callback {
 
         setVisibility(VISIBLE);
         
+        isTransparency = false;
 
         mPaint = new Paint();
         mPaint.setAntiAlias(true);
@@ -243,17 +328,24 @@ class SignatureView extends SurfaceView implements SurfaceHolder.Callback {
 
         bgColor = 0xFFFFFFFF;
         
+        //setBackgroundColor(0);
+        //setZOrderOnTop(true);
+        //getHolder().setFormat(PixelFormat.TRANSLUCENT);
+        
         setFocusable(true); // make sure we get key events
         
         requestFocus();
         bringToFront();
-        
-        
     }
 	
     public Bitmap makeBitmap() {
-    	return mBitmap;
+        Bitmap b = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
+        b.eraseColor(bgColor | 0xFF000000);
+        Canvas c = new Canvas(b);
+        doFullRedraw(c, b, false, false);
+        return b;
     }
+    
     
     public boolean onTouchEvent(MotionEvent event) {
     	 float x = event.getX();
@@ -264,14 +356,17 @@ class SignatureView extends SurfaceView implements SurfaceHolder.Callback {
                 	mCurrentSequence.mPoints.add(new PointF(x,y));
                 	break;
                 case MotionEvent.ACTION_MOVE:
-                	doDrawSegment(mX,mY, x,y);
+                	//doDrawSegment(mX,mY, x,y);
                 	mCurrentSequence.mPoints.add(new PointF(x,y));
+                	doFullRedraw(mCanvas, mBitmap, true, true);
+                	invalidate();
                     break;
                 case MotionEvent.ACTION_UP:
-                	doDrawSegment(mX,mY, x,y);
+                	//doDrawSegment(mX,mY, x,y);
                 	mCurrentSequence.mPoints.add(new PointF(x,y));
                 	mSequences.add(mCurrentSequence);
                 	mCurrentSequence = new PointSequence();
+                	doFullRedraw(mCanvas, mBitmap, true, true);
                     break;
             }
     	 
@@ -280,14 +375,28 @@ class SignatureView extends SurfaceView implements SurfaceHolder.Callback {
     	 return true;
      }
      
+    ///*
+    protected void onDraw (Canvas canvas) {
+    	if (isTransparency) {
+	    	if (mBitmap != null) {
+	    		canvas.drawBitmap(mBitmap, 0, 0, null);
+	    	}
+    	}
+    	else {
+    		super.onDraw(canvas);
+    	}
+    }
+    //*/
     
     /* Callback invoked when the surface dimensions change. */
     public void surfaceChanged(SurfaceHolder holder, int format, int width,
             int height) {
  		Logger.D(TAG, "SurfaceChanged()");
-        mBitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.RGB_565);
+        mBitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
+        mBitmap.eraseColor(bgColor);
         mCanvas = new Canvas(mBitmap);
-        doFullRedraw();
+        doFullRedraw(mCanvas, mBitmap, true, true);
+        invalidate();
     }
     
     

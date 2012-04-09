@@ -43,7 +43,7 @@ import com.rhomobile.rhodes.nativeview.RhoNativeViewManager;
 import com.rhomobile.rhodes.util.ContextFactory;
 import com.rhomobile.rhodes.util.PerformOnUiThread;
 import com.rhomobile.rhodes.util.Utils;
-import com.rhomobile.rhodes.webview.WebView;
+import com.rhomobile.rhodes.webview.IRhoWebView;
 import com.rhomobile.rhodes.webview.GoogleWebView;
 
 import android.app.Activity;
@@ -145,7 +145,7 @@ public class SimpleMainView implements MainView {
 	};
 	
 	private LinearLayout view;
-	private WebView webView;
+	private IRhoWebView webView;
 	private RhoNativeViewManager.RhoNativeView mNativeView = null;
 	private View mNativeViewView = null;
 	private LinearLayout navBar = null;
@@ -159,7 +159,7 @@ public class SimpleMainView implements MainView {
 	}
 
 	@Override
-	public WebView getWebView(int tab_index) {
+	public IRhoWebView getWebView(int tab_index) {
 		return webView;
 	}
 
@@ -300,9 +300,9 @@ public class SimpleMainView implements MainView {
     }
 	
 	
-	public WebView detachWebView() {
+	public IRhoWebView detachWebView() {
 		restoreWebView();
-		WebView v = null;
+		IRhoWebView v = null;
 		if (webView != null) {
 			view.removeView(webView.getView());
 			v = webView;
@@ -516,7 +516,7 @@ public class SimpleMainView implements MainView {
 		}
 	}
 	
-	private void init(WebView v, Object params) {
+	private void init(IRhoWebView v, Object params) {
 		RhodesActivity activity = RhodesActivity.safeGetInstance();
 		
 		view = new MyView(activity);
@@ -529,10 +529,11 @@ public class SimpleMainView implements MainView {
 		//	webView = v.detachWebView();
 		if (webView == null) {
 	        if (Capabilities.WEBKIT_BROWSER_ENABLED) {
+	            Logger.D(TAG, "Creating Motorola WebKIT view");
 	            try {
-	                Class<? extends WebView> viewClass = (Class<? extends WebView>)Class.forName("com.rhomobile.rhodes.webview.EkiohWebView");
-	                Constructor<? extends WebView> viewCtor = viewClass.getConstructor(Activity.class);
-	                webView = viewCtor.newInstance(activity);
+	                Class<? extends IRhoWebView> viewClass = (Class<? extends IRhoWebView>)Class.forName("com.rhomobile.rhodes.webview.EkiohWebView");
+	                Constructor<? extends IRhoWebView> viewCtor = viewClass.getConstructor(Context.class, Runnable.class);
+	                webView = viewCtor.newInstance(activity, RhodesApplication.AppState.AppStarted.addObserver("MotorolaStartEngineObserver", true));
 	            } catch (Throwable e) {
 	                Logger.E(TAG, e);
 	                RhodesApplication.stop();
@@ -561,11 +562,11 @@ public class SimpleMainView implements MainView {
 		init(null, null);
 	}
 	
-	public SimpleMainView(WebView v) {
+	public SimpleMainView(IRhoWebView v) {
 		init(v, null);
 	}
 	
-	public SimpleMainView(WebView v, Object params) {
+	public SimpleMainView(IRhoWebView v, Object params) {
 		init(v, params);
 	}
 	
@@ -579,14 +580,15 @@ public class SimpleMainView implements MainView {
         
         boolean bStartPage = RhodesService.isOnStartPage();
 
-        if ( !bStartPage && webView.canGoBack() )
+        if ( !bStartPage && webView.canGoBack() ) {
             webView.goBack();
+        }
         else
         {    
 	        RhodesActivity ra = RhodesActivity.getInstance();
 	        if ( ra != null )
 	            ra.moveTaskToBack(true);
-        }		
+        }
 	}
 	
 	public void goBack() 
@@ -609,7 +611,12 @@ public class SimpleMainView implements MainView {
 			}
 		}
 	}
-	
+
+    @Override
+    public void executeJS(String js, int index) {
+        com.rhomobile.rhodes.WebView.executeJs(js, index);
+    }
+    
 	public void reload(int index) {
 		if (mNativeViewView != null) {
 			mNativeViewView.invalidate();
@@ -617,6 +624,12 @@ public class SimpleMainView implements MainView {
 		else {
 			webView.reload();
 		}
+	}
+	
+	public void stopNavigate(int index) {
+	    if (mNativeViewView == null) {
+	        webView.stopLoad();
+	    }
 	}
 	
 	public String currentLocation(int index) {

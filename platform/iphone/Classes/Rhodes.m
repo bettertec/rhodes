@@ -349,7 +349,8 @@ static Rhodes *instance = NULL;
                 picker.cameraDevice = UIImagePickerControllerCameraDeviceFront;
             }
             
-            [window addSubview:picker.view];
+            //[window addSubview:picker.view];
+            [[mainView getMainViewController] presentModalViewController:picker animated:NO];
         }
     } @catch(NSException* theException) {
         RAWLOG_ERROR2("startCameraPickerFromViewController failed(%s): %s", [[theException name] UTF8String], [[theException reason] UTF8String] );
@@ -382,9 +383,14 @@ static Rhodes *instance = NULL;
 		rect.origin.y = 0;
 		SignatureViewController* svc = [[SignatureViewController alloc] initWithRect:rect delegate:signatureDelegate];
 		[signatureDelegate setSignatureViewControllerValue:svc];
-		[mainView.view retain];
-		[mainView.view removeFromSuperview];
-		[window addSubview:svc.view];
+        
+        [[mainView getMainViewController] presentModalViewController:svc animated:YES];
+ 
+        
+        
+		//[mainView.view retain];
+		//[mainView.view removeFromSuperview];
+		//[window addSubview:svc.view];
     } @catch(NSException* theException) {
         RAWLOG_ERROR2("startSignatureViewController failed(%s): %s", [[theException name] UTF8String], [[theException reason] UTF8String] );
     }
@@ -567,7 +573,7 @@ static Rhodes *instance = NULL;
         const char *szRootPath = rho_native_rhopath();
         const char *szUserPath = rho_native_rhouserpath();
         NSLog(@"Init logconf");
-        rho_logconf_Init_with_separate_user_path(szRootPath, "", szUserPath);
+        rho_logconf_Init_with_separate_user_path(szRootPath, szRootPath, "", szUserPath);
         NSLog(@"Create rhodes app");
         rho_rhodesapp_create_with_separate_user_path(szRootPath, szUserPath);
         app_created = YES;
@@ -636,7 +642,7 @@ static Rhodes *instance = NULL;
     NSLog(@"Init delegates");
     dateTimePickerDelegate = [[DateTimePickerDelegate alloc] init];
     pickImageDelegate = [[PickImageDelegate alloc] init];
-    signatureDelegate = [[SignatureDelegate alloc] init];
+    signatureDelegate = [SignatureDelegate getSharedInstance];
     nvDelegate = [[NVDelegate alloc] init];
     
 #ifdef APP_BUILD_CAPABILITY_PUSH    

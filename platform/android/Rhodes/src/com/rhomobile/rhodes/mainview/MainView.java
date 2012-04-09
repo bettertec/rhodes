@@ -28,7 +28,7 @@ package com.rhomobile.rhodes.mainview;
 
 import java.util.Map;
 
-import com.rhomobile.rhodes.webview.WebView;
+import com.rhomobile.rhodes.webview.IRhoWebView;
 
 import android.view.View;
 
@@ -36,9 +36,9 @@ public interface MainView {
 
 	public View getView();
 
-	public WebView getWebView(int tab_index);
+	public IRhoWebView getWebView(int tab_index);
 	
-	public WebView detachWebView();
+	public IRhoWebView detachWebView();
 	
 	public void back(int index);
 	public void forward(int index);
@@ -47,7 +47,10 @@ public interface MainView {
 	public void goBack();
 	
 	public void navigate(String url, int index);
+	public void executeJS(String js, int index);
+	//public boolean existsJS(String js, int index);
 	public void reload(int index);
+	public void stopNavigate(int index);
 	
 	public String currentLocation(int index);
 	

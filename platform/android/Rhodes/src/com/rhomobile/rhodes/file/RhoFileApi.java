@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.rhomobile.rhodes.Logger;
+import com.rhomobile.rhodes.util.Utils;
 
 import android.content.Context;
 import android.content.res.AssetManager;
@@ -51,6 +52,8 @@ public class RhoFileApi {
 	private static final String TAG = RhoFileApi.class.getSimpleName();
 	
 	private static final int MAX_SIZE = 2*1024*1024;
+	
+	private static final String STAT_TABLE_FILENAME = "rho.dat";
 	
 	private static AssetManager am;
 	private static String root;
@@ -66,13 +69,21 @@ public class RhoFileApi {
 	
 	private static native boolean needEmulate(String path);
 	private static native String makeRelativePath(String path);
-	
-	private static void fillStatTable() throws IOException
-	{
-		InputStream is = null;
-		try {
-			is = am.open("rho.dat");
-			BufferedReader in = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+
+    private static void fillStatTable() throws IOException {
+        InputStream is = null;
+        try {
+
+            File statFile = new File(getRootPath(), STAT_TABLE_FILENAME);
+            if (statFile.exists() && statFile.isFile()) {
+                Log.i(TAG, "Opening stat table from FS: " + statFile.getCanonicalPath());
+                is = new FileInputStream(statFile);
+            } else {
+                Log.i(TAG, "Opening stat table from package assets");
+                is = am.open("rho.dat");
+            }
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(is, "UTF-8"));
 			for (;;) {
 				String line = in.readLine();
 				if (line == null)
@@ -102,7 +113,11 @@ public class RhoFileApi {
 				is.close();
 		}
 	}
-	
+
+    static void patchStatTable(String path) {
+        //TODO: Implement rho.dat patching from bundle filelist.txt
+    }
+
 	private static void copyAssets(String assets[])
 	{
 		for(String asset: assets)
@@ -325,5 +340,27 @@ public class RhoFileApi {
 			return null;
 		}
 	}
-	
+
+    public static int copyRecursively(String srcPath, String trgPath) {
+        try {
+            File source = new File(srcPath);
+            File target = new File(trgPath);
+            Utils.copyRecursively(new Utils.FileSource(), source, target, true);
+            return 0;
+        } catch (Throwable ex) {
+            Logger.E(TAG, ex.getMessage());
+            return -1;
+        }
+    }
+
+    public static int deleteRecursively(String path) {
+        try {
+            Utils.deleteRecursively(new File(path));
+            return 0;
+        } catch (Throwable ex) {
+            Logger.E(TAG, ex.getMessage());
+            return -1;
+        }
+    }
+    
 }

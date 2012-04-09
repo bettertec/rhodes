@@ -56,7 +56,9 @@ namespace rho.common
         private PhoneApplicationPage m_appMainPage;
         public PhoneApplicationPage MainPage { get { return m_appMainPage; } }
         private Grid m_layoutRoot;
-        private TabControl m_tabControl;
+        //private TabControl m_tabControl;
+        private Pivot m_tabControl;
+        public Pivot Tab { get { return m_tabControl; } }
         private Stack<Uri> m_backHistory = new Stack<Uri>();
         private Stack<Uri> m_forwardHistory = new Stack<Uri>();
         private Hash m_menuItems = null;
@@ -69,7 +71,8 @@ namespace rho.common
         private String m_strHomeUrl;
         private String m_strAppBackUrl;
         private RhoView m_rhoView;
-        private RhoView m_masterView = null;
+        private static RhoView m_masterView = null;
+        public  bool m_transition = false;
         ManualResetEvent m_UIWaitEvent = new ManualResetEvent(false);
         Vector<Object> m_arCallbackObjects = new Vector<Object>();
 
@@ -85,12 +88,17 @@ namespace rho.common
         public String getBlobsDirPath() { return m_strBlobsDirPath; }
         public String getHomeUrl() { return m_strHomeUrl; }
 
+        private void Pivot_OnChanged(object sender, RoutedEventArgs e)
+        {
+            m_currentTabIndex = m_tabControl.SelectedIndex;
+            ((RhoView)(((PivotItem)m_tabControl.SelectedItem).Content)).refresh();
+        }
+
         public void Init(WebBrowser browser, PhoneApplicationPage appMainPage, Grid layoutRoot, RhoView rhoView)
         {
             initAppUrls();
             RhoLogger.InitRhoLog();
             LOG.INFO("Init");
-
             CRhoFile.recursiveCreateDir(CFilePath.join(getBlobsDirPath()," "));
 
             m_webBrowser = browser;
@@ -221,16 +229,16 @@ namespace rho.common
             m_webBrowser.Dispatcher.BeginInvoke( () =>
             {
                 try{
-                    if (index > 0)
+                    if (m_tabControl != null && m_tabControl.Items.Count > 0)
                     {
-                        if (m_tabControl != null && m_tabControl.Items.Count > 0)
-                        {
-                            ((RhoView)((TabItem)m_tabControl.Items[index]).Content).webBrowser1.IsScriptEnabled = true;
-                            if (isExternalUrl(strUrl))
-                                ((RhoView)((TabItem)m_tabControl.Items[index]).Content).webBrowser1.Navigate(new Uri(strUrl, UriKind.Absolute));
-                            else
-                                ((RhoView)((TabItem)m_tabControl.Items[index]).Content).webBrowser1.Navigate(new Uri(strUrl, UriKind.Relative));
-                        }
+                        if (index == -1)
+                            index = getCurrentTab();
+
+                        ((RhoView)((PivotItem)m_tabControl.Items[index]).Content).webBrowser1.IsScriptEnabled = true;
+                        if (isExternalUrl(strUrl))
+                            ((RhoView)((PivotItem)m_tabControl.Items[index]).Content).webBrowser1.Navigate(new Uri(strUrl, UriKind.Absolute));
+                        else
+                            ((RhoView)((PivotItem)m_tabControl.Items[index]).Content).webBrowser1.Navigate(new Uri(strUrl, UriKind.Relative));
                     }
                     else
                     {
@@ -254,12 +262,12 @@ namespace rho.common
             {
                 try
                 {
-                    if (index > 0)
+                    if (m_tabControl != null && m_tabControl.Items.Count > 0)
                     {
-                        if (m_tabControl != null && m_tabControl.Items.Count > 0)
-                        {
-                            ((RhoView)((TabItem)m_tabControl.Items[index]).Content).webBrowser1.Navigate(m_webBrowser.Source);
-                        }
+                        if (index == -1)
+                            index = this.getCurrentTab();
+
+                        ((RhoView)((PivotItem)m_tabControl.Items[index]).Content).webBrowser1.Navigate(m_webBrowser.Source);
                     }
                     else
                     {
@@ -273,37 +281,35 @@ namespace rho.common
             });
         }
 
-        public void processInvokeScript(String strScript, int index)
+        public int getTabIndexFor(object obj)
         {
-            String[] arr = strScript.Split('(');
-            String[] arrParams = null;
-            if (arr.Length > 1)
+            if (!(obj is WebBrowser) || m_tabControl == null || m_tabControl.Items.Count == 0) return -1;
+
+            for (int i = 0; i < m_tabControl.Items.Count; i++)
             {
-                arrParams = arr[1].Split(',');
-                if (arrParams.Length == 1)
-                {
-                    arrParams[0] = arrParams[0].Replace('"', ' ');
-                    arrParams[0] = arrParams[0].Replace(')', ' ');
-                    arrParams[0] = arrParams[0].Replace(';', ' ');
-                    arrParams[0] = arrParams[0].Trim();
-                }
+                if (obj == ((RhoView)((PivotItem)m_tabControl.Items[i]).Content).webBrowser1) return i;
             }
 
-            processInvokeScriptArgs(arr[0], arrParams, index);
+            return -1;
         }
 
         public void processInvokeScriptArgs(String strFuncName, String[] arrParams, int index)
         {
+            if (null != strFuncName && 0 < strFuncName.Length && (null == arrParams || 0 == arrParams.Length))
+            {
+                arrParams = new String[]{strFuncName};
+                strFuncName = CHttpServer.JS_EVAL_FUNCNAME;
+            }
             m_webBrowser.Dispatcher.BeginInvoke(() =>
             {
                 try
                 {
-                    if (index > 0)
+                    if (m_tabControl != null && m_tabControl.Items.Count > 0)
                     {
-                        if (m_tabControl != null && m_tabControl.Items.Count > 0)
-                        {
-                            ((RhoView)((TabItem)m_tabControl.Items[index]).Content).webBrowser1.InvokeScript(strFuncName, arrParams);
-                        }
+                        if (index == -1)
+                            index = getCurrentTab();
+
+                        ((RhoView)((PivotItem)m_tabControl.Items[index]).Content).webBrowser1.InvokeScript(strFuncName, arrParams);
                     }
                     else
                     {
@@ -332,7 +338,10 @@ namespace rho.common
 
         public String getCurrentUrl(int index)
         {
-            return m_currentUrls[m_currentTabIndex];
+            if ( index == -1 )
+                index = m_currentTabIndex;
+
+            return m_currentUrls[index];
         }
 
         public void keepLastVisitedUrl(String strUrl)
@@ -694,16 +703,23 @@ namespace rho.common
                        // continue;
 
 
-                    //tabItem.Header = "Test";to do
-                    TabItem tabItem = new TabItem();
-                    tabItem.Header = new RhoTabHeader(label, icon);
-                    //if (i == 0)// && use_current_view_for_tab)
-                    tabItem.Content = new RhoView(m_appMainPage, m_layoutRoot, action, reload, web_bkg_color);
+                    //PivotItem.Header = "Test";to do
+                    //PivotItem PivotItem = new PivotItem();
+                    PivotItem PivotItem = new PivotItem();
+                    PivotItem.Header = new RhoTabHeader(label, icon);
+                    if (i == 0)
+                    {// && use_current_view_for_tab)
+                        ((Grid)m_masterView.Parent).Children.Remove(m_masterView);
+                        m_masterView.Init(m_appMainPage, m_layoutRoot, action, reload, web_bkg_color, i);
+                        PivotItem.Content = m_masterView;
+                    }
+                    else
+                        PivotItem.Content = new RhoView(m_appMainPage, m_layoutRoot, action, reload, web_bkg_color, i);
                     if (values.TryGetValue(CRhoRuby.CreateSymbol("selected_color"), out val))
-                        tabItem.Background = new SolidColorBrush(getColorFromString(val.ToString()));
+                        PivotItem.Background = new SolidColorBrush(getColorFromString(val.ToString()));
                     if (values.TryGetValue(CRhoRuby.CreateSymbol("disabled"), out val))
-                        tabItem.IsEnabled = !Convert.ToBoolean(val);
-                    m_tabControl.Items.Add(tabItem);
+                        PivotItem.IsEnabled = !Convert.ToBoolean(val);
+                    m_tabControl.Items.Add(PivotItem);
                 }
             }
         }
@@ -712,11 +728,14 @@ namespace rho.common
         {
             m_appMainPage.Dispatcher.BeginInvoke( () =>
             {
-                m_tabControl = new TabControl();
+                /*m_tabControl = new TabControl();
                 if (tabBarType == 1)
                     m_tabControl.TabStripPlacement = Dock.Top;
                 else if (tabBarType == 3)
-                    m_tabControl.TabStripPlacement = Dock.Left;
+                    m_tabControl.TabStripPlacement = Dock.Left;*/
+                
+                m_tabControl = new Pivot();
+                m_tabControl.SelectionChanged += Pivot_OnChanged;
 
                 Object[] hashArray = null;
                 Hash paramHash = null;
@@ -736,6 +755,7 @@ namespace rho.common
                 createTabBarButtons(tabBarType, hashArray);
                 m_tabControl.Margin = new Thickness(0, 70, 0, 0);
                 m_layoutRoot.Children.Add(m_tabControl);
+                m_masterView.removeBrowser();
             });
         }
 
@@ -746,6 +766,7 @@ namespace rho.common
                 if (m_tabControl != null)
                 {
                     m_tabControl.Items.Clear();
+                    ((Grid)m_masterView.Parent).Children.Add(m_masterView);
                     m_layoutRoot.Children.Remove(m_tabControl);
                     m_masterView.refresh();
                 }
@@ -770,19 +791,14 @@ namespace rho.common
                 if (m_tabControl != null)
                 {
                     //TO DO
-                    //((TabItem)m_tabControl.Items[index]).Header
+                    //((PivotItem)m_tabControl.Items[index]).Header
                 }
             });
         }
 
         public int getCurrentTab()
         {
-            if (m_tabControl != null)
-            {
-                return m_tabControl.SelectedIndex;
-            }
-                
-            return -1;
+            return m_currentTabIndex;
         }
     }
 }

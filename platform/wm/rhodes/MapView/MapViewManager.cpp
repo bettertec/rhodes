@@ -78,12 +78,22 @@ class DrawingDeviceMapViewImpl : public WmDrawingDeviceImpl {
 static DrawingDeviceMapViewImpl ourDrawingDevice;
 
 
-CRhoMapViewDlg::CRhoMapViewDlg () : m_hBrush(0), m_hMemBitmap(0)
+CRhoMapViewDlg::CRhoMapViewDlg () : m_hBrush(0), m_hMemBitmap(0), m_hWndCommandBar(0)
 {
 }
 
 CRhoMapViewDlg::~CRhoMapViewDlg ()
 {
+}
+
+LRESULT CRhoMapViewDlg::OnDestroyDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
+{
+    if ( m_hWndCommandBar )
+        ::DestroyWindow(m_hWndCommandBar);
+
+    m_hWndCommandBar = 0;
+
+	return FALSE;
 }
 
 LRESULT CRhoMapViewDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
@@ -103,7 +113,11 @@ LRESULT CRhoMapViewDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*
 	mbi.hInstRes = _AtlBaseModule.GetResourceInstance();
 	
 	SHCreateMenuBar(&mbi);
-#endif
+#else
+	m_hWndCommandBar = CommandBar_Create(_AtlBaseModule.GetResourceInstance(), m_hWnd, 1);
+	CommandBar_AddAdornments(m_hWndCommandBar, 0, 0 );
+    CommandBar_Show(m_hWndCommandBar, TRUE);
+#endif //OS_WINCE
 
 	//::SetWindowLong(GetDlgItem(IDC_SLIDER_ZOOM).m_hWnd, 
 	//	GWL_EXSTYLE,
@@ -130,7 +144,7 @@ LRESULT CRhoMapViewDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*
 		::SendMessage(GetDlgItem(IDC_SLIDER_ZOOM).m_hWnd, TBM_SETPOS, TRUE, dwPos); 
 
 		String strImagePath = "lib/res/blue_pushpin.png";
-		String fullImagePath = CFilePath::join( RHODESAPP().getRhoRootPath(), strImagePath);
+		String fullImagePath = CFilePath::join( RHODESAPP().getRhoRuntimePath(), strImagePath);
 		IDrawingImage* pinImg = ourDrawingDevice.createImage(fullImagePath, true);
 
         PIN_INFO pin_info = {0};
@@ -144,7 +158,7 @@ LRESULT CRhoMapViewDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*
 		ourMapView->setPinImage(pinImg, pin_info);
 
 		strImagePath = "lib/res/callout.png";
-		fullImagePath = CFilePath::join( RHODESAPP().getRhoRootPath(), strImagePath);
+		fullImagePath = CFilePath::join( RHODESAPP().getRhoRuntimePath(), strImagePath);
 		IDrawingImage* pinCalloutImg = ourDrawingDevice.createImage(fullImagePath, true);
 
         PIN_INFO pin_callout_info = {0};
@@ -156,12 +170,12 @@ LRESULT CRhoMapViewDlg::OnInitDialog(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*
 		ourMapView->setPinCalloutImage(pinCalloutImg, pin_callout_info);
 
 		strImagePath = "lib/res/callout_link.png";
-		fullImagePath = CFilePath::join( RHODESAPP().getRhoRootPath(), strImagePath);
+		fullImagePath = CFilePath::join( RHODESAPP().getRhoRuntimePath(), strImagePath);
 		IDrawingImage* pinCalloutLinkImg = ourDrawingDevice.createImage(fullImagePath, true);
 		ourMapView->setPinCalloutLinkImage(pinCalloutLinkImg, pin_callout_info);
 
 		strImagePath = "lib/res/esri.png";
-		fullImagePath = CFilePath::join( RHODESAPP().getRhoRootPath(), strImagePath);
+		fullImagePath = CFilePath::join( RHODESAPP().getRhoRuntimePath(), strImagePath);
 		IDrawingImage* esriLogoImg = ourDrawingDevice.createImage(fullImagePath, true);
 		ourMapView->setESRILogoImage(esriLogoImg);
 	}

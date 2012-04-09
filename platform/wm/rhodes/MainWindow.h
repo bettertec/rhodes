@@ -68,6 +68,11 @@ extern UINT WM_BROWSER_ONDOCUMENTCOMPLETE;
 extern UINT WM_BROWSER_ONNAVIGATECOMPLETE;
 extern UINT WM_BROWSER_ONTITLECHANGE;
 extern UINT WM_BROWSER_ONBEFORENAVIGATE;
+extern UINT WM_BROWSER_ONNAVIGATIONTIMEOUT;
+extern UINT WM_BROWSER_ONNAVIGATIONERROR;
+extern UINT WM_BROWSER_ONSETSIPSTATE;
+extern UINT WM_BROWSER_ONALERTPOPUP;
+
 #else
 #if defined (_WIN32_WCE) && !defined( OS_PLATFORM_MOTCE )
 #include <pvdispid.h>
@@ -129,12 +134,17 @@ public:
     // Required to forward messages to the PIEWebBrowser control
     BOOL TranslateAccelerator(MSG* pMsg);
 
+#if defined( OS_PLATFORM_MOTCE )
+   	void SetFullScreen(bool bFull);
+	bool m_bFullScreen;
+#endif
+
 	void openNativeView(	NativeViewFactory* nativeViewFactory, 
 							NativeView* nativeView,
 							String nativeViewType);
 	void closeNativeView();
     rho::IBrowserEngine* getWebKitEngine(){return m_pBrowserEng; }
-    
+
 #if defined(OS_WINDOWS)
     DECLARE_WND_CLASS(TEXT("Rhodes.MainWindow"))
 #else
@@ -165,6 +175,10 @@ public:
         COMMAND_ID_HANDLER(IDM_SK1_EXIT, OnBackCommand)
         COMMAND_ID_HANDLER(IDM_REFRESH, OnRefreshCommand)
 		COMMAND_ID_HANDLER(IDM_NAVIGATE, OnNavigateCommand)
+        COMMAND_ID_HANDLER(IDM_EXECUTEJS, OnExecuteJSCommand)
+        COMMAND_ID_HANDLER(IDM_STOPNAVIGATE, OnStopNavigate)
+        COMMAND_ID_HANDLER(IDM_ZOOMPAGE, OnZoomPage)
+        COMMAND_ID_HANDLER(IDM_ZOOMTEXT, OnZoomText)
         COMMAND_ID_HANDLER(IDM_LOG,OnLogCommand)
 		COMMAND_ID_HANDLER(ID_FULLSCREEN, OnFullscreenCommand)
         COMMAND_ID_HANDLER(ID_SETCOOKIE, OnSetCookieCommand)
@@ -195,6 +209,11 @@ public:
         MESSAGE_HANDLER(WM_BROWSER_ONNAVIGATECOMPLETE, OnNavigateComplete);
         MESSAGE_HANDLER(WM_BROWSER_ONTITLECHANGE, OnTitleChange);
         MESSAGE_HANDLER(WM_BROWSER_ONBEFORENAVIGATE, OnBeforeNavigate);
+        MESSAGE_HANDLER(WM_BROWSER_ONNAVIGATIONTIMEOUT, OnNavigateTimeout);
+        MESSAGE_HANDLER(WM_BROWSER_ONNAVIGATIONERROR, OnNavigateError);
+        MESSAGE_HANDLER(WM_BROWSER_ONSETSIPSTATE, OnSetSIPState);
+        MESSAGE_HANDLER(WM_BROWSER_ONALERTPOPUP, OnAlertPopup);
+
         MESSAGE_RANGE_HANDLER(PB_NAVIGATETAB, PB_NEWGPSDATA, OnWebKitMessages)
 #endif
 
@@ -218,6 +237,10 @@ private:
     LRESULT OnNavigateForwardCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnRefreshCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnNavigateCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+    LRESULT OnExecuteJSCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+    LRESULT OnStopNavigate(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+    LRESULT OnZoomPage(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+    LRESULT OnZoomText(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnLogCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnFullscreenCommand (WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
     LRESULT OnSetCookieCommand (WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
@@ -251,6 +274,10 @@ private:
     LRESULT OnTitleChange (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);
     LRESULT OnWebKitMessages (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);
     LRESULT OnBeforeNavigate (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);    
+    LRESULT OnNavigateTimeout (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);    
+    LRESULT OnNavigateError (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);    
+    LRESULT OnSetSIPState (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);    
+    LRESULT OnAlertPopup (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/);    
 #endif
 
 public:

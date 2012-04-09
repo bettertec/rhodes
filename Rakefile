@@ -150,8 +150,6 @@ def make_application_build_capabilities_header_file
   Jake.modify_file_if_content_changed(File.join($startdir, "platform", "shared", "common", "app_build_capabilities.h"), f)
 end
 
-
-
 def make_application_build_config_java_file
 
     f = StringIO.new("", "w+")
@@ -263,25 +261,50 @@ namespace "config" do
        $app_config[$config["platform"]]["capabilities"] and $app_config[$config["platform"]]["capabilities"].is_a? Array
     $app_config["capabilities"] = capabilities
 
-    #Process motorola extensions
-    if capabilities.index("motorola")
-        $app_config["capabilities"] += ["webkit_browser"] if $app_config["extensions"].index("webkit-browser")
-        $app_config["extensions"] += ["rhoelements"]
-        
-        idx_barcode = $app_config["extensions"].index("barcode")
-        $app_config["extensions"][idx_barcode] = "barcode-moto" if idx_barcode
+    application_build_configs = {}
 
-        $app_config["capabilities"] += ["barcode"] if $app_config["extensions"].index("barcode-moto")
+    #Process rhoelements settings
+    if $app_config["app_type"] == 'rhoelements'
+        $app_config["capabilities"] += ["motorola"] unless $app_config["capabilities"].index("motorola")
+        $app_config["extensions"] += ["rhoelementsext"] if $current_platform == 'wm'
+        $app_config["extensions"] += ["motoapi"] #extension with plug-ins
+        $app_config["extensions"] += ['webkit-browser'] unless $app_config["extensions"].index("webkit-browser")
+        
+        #check for RE2 plugins
+        plugins = ""
+        $app_config["extensions"].each do |ext|
+            if ( ext.start_with?('moto-') )
+                plugins += ',' if plugins.length() > 0
+                plugins += ext[5, ext.length()-5]
+            end
+        end
+        
+        if plugins.length() == 0
+            plugins = "ALL"    
+        end
+        
+        application_build_configs['moto-plugins'] = plugins if plugins.length() > 0
+        
+    end
+    
+    if $app_config["capabilities"].index("motorola")
+        if $app_config["extensions"].index("webkit-browser")
+            $app_config["capabilities"] += ["webkit_browser"]
+            $app_config["extensions"].delete("webkit-browser") unless $current_platform == 'android'
+        end
+        if $current_platform == 'android'
+            barcode_idx = $app_config['extensions'].index('barcode')
+            $app_config['extensions'][barcode_idx] = 'barcode-moto' unless barcode_idx.nil?
+        end
+        $app_config["extensions"] += ["rhoelements"]
     end
 
-    puts "$app_config['extensions'] : #{$app_config['extensions']}"   
-    puts "$app_config['capabilities'] : #{$app_config['capabilities']}"   
+    puts "$app_config['extensions'] : #{$app_config['extensions'].inspect}"   
+    puts "$app_config['capabilities'] : #{$app_config['capabilities'].inspect}"   
     
     $hidden_app = $app_config["hidden_app"].nil?() ? "0" : $app_config["hidden_app"]
     
-
     #application build configs
-    application_build_configs = {}
 
     $application_build_configs_keys.each do |key|
       value = $app_config[key]
@@ -307,6 +330,10 @@ namespace "config" do
     $rhologhostport = 52363 unless $rhologhostport
 	$rhologhostaddr = Jake.localip()
 
+    $obfuscate_js = (($app_config["obfuscate"].nil? || $app_config["obfuscate"]["js"].nil?) ? nil : 1 )
+    $obfuscate_css = (($app_config["obfuscate"].nil? || $app_config["obfuscate"]["css"].nil?) ? nil : 1 )
+    $obfuscate_exclude = ($app_config["obfuscate"].nil? ? nil : $app_config["obfuscate"]["exclude_dirs"] )
+    $obfuscator = 'res/build-tools/yuicompressor-2.4.7.jar'
   end
 
   task :qt do
@@ -390,6 +417,8 @@ def set_linker_flags
 end
 
 def add_extension(path,dest)
+  puts 'add_extension - ' + path.to_s + " - " + dest.to_s
+  
   start = pwd
   chdir path if File.directory?(path)
 
@@ -406,6 +435,8 @@ def init_extensions(startdir, dest)
     
   puts 'init extensions'
   $app_config["extensions"].each do |extname|  
+    puts 'ext - ' + extname
+    
     extpath = nil
     extpaths.each do |p|
       if p
@@ -416,19 +447,24 @@ def init_extensions(startdir, dest)
       end
       end
     end    
+    
+    puts '1'
 
     if extpath.nil?
       begin
         $rhodes_extensions = nil
         require extname
-        extpath = $rhodes_extensions[0] unless $rhodes_extensions.nil?        
-        $app_config["extpaths"] << extpath 
+        puts '1-2'
+        if $rhodes_extensions
+            extpath = $rhodes_extensions[0]
+            $app_config["extpaths"] << extpath
+        end    
       rescue Exception => e      
         puts "exception"  
       end
     end
-    
-    unless extpath.nil?
+        
+    unless extpath.nil?      
       add_extension(extpath, dest) unless dest.nil?
 
       if $config["platform"] != "bb"
@@ -460,8 +496,10 @@ def init_extensions(startdir, dest)
             extlibs += libs
           end
         end
-      end    
+      end
+      
     end
+    
   end
   
   exts = File.join($startdir, "platform", "shared", "ruby", "ext", "rho", "extensions.c")
@@ -510,6 +548,8 @@ def init_extensions(startdir, dest)
     nativelib.each { |lib| add_linker_library(lib) }
 
     set_linker_flags
+    
+    #exit
   end
   
   unless $app_config["constants"].nil?
@@ -528,6 +568,28 @@ def init_extensions(startdir, dest)
       $excludeextlib.each {|e| Dir.glob(e).each {|f| rm f}}
   end
 
+end
+
+def public_folder_cp_r(src_dir,dst_dir,level,obfuscate)
+  mkdir_p dst_dir if not File.exists? dst_dir
+  Dir.foreach(src_dir) do |filename|
+    next if filename.eql?('.') || filename.eql?('..')
+    filepath = src_dir + '/' + filename
+    dst_path = dst_dir + '/' + filename
+    if File.directory?(filepath)
+      public_folder_cp_r(filepath,dst_path,(level+1),((obfuscate==1) && ((level>0) || $obfuscate_exclude.nil? || !$obfuscate_exclude.include?(filename)) ? 1 : 0))
+    else
+      if (obfuscate==1) && (((!$obfuscate_js.nil?) && File.extname(filename).eql?(".js")) || ((!$obfuscate_css.nil?) && File.extname(filename).eql?(".css")))
+        puts Jake.run('java',['-jar', $obfuscator, filepath, '-o', dst_path])
+        unless $? == 0
+          puts "Obfuscation error"
+          exit 1
+        end
+      else
+        cp filepath, dst_path, :preserve => true
+      end
+    end
+  end
 end
 
 def common_bundle_start(startdir, dest)
@@ -560,8 +622,14 @@ def common_bundle_start(startdir, dest)
   chdir startdir
   #throw "ME"
   cp_r app + '/app',File.join($srcdir,'apps'), :preserve => true
-  cp_r app + '/public', File.join($srcdir,'apps'), :preserve => true if File.exists? app + '/public'
-  cp   app + '/rhoconfig.txt', File.join($srcdir,'apps'), :preserve => true
+  if File.exists? app + '/public'
+    if $obfuscate_js.nil? && $obfuscate_css.nil?
+      cp_r app + '/public', File.join($srcdir,'apps'), :preserve => true 
+    else
+      public_folder_cp_r app + '/public', File.join($srcdir,'apps/public'), 0, 1
+    end
+  end
+  cp app + '/rhoconfig.txt', File.join($srcdir,'apps'), :preserve => true
 
   app_version = "\r\napp_version='#{$app_config["version"]}'"  
   File.open(File.join($srcdir,'apps/rhoconfig.txt'), "a"){ |f| f.write(app_version) }
@@ -592,7 +660,7 @@ def common_bundle_start(startdir, dest)
       end
       
       Dir.glob("**/*.wm.*").each { |f| rm f }
-	  Dir.glob("**/*.wp7.*").each { |f| rm f }
+	    Dir.glob("**/*.wp7.*").each { |f| rm f }
       Dir.glob("**/*.iphone.*").each { |f| rm f }
       Dir.glob("**/*.bb.*").each { |f| rm f }
       Dir.glob("**/*.bb6.*").each { |f| rm f }
@@ -628,11 +696,11 @@ def process_exclude_folders
       excl << $config["excludedirs"][exclude_platform] if $config["excludedirs"][exclude_platform]
   end  
   
-  if excl
-      chdir File.join($srcdir, 'apps')
+  if excl.size() > 0
+      chdir File.join($srcdir)#, 'apps')
   
       excl.each do |mask|
-        Dir.glob(mask).each {|f| rm_rf f}
+        Dir.glob(mask).each {|f| puts "f: #{f}"; rm_rf f}
       end
   end
 
@@ -815,21 +883,17 @@ namespace "build" do
         sh %{zip -r upgrade_bundle.zip .}
       end
 
-      
       cp   new_zip_file, $bindir
       
       rm   new_zip_file
       
-      
-      
     end
     
-    
-    
+
     task :noiseq do
       app = $app_path
       rhodeslib = File.dirname(__FILE__) + "/lib/framework"
-	  compileERB = "lib/build/compileERB/bb.rb"
+	    compileERB = "lib/build/compileERB/bb.rb"
       startdir = pwd
       dest = $srcdir + "/lib"      
 

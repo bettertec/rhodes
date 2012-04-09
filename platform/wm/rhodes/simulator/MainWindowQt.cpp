@@ -398,7 +398,7 @@ void CMainWindow::createToolbar(rho_param *p)
                             strImagePath = "res/back_btn.wm.png";
                         else if ( strcasecmp(action, "forward")==0 )
                             strImagePath = "res/forward_btn.wm.png";
-                        strImagePath = strImagePath.length() > 0 ? CFilePath::join( RHOSIMCONF().getRhodesPath(), "lib/framework/" + strImagePath) : String();
+                        strImagePath = strImagePath.length() > 0 ? CFilePath::join( RHOSIMCONF().getRhoRuntimePath(), "lib/framework/" + strImagePath) : String();
                     }
 
                     ((QtMainWindow*)qtMainWindow)->toolbarAddAction(QIcon(QString(strImagePath.c_str())), QString(label), action, wasSeparator);
@@ -705,6 +705,27 @@ LRESULT CMainWindow::OnNavigateCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND 
         LPTSTR wcurl = (LPTSTR)(nd->url);
         if (wcurl) {
             Navigate2(wcurl, nd->index);
+            free(wcurl);
+        }
+        free(nd);
+    }
+    return 0;
+}
+
+LRESULT CMainWindow::OnExecuteJS(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& /*bHandled*/)
+{
+    TNavigateData* nd = (TNavigateData*)hWndCtl;
+    if (nd) {
+        LPTSTR wcurl = (LPTSTR)(nd->url);
+        if (wcurl) {
+
+            StringW strUrlW;
+            if(_memicmp(wcurl,L"JavaScript:",11*2) != 0)
+                strUrlW = L"javascript:";
+
+            strUrlW += wcurl;
+
+            Navigate2((LPWSTR)strUrlW.c_str(), nd->index);
             free(wcurl);
         }
         free(nd);

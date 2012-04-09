@@ -58,7 +58,6 @@ if !defined? RHO_ME
   end
 end
 
-if !defined?(RHO_WP7)
   it "should support operations with dates" do
     to_day = Date.civil(2010, 3, 21)
     to_day2 = Date.civil(2011, 3, 21)
@@ -68,11 +67,13 @@ if !defined?(RHO_WP7)
     puts "res : #{res.day}"
 
     res = to_day2-to_day
-    
-if !defined? RHO_ME    
-    res.to_s.should == "365/1"
+
+if defined? RHO_ME
+    res.to_s.should == "365"        
+elsif defined?(RHO_WP7) 
+    res.to_s.should == "365"           
 else
-    res.to_s.should == "365"    
+    res.to_s.should == "365/1"
 end
     
     puts "res : #{res}"
@@ -82,6 +83,5 @@ end
     puts "res : #{res.day}"
     
   end
-end
 
 end

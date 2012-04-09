@@ -572,6 +572,15 @@ end
                 SyncEngine.set_source_property(src['source_id'], prop, src[prop] ? src[prop].to_s() : '' )
             end            
         end
+        
+        uniq_sources.each do|src|
+            if src.has_key?('freezed') || !src['schema'].nil?
+                hash_props = !src['schema'].nil? ? src['schema']["property"] : src["property"]
+                str_props = hash_props.keys.join(',')
+                SyncEngine.set_source_property(src['source_id'], 'freezed', str_props )
+            end            
+        end
+        
     end
     
     def self.processIndexes(index_param, src_name, is_unique)
@@ -1304,3 +1313,24 @@ module Kernel
     end
     
 end    
+
+if defined?(RHO_WP7).nil?
+module WebView
+
+    class << self
+        alias_method :orig_execute_js, :execute_js
+    end
+
+    def self.execute_js(func, index = -1, vals = nil)
+        if (vals && 0 < vals.size)
+            func += '('
+            vals.each do |val|
+                func += val
+                func += ',' if val != vals.last
+            end
+            func += ');'
+        end
+       orig_execute_js(func, index)                
+    end
+end
+end

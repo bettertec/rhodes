@@ -99,6 +99,7 @@ final public class RhodesApplication extends RhodesApplicationPlatform implement
 	public static final String LABEL_CLOSE = "Close";
 	public static final String LABEL_EXIT = "Exit";
 	public static final String LABEL_NONE = "none";
+	public static final String LABEL_COPYPASTE = "copy_paste";
 	
 	private static final RhoLogger LOG = RhoLogger.RHO_STRIP_LOG ? new RhoEmptyLogger() : 
 		new RhoLogger("RhodesApplication");
@@ -507,7 +508,9 @@ final public class RhodesApplication extends RhodesApplicationPlatform implement
     	if ( ClientRegister.getInstance() != null )
     		ClientRegister.getInstance().Destroy();
     	
-    	RhoRuby.rho_ruby_deactivateApp();
+    	if (!m_bInDeactivate)
+    		RhoRuby.rho_ruby_deactivateApp();
+    	
     	RhoRuby.rho_ruby_uiDestroyed();
     	
 		GeoLocation.stop();
@@ -565,6 +568,7 @@ final public class RhodesApplication extends RhodesApplicationPlatform implement
     private static boolean m_bRubyInit = false;
 	public void activate()
 	{
+		m_bInDeactivate = false;
 		if (!m_bActivate)
 			rhodes_activate();
 		else
@@ -670,9 +674,11 @@ final public class RhodesApplication extends RhodesApplicationPlatform implement
     	}
     }
 
+    boolean m_bInDeactivate = false;
 	public void deactivate() {
     	LOG.TRACE("Rhodes deactivate ***--------------------------***");		
     	
+    	m_bInDeactivate = true;
     	RhoRuby.rho_ruby_deactivateApp();
     	
 //		SyncEngine.stop(null);
@@ -839,7 +845,8 @@ final public class RhodesApplication extends RhodesApplicationPlatform implement
     	}
     	
 		private Vector menuItems = new Vector();
-
+		private boolean m_bMenuCopyPaste = false;
+		
 		private MenuItem homeItem = new MenuItem("", 200000, 10) {
 			public void run() {
 					navigateHome();
@@ -895,8 +902,11 @@ final public class RhodesApplication extends RhodesApplicationPlatform implement
 				super.makeMenu(menu, instance);
 				return;
 			}
+			//return;
 			
-			menu.deleteAll();
+			if (!m_bMenuCopyPaste)
+				menu.deleteAll();
+			
 			// Don't draw menu if menuItems is null
 			if (menuItems == null)
 				return;
@@ -955,6 +965,8 @@ final public class RhodesApplication extends RhodesApplicationPlatform implement
     	    	setDefaultItemToMenuItems(label, closeItem);
     	    } else if (label.equalsIgnoreCase(RhodesApplication.LABEL_NONE)) {
     	    	menuItems = null;
+    	    } else if (value.equalsIgnoreCase(RhodesApplication.LABEL_COPYPASTE)) {
+    	    	m_bMenuCopyPaste = true;
     	    } else {
 				MenuItem itemToAdd = new MenuItem(label, 200000, 10) 
 				{
@@ -1029,6 +1041,7 @@ final public class RhodesApplication extends RhodesApplicationPlatform implement
 
 		public void setMenuItems(Vector menuItems) {
 			this.menuItems = menuItems;
+	    	m_bMenuCopyPaste = false;
 		}
 
 		public MenuItem getSavedGetLinkItem() {
@@ -1371,6 +1384,14 @@ final public class RhodesApplication extends RhodesApplicationPlatform implement
 				_mainScreen.close();
             }
     	});
+    	
+    	this.invokeLater(new Runnable() {
+            public void run() 
+            {
+				System.exit(1);
+            }
+    	});
+    	
     }
 
     boolean m_bDisableInput = false;

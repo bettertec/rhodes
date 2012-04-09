@@ -70,6 +70,31 @@ BOOL CIEBrowserEngine::ReloadOnTab(bool bFromCache, UINT iTab)
     return m_spIWebBrowser2->Refresh() == S_OK;
 }
 
+BOOL CIEBrowserEngine::StopOnTab(UINT iTab)
+{
+    return FALSE;
+}
+
+BOOL CIEBrowserEngine::ZoomPageOnTab(float fZoom, UINT iTab)
+{
+    return FALSE;
+}
+
+BOOL CIEBrowserEngine::ZoomTextOnTab(int nZoom, UINT iTab)
+{
+    return FALSE;
+}
+
+int CIEBrowserEngine::GetTextZoomOnTab(UINT iTab)
+{
+    return 2; //Normal
+}
+
+BOOL CIEBrowserEngine::GetTitleOnTab(LPTSTR szURL, UINT iMaxLen, UINT iTab)
+{
+    return FALSE;
+}
+
 static void writeHtmlToTheDoc (
 #if defined(_WIN32_WCE) && !defined( OS_PLATFORM_MOTCE )
 					IPIEHTMLDocument2 *document
@@ -140,12 +165,30 @@ void CIEBrowserEngine::RunMessageLoop(CMainWindow& mainWnd)
     MSG msg;
     while (GetMessage(&msg, NULL, 0, 0))
     {
+        if ( RHODESAPP().getExtManager().onWndMsg(msg) )
+            continue;
+
         if (!mainWnd.TranslateAccelerator(&msg))
         {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
     }
+}
+
+bool CIEBrowserEngine::isExistJavascript(const wchar_t* szJSFunction, int index)
+{
+    return true;
+}
+
+void CIEBrowserEngine::executeJavascript(const wchar_t* szJSFunction, int index)
+{
+    StringW strUrlW;
+    if(_memicmp(szJSFunction,L"JavaScript:",11*2) != 0)
+        strUrlW = L"javascript:";
+
+    strUrlW += szJSFunction;
+    Navigate(strUrlW.c_str());
 }
 
 void CIEBrowserEngine::SetCookie(char* url, char* cookie)

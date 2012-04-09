@@ -66,12 +66,6 @@ namespace "config" do
     $sdk = "Win32"
   end
 
-  task :set_motce_platform do
-    $current_platform = "wm" unless $current_platform
-    $build_solution = 'rhoelements.sln' unless $build_solution
-    $sdk = "MC3000c50b (ARMV4I)"
-  end
-
   task :wm => [:set_wm_platform, "config:common"] do
     puts " $current_platform : #{$current_platform}"
 
@@ -106,6 +100,7 @@ namespace "config" do
     $cabwiz = "cabwiz" if $cabwiz.nil?
     $webkit_capability = !($app_config["capabilities"].nil? or $app_config["capabilities"].index("webkit_browser").nil?) 
     $wk_data_dir = "/Program Files" # its fake value for running without motorola extensions. do not delete
+    $additional_dlls_path = nil
 
     begin
       if $webkit_capability
@@ -137,17 +132,44 @@ namespace "config" do
 
     $wm_emulator = $app_config["wm"]["emulator"] if $app_config["wm"] and $app_config["wm"]["emulator"]
     $wm_emulator = "Windows Mobile 6 Professional Emulator" unless $wm_emulator
+
+    $use_shared_runtime = (($app_config["wm"].nil? || $app_config["wm"]["use_shared_runtime"].nil?) ? nil : 1 )
+    #puts $app_config["wm"]["use_shared_runtime"].inspect
+    #puts $use_shared_runtime.inspect
   end
 end
 
 namespace "build" do
   namespace "wm" do
     task :extensions => "config:wm" do
+      if not $use_shared_runtime.nil? then next end
+
+      if $additional_dlls_path.nil?
+        puts 'new $additional_dlls_paths'
+        $additional_dlls_paths = Array.new
+      end
 
       $app_config["extensions"].each do |ext|
         $app_config["extpaths"].each do |p|
           extpath = File.join(p, ext, 'ext')
+          commin_ext_path = File.join(p, ext)
+          ext_config_path = File.join(p, ext, "ext.yml")
+          ext_config = nil
+
           next unless File.exists? File.join(extpath, "build.bat")
+          
+          puts "ext_config_path - " + ext_config_path.to_s
+          if File.exist? ext_config_path
+            ext_config = YAML::load_file(ext_config_path)
+          end
+
+          puts "extpath - " + commin_ext_path.to_s
+          chdir commin_ext_path 
+            if ext_config != nil && ext_config["files"] != nil
+              puts "ext_config[files] - " + ext_config["files"].to_s
+              $additional_dlls_paths << File.expand_path(ext_config["files"])
+            end
+          chdir $startdir
 
           ENV['RHO_PLATFORM'] = $current_platform
           ENV['RHO_BUILD_CONFIG'] = 'Release'
@@ -159,7 +181,6 @@ namespace "build" do
           ENV['VCBUILD'] = $vcbuild
           ENV['SDK'] = $sdk
 
-          #puts Jake.run("build.bat", [], extpath)
           chdir extpath
           puts `build.bat`
           chdir $startdir
@@ -167,6 +188,11 @@ namespace "build" do
           break
         end
       end
+      #test
+      $additional_dlls_paths.each do |x|
+        puts " - " + x.to_s
+      end
+      #exit
     end
 
     #    desc "Build wm rhobundle"
@@ -175,6 +201,8 @@ namespace "build" do
     end
 
     task :rhodes => ["config:wm", "build:wm:rhobundle"] do
+      if not $use_shared_runtime.nil? then next end
+
       chdir $config["build"]["wmpath"]
 
       cp $app_path + "/icon/icon.ico", "rhodes/resources" if File.exists? $app_path + "/icon/icon.ico"
@@ -326,18 +354,22 @@ end
 
 namespace "device" do
 
-  namespace "motce" do
-    desc "Build production for Motorola device"
-    task :production => ["config:set_motce_platform", "device:wm:production"] do
-    end
-  end
-
   namespace "wm" do
     desc "Build production for device or emulator"
     task :production => ["config:wm","build:wm:rhobundle","build:wm:rhodes"] do
 
-      out_dir = $startdir + "/" + $vcbindir + "/#{$sdk}" + "/rhodes/Release/"
-      cp  out_dir + "rhodes.exe", out_dir + $appname + ".exe"
+      wm_icon = $app_path + '/icon/icon.ico'
+      if $use_shared_runtime.nil? then
+        out_dir = $startdir + "/" + $vcbindir + "/#{$sdk}" + "/rhodes/Release/"
+        cp out_dir + "rhodes.exe", out_dir + $appname + ".exe"
+      else
+        shortcut_content = '"\\Program Files\\RhoElements2\\RhoElements2.exe" -approot="\\Program Files\\' + $appname + '"'
+        if File.exists? wm_icon then
+          shortcut_content = shortcut_content + '?"\\Program Files\\' + $appname + '\\rho\\icon\\icon.ico"'
+        end
+        shortcut_content = shortcut_content.length().to_s + '#' + shortcut_content
+        File.open($srcdir + '/../' + $appname + ".lnk", "w") { |f| f.write(shortcut_content) }
+      end
 
       chdir $builddir
 
@@ -345,23 +377,23 @@ namespace "device" do
       build_platform = 'wm653' if $sdk == "Windows Mobile 6.5.3 Professional DTK (ARMV4I)"
       build_platform = 'ce5' if $sdk == "MC3000c50b (ARMV4I)"
 
-      if $webkit_capability and $wk_data_dir != nil 
-        wk_config_dir = $wk_data_dir + "/Config"
-        config_files = ['Config','Plugin','RegEx']
-        config_files.each do |filename|
-          filepath = File.join(wk_config_dir,filename + ".xml.template")
-          if not File.exists?(filepath)
-            puts "Cannot find required config template: #{filepath}"
-            exit 1
-          end
-          template = File.read(filepath)
-          config = template.to_s.gsub('(%APPNAME%)',$app_config["name"]);
-          filepath = File.join(wk_config_dir,filename + ".xml")
-          File.open(filepath, "w") { |f| f.write(config) }
+      icon_dest = $srcdir + '/icon'
+      rm_rf icon_dest
+      if not $use_shared_runtime.nil? then
+        rm_rf $srcdir + '/lib'
+        if File.exists? wm_icon then
+          mkdir_p icon_dest if not File.exists? icon_dest
+          cp wm_icon, icon_dest
         end
       end
- 
-      args = ['build_inf.js', $appname + ".inf", build_platform, '"' + $app_config["name"] +'"', $app_config["vendor"], '"' + $srcdir + '"', $hidden_app, ($webkit_capability ? "1" : "0"), $wk_data_dir]
+
+      args = ['build_inf.js', $appname + ".inf", build_platform, '"' + $app_config["name"] +'"', $app_config["vendor"], '"' + $srcdir + '"', $hidden_app, ($webkit_capability ? "1" : "0"), $wk_data_dir, (($use_shared_runtime.nil?) ? "0" : "1")]
+
+      if $use_shared_runtime.nil? then
+         $additional_dlls_paths.each do |path|
+            args << path
+         end
+      end
         
       puts Jake.run('cscript',args)
       unless $? == 0
@@ -404,10 +436,6 @@ end
 
 namespace "clean" do
 
-  desc "Clean Motorola device build"
-  task :motce => ["config:set_motce_platform", "clean:wm:all"] do
-  end
-
   desc "Clean wm"
   task :wm => "clean:wm:all" do
   end
@@ -448,24 +476,29 @@ namespace "run" do
     puts "\nStarting application on the WM6 emulator\n\n"
     log_file = gelLogPath
 
-    #Jake.run2( detool, ['log', log_file, $port], {:nowait => true})
+    File.delete($app_path + "/started")  if File.exists?($app_path + "/started")
+    Jake.run_rho_log_server($app_path)
+    puts "RhoLogServer is starting"
+    while true do
+      if File.exists?($app_path + "/started")
+        break
+      end
+      sleep(1)
+    end
 
-	File.delete($app_path + "/started")  if File.exists?($app_path + "/started")
-	Jake.run_rho_log_server($app_path)
-	puts "RhoLogServer is starting"
-	while true do
-		if File.exists?($app_path + "/started")
-			break
-		end
-		sleep(1)
-	end
-
-    if $webkit_capability
+    if $webkit_capability and ($use_shared_runtime.nil?)
       wk_args   = [ 'wk-emu', "\"#{$wm_emulator}\"", '"'+ $wk_data_dir.gsub(/"/,'\\"') + '"', '"'+ $appname + '"']
       Jake.run2( detool, wk_args, {:nowait => false})
     end
 
-    args   = [ 'emu', "\"#{$wm_emulator}\"", '"'+$appname.gsub(/"/,'\\"')+'"', '"'+$srcdir.gsub(/"/,'\\"')+'"', '"'+($startdir + "/" + $vcbindir + "/#{$sdk}" + "/rhodes/Release/" + $appname + ".exe").gsub(/"/,'\\"')+'"' , $port]
+    if $additional_dlls_paths
+      $additional_dlls_paths.each do |path|
+        add_files_args   = [ 'wk-emu', "\"#{$wm_emulator}\"", '"'+ path.gsub(/"/,'\\"') + '"', '"'+ $appname + '"']
+        Jake.run2( detool, add_files_args, {:nowait => false})
+      end
+    end
+
+    args = [ 'emu', "\"#{$wm_emulator}\"", '"'+$appname.gsub(/"/,'\\"')+'"', '"'+$srcdir.gsub(/"/,'\\"')+'"', '"'+((not $use_shared_runtime.nil?) ? $srcdir + '/../' + $appname + '.lnk' : $startdir + "/" + $vcbindir + "/#{$sdk}" + "/rhodes/Release/" + $appname + ".exe").gsub(/"/,'\\"')+'"' , $port]
     Jake.run2( detool, args, {:nowait => false})
   end
 
@@ -496,26 +529,30 @@ namespace "run" do
       puts "Please, connect you device via ActiveSync.\n\n"
       log_file = gelLogPath
 
-      # temporary disable log from device (caused enormous delays)
-      # Jake.run2( detool, ['log', log_file, $port], {:nowait => true})
-
-	  File.delete($app_path + "/started")  if File.exists?($app_path + "/started")
+      File.delete($app_path + "/started")  if File.exists?($app_path + "/started")
 	  
       Jake.run_rho_log_server($app_path)
-	  puts "RhoLogServer is starting"
-	  while true do
-	    if File.exists?($app_path + "/started")
-		    break
-	    end
-	    sleep(1)
-	  end    
+      puts "RhoLogServer is starting"
+      while true do
+        if File.exists?($app_path + "/started")
+          break
+        end
+        sleep(1)
+      end    
 
-      if $webkit_capability
+      if $webkit_capability and ($use_shared_runtime.nil?)
         wk_args   = [ 'wk-dev', '"'+ $wk_data_dir.gsub(/"/,'\\"') + '"', '"'+ $appname + '"']
         Jake.run2( detool, wk_args, {:nowait => false})
       end
 
-      args   = [ 'dev', '"'+$appname.gsub(/"/,'\\"')+'"', '"'+$srcdir.gsub(/"/,'\\"')+'"', '"'+($startdir + "/" + $vcbindir + "/#{$sdk}" + "/rhodes/Release/" + $appname + ".exe").gsub(/"/,'\\"')+'"', $port ]
+      if $additional_dlls_paths
+        $additional_dlls_paths.each do |path|
+          add_files_args   = [ 'wk-dev', '"'+ path.gsub(/"/,'\\"') + '"', '"'+ $appname + '"']
+          Jake.run2( detool, add_files_args, {:nowait => false})
+        end
+      end
+
+      args = [ 'dev', '"'+$appname.gsub(/"/,'\\"')+'"', '"'+$srcdir.gsub(/"/,'\\"')+'"', '"'+((not $use_shared_runtime.nil?) ? $srcdir + '/../' + $appname + '.lnk' : $startdir + "/" + $vcbindir + "/#{$sdk}" + "/rhodes/Release/" + $appname + ".exe").gsub(/"/,'\\"')+'"', $port ]
       Jake.run2( detool, args, {:nowait => false})
     end
 
@@ -532,10 +569,20 @@ namespace "run" do
         #remove log file
         rm_rf log_file if File.exists?(log_file)
 
+        File.delete($app_path + "/started")  if File.exists?($app_path + "/started")
+        Jake.run_rho_log_server($app_path)
+        puts "RhoLogServer is starting"
+        while true do
+          if File.exists?($app_path + "/started")
+            break
+          end
+          sleep(1)
+        end
+
         Jake.before_run_spec
         start = Time.now
         
-        Jake.run2( detool, ['log', log_file, $port], {:nowait => true})
+        #Jake.run2( detool, ['log', log_file, $port], {:nowait => true})
         Jake.run2( detool, args, {:nowait => false})
 
         puts "waiting for log: " + log_file
@@ -598,14 +645,14 @@ namespace "run" do
     end
 
     namespace "device" do
-      desc "Build, install .cab  and run on the Windows Phone"
+      desc "Build, install .cab and run on the Windows Mobile device"
       task :cab => ["device:wm:production"] do
         # kill all running detool
         kill_detool
 
         cd $startdir + "/res/build-tools"
         detool = "detool.exe"
-        args   = ['devcab', $targetdir + '/' +  $appname + ".cab", $appname, $port]
+        args   = ['devcab', $targetdir + '/' +  $appname + ".cab", $appname, (($use_shared_runtime.nil?) ? "0" : "1")]
         puts "\nStarting application on the device"
         puts "Please, connect you device via ActiveSync.\n\n"
         log_file = gelLogPath
@@ -623,7 +670,7 @@ namespace "run" do
 
       cd $startdir + "/res/build-tools"
       detool = "detool.exe"
-      args   = ['emucab', "\"#{$wm_emulator}\"", $targetdir + '/' +  $appname + ".cab", $appname, $port]
+      args   = ['emucab', "\"#{$wm_emulator}\"", $targetdir + '/' +  $appname + ".cab", $appname, (($use_shared_runtime.nil?) ? "0" : "1")]
       log_file = gelLogPath
 
       Jake.run2( detool, ['log', log_file, $port], {:nowait => true})
