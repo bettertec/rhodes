@@ -452,20 +452,19 @@ public class RhodesService extends Service {
 			
 			String buttonClicked = intent.getStringExtra("BUTTON_CLICKED");
 			Bundle originalExtras = intent.getBundleExtra(INTENT_EXTRA_PREFIX + "PARENT_EXTRA");
-			originalExtras.putString("action", originalExtras.getString("action")+":background_processed");
 			
 			Log.d(TAG, "command received from " + source + ": " + buttonClicked);
 			if(buttonClicked.equals("OK")){
+				originalExtras.putString("action", originalExtras.getString("action")+":background_ok");
 				Log.i(TAG, "OK Button clicked: ");
 				handlePushMessage(originalExtras);
 				Log.i(TAG, "re-run action");
 				bringToFront();
 				
-				
-				
 			}else if(buttonClicked.equals("NO")){
 				Log.i(TAG, "Cancel Button clicked: ");
-				//Do nothing
+				originalExtras.putString("action", originalExtras.getString("action")+":background_cancel");
+				handlePushMessage(originalExtras);
 			}
 		}
 	}

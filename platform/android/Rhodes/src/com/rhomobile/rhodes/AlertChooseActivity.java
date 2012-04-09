@@ -26,11 +26,18 @@
 
 package com.rhomobile.rhodes;
 
+import com.rhomobile.rhodes.file.RhoFileApi;
+
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
 /**
@@ -53,6 +60,25 @@ public class AlertChooseActivity extends Activity {
         Bundle extras = getIntent().getExtras();
         
         parentExtras = extras.getBundle(RhodesService.INTENT_EXTRA_PREFIX + "PARENT_EXTRA");
+        
+        String iconName = "popup_logo.png";
+        
+        Resources res = getResources();
+        Drawable icon = null;
+		if (iconName != null) {
+			if (iconName.equalsIgnoreCase("alert"))
+				icon = res.getDrawable(AndroidR.drawable.alert_alert);
+			else if (iconName.equalsIgnoreCase("question"))
+				icon = res.getDrawable(AndroidR.drawable.alert_question);
+			else if (iconName.equalsIgnoreCase("info"))
+				icon = res.getDrawable(AndroidR.drawable.alert_info);
+			else {
+				String iconPath = RhoFileApi.normalizePath("apps/" + iconName);
+				Bitmap bitmap = BitmapFactory.decodeStream(RhoFileApi.open(iconPath));
+				if (bitmap != null)
+					icon = new BitmapDrawable(bitmap);
+			}
+		}
         
         dialog = new AlertDialog.Builder(this)
         .setTitle(extras.getString(RhodesService.INTENT_EXTRA_PREFIX + "title"))
@@ -81,7 +107,7 @@ public class AlertChooseActivity extends Activity {
          		ctx.startService(serviceIntent);
          		finish();
             }
-        }).create();
+        }).setIcon(icon).create();
       //add this to your code
 //          Window window = dialog.getWindow(); 
 //          WindowManager.LayoutParams lp = window.getAttributes();

@@ -5,14 +5,12 @@
 #include "app_build_configs.h"
 
 static const char* keys[] = { ""
-,"android_title"
 };
 
 static const char* values[] = { ""
-,"0"
 };
 
-#define APP_BUILD_CONFIG_COUNT 2
+#define APP_BUILD_CONFIG_COUNT 1
 
 const char* get_app_build_config_item(const char* key) {
   int i;
