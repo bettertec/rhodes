@@ -47,6 +47,15 @@
 
 #include <algorithm>
 
+// licence lib
+#ifdef OS_ANDROID
+#include "../../../res/libs/motorolalicence/android/MotorolaLicence.h" 
+#endif
+#ifdef OS_MACOSX
+#include "../../../res/libs/motorolalicence/iphone/MotorolaLicence.h" 
+#endif
+
+
 #ifdef OS_WINCE
 #include <winsock.h>
 #endif 
@@ -61,6 +70,11 @@ void rho_appmanager_load( void* httpContext, const char* szQuery);
 void rho_db_init_attr_manager();
 void rho_sys_app_exit();
 void rho_sys_report_app_started();
+
+#ifdef OS_ANDROID
+void rho_file_set_fs_mode(int mode);
+#endif
+
 }
     
 namespace rho {
@@ -152,6 +166,9 @@ void CAppCallbacksQueue::call(CAppCallbacksQueue::callback_t type)
 
 void CAppCallbacksQueue::callCallback(const String& strCallback)
 {
+    if ( !rho_ruby_is_started() )
+        return;
+
     String strUrl = RHODESAPP().getBaseUrl();
     strUrl += strCallback;
     NetResponse resp = getNetRequest().pullData( strUrl, null );
@@ -250,7 +267,7 @@ void CAppCallbacksQueue::processCommand(IQueueCommand* pCmd)
         switch (type)
         {
         case app_deactivated:
-#if !defined( OS_WINCE ) && !defined (OS_WINDOWS)
+#if !defined( WINDOWS_PLATFORM )
             m_expected = local_server_restart;
 #else
             m_expected = app_activated;
@@ -324,7 +341,7 @@ CRhodesApp::CRhodesApp(const String& strRootPath, const String& strUserPath, con
 
     m_appCallbacksQueue = new CAppCallbacksQueue();
 
-#if defined(OS_WINCE) || defined (OS_WINDOWS)
+#if defined(WINDOWS_PLATFORM)
     //initializing winsock
     WSADATA WsaData;
     int result = WSAStartup(MAKEWORD(2,2),&WsaData);
@@ -419,13 +436,18 @@ void CRhodesApp::stopApp()
 {
    	m_appCallbacksQueue->stop(1000);
 
-    if (!m_bExit)
+    if (!m_bExit && rho_ruby_is_started())
     {
         m_bExit = true;
         m_httpServer->stop();
         stopWait();
         stop(2000);
     }
+
+    #ifdef OS_ANDROID
+        // Switch Android libc hooks to FS only mode
+        rho_file_set_fs_mode(0);
+    #endif
 
 //    net::CAsyncHttp::Destroy();
 }
@@ -472,6 +494,9 @@ public:
 
     void run(common::CRhoThread &)
     {
+        if ( !rho_ruby_is_started() )
+            return;
+
         getNetRequest().pushData( m_strCallback, m_strBody, null );
     }
 };
@@ -535,7 +560,7 @@ void CRhodesApp::callUiCreatedCallback()
 
 void CRhodesApp::callUiDestroyedCallback()
 {
-    if ( m_bExit )
+    if ( m_bExit || !rho_ruby_is_started() )
         return;
 
     String strUrl = m_strHomeUrl + "/system/uidestroyed";
@@ -554,7 +579,7 @@ void CRhodesApp::callAppActiveCallback(boolean bActive)
         // Restart server each time when we go to foreground
 /*        if (m_activateCounter++ > 0)
         {
-#if !defined( OS_WINCE ) && !defined (OS_WINDOWS)
+#if !defined( WINDOWS_PLATFORM )
             m_httpServer->stop();
 #endif
             this->stopWait();
@@ -575,22 +600,25 @@ void CRhodesApp::callAppActiveCallback(boolean bActive)
         m_bDeactivationMode = true;
         m_appCallbacksQueue->addQueueCommand(new CAppCallbacksQueue::Command(CAppCallbacksQueue::app_deactivated));
 
-        String strUrl = m_strHomeUrl + "/system/deactivateapp";
-        NetResponse resp = getNetRequest().pullData( strUrl, null );
-        if ( !resp.isOK() )
+        if ( rho_ruby_is_started() )
         {
-            LOG(ERROR) + "deactivate app failed. Code: " + resp.getRespCode() + "; Error body: " + resp.getCharData();
-        }else
-        {
-            const char* szData = resp.getCharData();
-            boolean bStop = szData && strcmp(szData,"stop_local_server") == 0;
-
-            if (bStop)
+            String strUrl = m_strHomeUrl + "/system/deactivateapp";
+            NetResponse resp = getNetRequest().pullData( strUrl, null );
+            if ( !resp.isOK() )
             {
-#if !defined( OS_WINCE ) && !defined (OS_WINDOWS)
-                LOG(INFO) + "Stopping local server.";
-                m_httpServer->stop();
-#endif
+                LOG(ERROR) + "deactivate app failed. Code: " + resp.getRespCode() + "; Error body: " + resp.getCharData();
+            }else
+            {
+                const char* szData = resp.getCharData();
+                boolean bStop = szData && strcmp(szData,"stop_local_server") == 0;
+
+                if (bStop)
+                {
+    #if !defined( WINDOWS_PLATFORM )
+                    LOG(INFO) + "Stopping local server.";
+                    m_httpServer->stop();
+    #endif
+                }
             }
         }
 
@@ -621,6 +649,8 @@ void CRhodesApp::callBarcodeCallback(String strCallbackUrl, const String& strBar
 void CRhodesApp::callCallbackWithData(String strCallbackUrl, String strBody, const String& strCallbackData, bool bWaitForResponse) 
 {
     strCallbackUrl = canonicalizeRhoUrl(strCallbackUrl);
+
+    LOG(TRACE) + "Call back URL: " + strCallbackUrl;
 
     strBody += "&rho_callback=1";
 
@@ -748,6 +778,26 @@ static void callback_syncdb(void *arg, String const &/*query*/ )
     rho_http_sendresponse(arg, "");
 }
 
+static void callback_dosync(void *arg, String const &/*query*/ )
+{
+    rho_sync_doSyncAllSources(1,"");
+    rho_http_sendresponse(arg, "ok");
+}
+
+static void callback_dosync_source(void *arg, String const &strQuery )
+{
+    size_t nPos = strQuery.find("srcName=");
+    if ( nPos != String::npos )
+    {
+        String strSrcName = strQuery.substr(nPos+8);
+        LOG(INFO) + "srcName = '" + strSrcName + "'";
+        rho_sync_doSyncSourceByName(strSrcName.c_str());
+    } else {
+    	LOG(WARNING) + "Unable to find 'srcName' parameter";
+    }
+    rho_http_sendresponse(arg, "ok");
+}
+
 static void callback_logger(void *arg, String const &query )
 {
     int nLevel = 0;
@@ -841,17 +891,272 @@ const String& CRhodesApp::getRhoMessage(int nError, const char* szName)
         strUrl += szName;
     }
 
-    NetResponse resp = getNetRequest().pullData( strUrl, null );
-    if ( !resp.isOK() )
+    if ( rho_ruby_is_started() )
     {
-        LOG(ERROR) + "getRhoMessage failed. Code: " + resp.getRespCode() + "; Error body: " + resp.getCharData();
+        NetResponse resp = getNetRequest().pullData( strUrl, null );
+        if ( !resp.isOK() )
+        {
+            LOG(ERROR) + "getRhoMessage failed. Code: " + resp.getRespCode() + "; Error body: " + resp.getCharData();
+            m_strRhoMessage = "";
+        }
+        else
+            m_strRhoMessage = resp.getCharData();
+    }else
         m_strRhoMessage = "";
-    }
-    else
-        m_strRhoMessage = resp.getCharData();
 
     return m_strRhoMessage;
 }
+
+static void callback_logged_in(void *arg, String const &strQuery)
+{
+    rho_http_sendresponse(arg, rho_sync_logged_in() ? "true" : "false");
+}
+
+static void callback_logout(void *arg, String const &strQuery)
+{
+	rho_sync_logout();
+    rho_http_sendresponse(arg, "ok");
+}
+
+static void callback_stop_sync(void *arg, String const &strQuery)
+{
+	rho_sync_stop();
+    rho_http_sendresponse(arg, "ok");
+}
+
+static void callback_set_pollinterval(void *arg, String const &strQuery)
+{
+    int nInterval = 0;
+
+    size_t nPos = strQuery.find("interval=");
+    if ( nPos != String::npos )
+    {
+        String strInterval = strQuery.substr(nPos+9);
+        nInterval = atoi(strInterval.c_str());
+    } else {
+    	LOG(WARNING) + "Unable to find 'interval' parameter";
+    }
+    nInterval = rho_sync_set_pollinterval(nInterval);
+	rho_http_sendresponse(arg, convertToStringA(nInterval).c_str());
+}
+
+static void callback_get_pollinterval(void *arg, String const &strQuery)
+{
+	rho_http_sendresponse(arg, convertToStringA(rho_sync_get_pollinterval()).c_str());
+}
+
+static void callback_set_syncserver(void *arg, String const &strQuery)
+{
+    String strSyncserver = "";
+
+    size_t nPos = strQuery.find("syncserver=");
+    if ( nPos != String::npos )
+    {
+        strSyncserver = rho::net::URI::urlDecode(strQuery.substr(nPos+11));
+    } else {
+    	LOG(WARNING) + "Unable to find 'syncserver' parameter";
+    }
+	rho_sync_set_syncserver(strSyncserver.c_str());
+	rho_http_sendresponse(arg, "ok");
+}
+
+static void callback_set_pagesize(void *arg, String const &strQuery)
+{
+    int nSize = 0;
+
+    size_t nPos = strQuery.find("pagesize=");
+    if ( nPos != String::npos )
+    {
+        String strSize = strQuery.substr(nPos+9);
+        nSize = atoi(strSize.c_str());
+    } else {
+    	LOG(WARNING) + "Unable to find 'pagesize' parameter";
+    }
+    int nOldSize = rho_sync_get_pagesize();
+    rho_sync_set_pagesize(nSize);
+	rho_http_sendresponse(arg, convertToStringA(nOldSize).c_str());
+}
+
+static void callback_get_pagesize(void *arg, String const &strQuery)
+{
+	rho_http_sendresponse(arg, convertToStringA(rho_sync_get_pagesize()).c_str());
+}
+
+static void callback_get_lastsync_objectcount(void *arg, String const &strQuery)
+{
+    int nSrcId = -1;
+    int nCount = -1;
+
+    size_t nPos = strQuery.find("srcName=");
+    if ( nPos != String::npos )
+    {
+        String strSrcId = strQuery.substr(nPos+8);
+        LOG(INFO) + "srcName = '" + strSrcId + "'";
+        nSrcId = atoi(strSrcId.c_str());
+        nCount = rho_sync_get_lastsync_objectcount(nSrcId);
+    } else {
+    	LOG(WARNING) + "Unable to find 'srcName' parameter";
+    }
+	rho_http_sendresponse(arg, convertToStringA(nCount).c_str());
+}
+
+static void callback_is_syncing(void *arg, String const &strQuery)
+{
+    rho_http_sendresponse(arg, rho_sync_issyncing() ? "true" : "false");
+}
+
+static void callback_enable_status_popup(void *arg, String const &strQuery)
+{
+    size_t nPos = strQuery.find("enable=");
+    if ( nPos != String::npos )
+    {
+        String strEnable = strQuery.substr(nPos+7);
+        rho_sync_enable_status_popup(strEnable == "true" ? 2 : 0);
+    } else {
+    	LOG(WARNING) + "Unable to find 'enable' parameter";
+    }
+	rho_http_sendresponse(arg, "ok");
+}
+
+static void callback_set_threaded_mode(void *arg, String const &strQuery)
+{
+    size_t nPos = strQuery.find("threaded=");
+    if ( nPos != String::npos )
+    {
+        String strThreaded = strQuery.substr(nPos+9);
+        rho_sync_set_threaded_mode(strThreaded == "true" ? 2 : 0);
+    } else {
+    	LOG(WARNING) + "Unable to find 'threaded' parameter";
+    }
+	rho_http_sendresponse(arg, "ok");
+}
+
+static void callback_register_push(void *arg, String const &strQuery)
+{
+	rho_sync_register_push();
+    rho_http_sendresponse(arg,  "ok");
+}
+
+static void callback_set_source_property(void *arg, String const &strQuery)
+{
+	//TODO: stub (DmitryP)
+    rho_http_sendresponse(arg,  "ok");
+}
+
+static void callback_set_ssl_verify_peer(void *arg, String const &strQuery)
+{
+    size_t nPos = strQuery.find("verify=");
+    if ( nPos != String::npos )
+    {
+        String strVerify = strQuery.substr(nPos+7);
+        rho_sync_set_ssl_verify_peer(strVerify == "true" ? 2 : 0);
+    } else {
+    	LOG(WARNING) + "Unable to find 'verify' parameter";
+    }
+	rho_http_sendresponse(arg, "ok");
+}
+
+static void callback_update_blob_attribs(void *arg, String const &strQuery)
+{
+	//TODO: stub (DmitryP)
+    rho_http_sendresponse(arg,  "ok");
+}
+
+static void callback_set_objectnotify_url(void *arg, String const &strQuery)
+{
+    size_t nPos = strQuery.find("url=");
+    if ( nPos != String::npos )
+    {
+        String strUrl = strQuery.substr(nPos+4);
+        rho_sync_setobjectnotify_url(strUrl.c_str());
+    } else {
+    	LOG(WARNING) + "Unable to find 'url' parameter";
+    }
+	rho_http_sendresponse(arg, "ok");
+}
+
+static void callback_add_objectnotify(void *arg, String const &strQuery)
+{
+	//TODO: stub (DmitryP)
+    rho_http_sendresponse(arg,  "ok");
+}
+
+static void callback_clean_objectnotify(void *arg, String const &strQuery)
+{
+	rho_sync_cleanobjectnotify();
+    rho_http_sendresponse(arg,  "ok");
+}
+
+static void callback_set_notification(void *arg, String const &strQuery)
+{
+	//TODO: stub (DmitryP)
+    rho_http_sendresponse(arg,  "ok");
+}
+
+static void callback_clear_notification(void *arg, String const &strQuery)
+{
+    int nSrcId = -1;
+
+    size_t nPos = strQuery.find("srcName=");
+    if ( nPos != String::npos )
+    {
+        String strSrcId = strQuery.substr(nPos+8);
+        LOG(INFO) + "srcName = '" + strSrcId + "'";
+        nSrcId = atoi(strSrcId.c_str());
+        rho_sync_clear_notification(nSrcId);
+    } else {
+    	LOG(WARNING) + "Unable to find 'srcName' parameter";
+    }
+    rho_http_sendresponse(arg, "ok");
+}
+
+static void callback_login(void *arg, String const &strQuery)
+{
+    int nLevel = 0;
+    String strLogin, strPassword, strCallback;
+
+    CTokenizer oTokenizer(strQuery, "&");
+    while (oTokenizer.hasMoreTokens())
+    {
+	    String tok = oTokenizer.nextToken();
+	    if (tok.length() == 0)
+		    continue;
+
+        if ( String_startsWith(tok, "login=") )
+        {
+            strLogin = tok.substr(6);
+        }else if ( String_startsWith( tok, "password=") )
+        {
+            strPassword = tok.substr(9);
+        }else if ( String_startsWith( tok, "callback=") )
+        {
+            strCallback = rho::net::URI::urlDecode(tok.substr(9));
+        }
+    }
+
+    rho_sync_login(strLogin.c_str(), strPassword.c_str(), strCallback.c_str());
+    rho_http_sendresponse(arg,  "ok");
+}
+
+static void callback_dosearch(void *arg, String const &strQuery)
+{
+	//TODO: stub (DmitryP)
+    rho_http_sendresponse(arg,  "ok");
+}
+
+static void callback_get_src_attrs(void *arg, String const &strQuery)
+{
+	//TODO: stub (DmitryP)
+    rho_http_sendresponse(arg,  "ok");
+}
+
+static void callback_is_blob_attr(void *arg, String const &strQuery)
+{
+	//TODO: stub (DmitryP)
+    rho_http_sendresponse(arg,  "ok");
+}
+
+
 
 void CRhodesApp::initHttpServer()
 {
@@ -878,6 +1183,35 @@ void CRhodesApp::initHttpServer()
     m_httpServer->register_uri("/system/resetDBOnSyncUserChanged", callback_resetDBOnSyncUserChanged);
     m_httpServer->register_uri("/system/loadallsyncsources", callback_loadallsyncsources);
     m_httpServer->register_uri("/system/logger", callback_logger);
+
+    m_httpServer->register_uri("/system/syncengine/logged_in", callback_logged_in);
+    m_httpServer->register_uri("/system/syncengine/logout", callback_logout);
+    m_httpServer->register_uri("/system/syncengine/dosync", callback_dosync);
+    m_httpServer->register_uri("/system/syncengine/stop_sync", callback_stop_sync);
+    m_httpServer->register_uri("/system/syncengine/set_pollinterval", callback_set_pollinterval);
+    m_httpServer->register_uri("/system/syncengine/get_pollinterval", callback_get_pollinterval);
+    m_httpServer->register_uri("/system/syncengine/set_syncserver", callback_set_syncserver);
+    m_httpServer->register_uri("/system/syncengine/set_pagesize", callback_set_pagesize);
+    m_httpServer->register_uri("/system/syncengine/get_pagesize", callback_get_pagesize);
+    m_httpServer->register_uri("/system/syncengine/get_lastsync_objectcount", callback_get_lastsync_objectcount);
+    m_httpServer->register_uri("/system/syncengine/is_syncing", callback_is_syncing);
+    m_httpServer->register_uri("/system/syncengine/dosync_source", callback_dosync_source);
+    m_httpServer->register_uri("/system/syncengine/enable_status_popup", callback_enable_status_popup);
+    m_httpServer->register_uri("/system/syncengine/set_threaded_mode", callback_set_threaded_mode);
+    m_httpServer->register_uri("/system/syncengine/register_push", callback_register_push);
+
+    m_httpServer->register_uri("/system/syncengine/set_source_property", callback_set_source_property);
+    m_httpServer->register_uri("/system/syncengine/set_ssl_verify_peer", callback_set_ssl_verify_peer);
+    m_httpServer->register_uri("/system/syncengine/update_blob_attribs", callback_update_blob_attribs);
+    m_httpServer->register_uri("/system/syncengine/set_objectnotify_url", callback_set_objectnotify_url);
+    m_httpServer->register_uri("/system/syncengine/add_objectnotify", callback_add_objectnotify);
+    m_httpServer->register_uri("/system/syncengine/clean_objectnotify", callback_clean_objectnotify);
+    m_httpServer->register_uri("/system/syncengine/set_notification", callback_set_notification);
+    m_httpServer->register_uri("/system/syncengine/clear_notification", callback_clear_notification);
+    m_httpServer->register_uri("/system/syncengine/login", callback_login);
+    m_httpServer->register_uri("/system/syncengine/dosearch", callback_dosearch);
+    m_httpServer->register_uri("/system/syncengine/get_src_attrs", callback_get_src_attrs);
+    m_httpServer->register_uri("/system/syncengine/is_blob_attr", callback_is_blob_attr);
 }
 
 const char* CRhodesApp::getFreeListeningPort()
@@ -1330,6 +1664,9 @@ void CRhodesApp::setScreenRotationNotification(String strUrl, String strParams)
 
 void CRhodesApp::callScreenRotationCallback(int width, int height, int degrees)
 {
+    if ( !rho_ruby_is_started() )
+        return;
+
 	synchronized(m_mxScreenRotationCallback) 
 	{
 		if (m_strScreenRotationCallback.length() == 0)
@@ -1390,7 +1727,8 @@ void CRhodesApp::loadUrl(String url)
     url = canonicalizeRhoUrl(url);
     if (callback)
     {
-        getNetRequest().pushData( url,  "rho_callback=1", null );
+        if ( rho_ruby_is_started() )
+            getNetRequest().pushData( url,  "rho_callback=1", null );
     }
     else
         navigateToUrl(url);
@@ -1756,5 +2094,66 @@ int rho_rhodesapp_canstartapp(const char* szCmdLine, const char* szSeparators)
 
     return result; 
 }
+    
+int rho_is_motorola_licence_checked() {
+	const char* szMotorolaLicence = get_app_build_config_item("motorola_licence");
+	const char* szMotorolaLicenceCompany = get_app_build_config_item("motorola_licence_company");
+    
+    if ((szMotorolaLicence == NULL) || (szMotorolaLicenceCompany == NULL)) {
+        return 0;
+    }
+
+    int res_check = 1;
+#ifdef OS_ANDROID
+    res_check = MotorolaLicence_check(szMotorolaLicenceCompany, szMotorolaLicence);
+#endif
+    
+#ifdef OS_MACOSX
+    res_check = MotorolaLicence_check(szMotorolaLicenceCompany, szMotorolaLicence);
+#endif
+    
+    return res_check;
+}
+    
+int rho_is_rho_elements_extension_can_be_used() {
+    int res_check = 1;
+
+#ifdef OS_ANDROID
+#ifdef APP_BUILD_CAPABILITY_MOTOROLA
+    // ET1
+    res_check = 1;
+#else
+    res_check = rho_is_motorola_licence_checked();
+#endif    
+#endif    
+#ifdef OS_MACOSX
+    res_check = rho_is_motorola_licence_checked();
+#endif    
+    return res_check;
+}
+    
+int rho_can_app_started_with_current_licence() {
+	const char* szMotorolaLicence = get_app_build_config_item("motorola_licence");
+	const char* szMotorolaLicenceCompany = get_app_build_config_item("motorola_licence_company");
+    
+    if ((szMotorolaLicence == NULL) || (szMotorolaLicenceCompany == NULL)) {
+        return 1;
+    }
+        
+    int res_check = 1;
+#ifdef OS_ANDROID
+#ifdef APP_BUILD_CAPABILITY_MOTOROLA
+    // ET1
+    res_check = 1;
+#else
+    res_check = rho_is_motorola_licence_checked();
+#endif    
+#endif    
+#ifdef OS_MACOSX
+    res_check = rho_is_motorola_licence_checked();
+#endif        
+    return res_check;
+}
+    
 
 } //extern "C"

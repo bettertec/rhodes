@@ -26,6 +26,7 @@
 
 package com.rhomobile.rhodes;
 
+import com.rhomobile.rhodes.mainview.MainView;
 import com.rhomobile.rhodes.util.PerformOnUiThread;
 
 import android.net.Uri;
@@ -45,10 +46,14 @@ public class WebView {
 			url = u;
 			index = i;
 		}
-		
-		public void run() {
-			RhodesService r = RhodesService.getInstance();
-			r.getMainView().navigate(url, index);
+
+        public void run() {
+            try {
+                MainView mainView = RhodesActivity.safeGetInstance().getMainView();
+                mainView.navigate(url, index);
+            } catch (Throwable ex) {
+                Logger.E(TAG, ex);
+            }
 		}
 	};
 	
@@ -126,6 +131,38 @@ public class WebView {
         }
     };
     
+    
+    ///*** SetZoomTask ***
+    ///
+    private static class SetZoomTask implements Runnable {
+        private int zoom;
+        private int index;
+        SetZoomTask(int z, int i) {zoom = z; index = i;}
+        @Override
+        public void run() {
+            try {
+                RhodesActivity.safeGetInstance().getMainView().getWebView(index).setZoom(zoom);
+            } catch (Throwable e) {
+                Logger.E(TAG, e);
+            }
+        }
+    };
+    
+    ///*** SetTextZoomTask ***
+    ///
+    private static class SetTextZoomTask implements Runnable {
+        private int zoom;
+        private int index;
+        SetTextZoomTask(int z, int i) {zoom = z; index = i;}
+        @Override
+        public void run() {
+            try {
+                RhodesActivity.safeGetInstance().getMainView().getWebView(index).setTextZoom(zoom);
+            } catch (Throwable e) {
+                Logger.E(TAG, e);
+            }
+        }
+    };
 	
 	public static void navigate(String url, int index) {
 		try {
@@ -162,19 +199,19 @@ public class WebView {
             Logger.E(TAG, e);
 		}
 	}
-	
-	public static int activeTab() {
-		try {
-			RhodesService r = RhodesService.getInstance();
-			return r.getMainView().activeTab();
-		}
-		catch (Exception e) {
+
+    public static int activeTab() {
+        try {
+            MainView mainView = RhodesActivity.safeGetInstance().getMainView();
+            return mainView != null ? mainView.activeTab() : 0;
+        }
+        catch (Exception e) {
             Logger.E(TAG, e);
-		}
-		
-		return 0;
-	}
-	
+        }
+
+        return 0;
+    }
+
 	public static void executeJs(String js, int index) {
 		try {
 			PerformOnUiThread.exec(new NavigateTask("javascript:" + js, index));
@@ -196,6 +233,24 @@ public class WebView {
     public static void stopNavigate() {
         try {
             PerformOnUiThread.exec(new StopNavigateTask(activeTab()));
+        }
+        catch (Exception e) {
+            Logger.E(TAG, e);
+        }
+    }
+    
+    public static void setZoom(int zoom) {
+        try {
+            PerformOnUiThread.exec(new SetZoomTask(zoom, activeTab()));
+        }
+        catch (Exception e) {
+            Logger.E(TAG, e);
+        }
+    }
+
+    public static void setTextZoom(int zoom) {
+        try {
+            PerformOnUiThread.exec(new SetTextZoomTask(zoom, activeTab()));
         }
         catch (Exception e) {
             Logger.E(TAG, e);

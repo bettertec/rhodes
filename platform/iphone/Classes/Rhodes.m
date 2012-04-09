@@ -427,10 +427,11 @@ static Rhodes *instance = NULL;
 }
 
 
-- (void)choosePicture:(NSString*) url {
+- (void)choosePicture:(RhoCameraSettings*) settings {
     if (!rho_rhodesapp_check_mode())
         return;
-    [pickImageDelegate setPostUrl:url];
+    [pickImageDelegate setPostUrl:settings.callback_url];
+    pickImageDelegate.settings = settings;
     [self startCameraPicker:pickImageDelegate 
                  sourceType:UIImagePickerControllerSourceTypePhotoLibrary];
 }
@@ -933,6 +934,15 @@ static Rhodes *instance = NULL;
         }
         */
         //exit(EXIT_SUCCESS);
+    }
+    if (!rho_can_app_started_with_current_licence()) {
+		NSLog(@"############################");
+		NSLog(@" ");
+		NSLog(@"ERROR: motorola_licence is INVALID !");
+		NSLog(@" ");
+		NSLog(@"############################");
+        //exit(EXIT_SUCCESS);
+        [self exit_with_errormessage:@"Motorola Licence" message:@"Your licence key is invalid !"];
     }
 	
 	return NO;

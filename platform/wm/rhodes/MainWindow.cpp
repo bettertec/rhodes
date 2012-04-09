@@ -35,7 +35,7 @@
 #include <string>
 #include <hash_map>
 
-#if defined(OS_WINDOWS)
+#if defined(OS_WINDOWS_DESKTOP)
 #pragma warning(disable : 4995)
 #include <strsafe.h>
 #endif
@@ -57,6 +57,7 @@
 #endif
 
 IMPLEMENT_LOGCLASS(CMainWindow,"MainWindow");
+UINT WM_LICENSE_SCREEN          = ::RegisterWindowMessage(L"RHODES_WM_LICENSE_SCREEN");
 
 #include "DateTimePicker.h"
 
@@ -83,6 +84,11 @@ CMainWindow::CMainWindow()
     mNativeView = NULL;
     mNativeViewFactory = NULL;
     mNativeViewType = "";
+    g_hWndCommandBar = 0;
+    m_pBrowserEng = NULL;
+#if defined( OS_PLATFORM_MOTCE )
+    m_bFullScreen = false;
+#endif
 
     mIsOpenedByURL = false;
 
@@ -94,6 +100,8 @@ CMainWindow::CMainWindow()
 #endif
     m_pageCounter = 0;
     m_menuBarHeight = 0;
+
+    m_alertDialog = 0;
 }
 
 CMainWindow::~CMainWindow()
@@ -108,7 +116,7 @@ CMainWindow::~CMainWindow()
 void CMainWindow::Navigate2(BSTR URL) 
 {
 	String cleared_url = processForNativeView(convertToStringA(OLE2CT(URL)));
-	if (!cleared_url.empty()) 
+	if ( m_pBrowserEng && !cleared_url.empty()) 
     {
 		StringW cw = convertToStringW(cleared_url);
 		//BSTR cleared_url_bstr = SysAllocString(cw.c_str());
@@ -120,7 +128,7 @@ void CMainWindow::Navigate2(BSTR URL)
 void CMainWindow::Navigate(BSTR URL) 
 {
 	String cleared_url = processForNativeView(convertToStringA(OLE2CT(URL)));
-	if (!cleared_url.empty()) 
+	if (m_pBrowserEng && !cleared_url.empty()) 
     {
 		StringW cw = convertToStringW(cleared_url);
 		//BSTR cleared_url_bstr = SysAllocString(cw.c_str());
@@ -137,35 +145,44 @@ void CMainWindow::Navigate(BSTR URL)
 
 LRESULT CMainWindow::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
 {
-    return S_OK;
+    return InitMainWindow();
 }
 
 #if defined( OS_PLATFORM_MOTCE )
 void CMainWindow::SetFullScreen(bool bFull)
 {
+    LOG(INFO) + "SetFullScreen";
 	HWND hTaskBar = FindWindow(_T("HHTaskBar"), NULL);
 	if(!hTaskBar) 
+    {
+        LOG(INFO) + "SetFullScreen END 1";
 		return;
+    }
+
 	::ShowWindow(hTaskBar, !bFull ? SW_SHOW : SW_HIDE);
+
 
 	if(g_hWndCommandBar)
 		::ShowWindow(g_hWndCommandBar, !bFull ? SW_SHOW : SW_HIDE);
 
+    //return;
 	RECT rect = { 0 };
 	SystemParametersInfo(SPI_GETWORKAREA, NULL, &rect, FALSE);
 	
 	if(bFull)
 		rect.bottom =  GetSystemMetrics(SM_CYSCREEN);
-	
-	MoveWindow(&rect);
 
 	m_bFullScreen = bFull;
+
+	MoveWindow(&rect);
 }
 #endif
 
 LRESULT CMainWindow::InitMainWindow()
 {
     HRESULT hr = S_OK;
+
+    m_pBrowserEng = 0;
 #if defined(_WIN32_WCE)
     SHMENUBARINFO mbi = { sizeof(mbi), 0 };
     SIPINFO si = { sizeof(si), 0 };
@@ -185,7 +202,7 @@ LRESULT CMainWindow::InitMainWindow()
     // and also create the control itself. (AtlAxWin is a window class that
     // ATL uses to support containment of controls in windows.)
 #if defined(_WIN32_WCE)    
-    m_pBrowserEng = rho_wmimpl_createBrowserEngine(m_hWnd);
+    //m_pBrowserEng = rho_wmimpl_createBrowserEngine(m_hWnd);
 #else
 	LOGCONF().setLogView(&m_logView);
 
@@ -205,7 +222,7 @@ LRESULT CMainWindow::InitMainWindow()
         height = rcMainWindow.bottom;
 	rcMainWindow.bottom = rcMainWindow.top+height;
 
-    m_pBrowserEng = rho_wmimpl_createBrowserEngine(m_hWnd);
+    //m_pBrowserEng = rho_wmimpl_createBrowserEngine(m_hWnd);
 
 	m_menuBar.Create(m_hWnd,CWindow::rcDefault);
 
@@ -218,7 +235,7 @@ LRESULT CMainWindow::InitMainWindow()
 
 #ifndef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
     // set up connection point
-    hr = AtlAdviseSinkMap(this, true);
+    //hr = AtlAdviseSinkMap(this, true);
 #endif
 
 #if defined(_WIN32_WCE) && !defined( OS_PLATFORM_MOTCE )
@@ -295,10 +312,28 @@ LRESULT CMainWindow::InitMainWindow()
     return SUCCEEDED(hr) ? 0 : -1;
 }
 
+void CMainWindow::initBrowserWindow()
+{
+    m_pBrowserEng = rho_wmimpl_createBrowserEngine(m_hWnd);
+
+    CRect rect;
+    GetWindowRect(&rect);
+    resizeWindow(rect.Width(), rect.Height());
+    //m_pBrowserEng->ResizeOnTab(0, rect);
+
+    HRESULT hr = S_OK;
+#ifndef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
+    // set up connection point
+    hr = AtlAdviseSinkMap(this, true);
+#endif
+
+}
+
 void CMainWindow::performOnUiThread(rho::common::IRhoRunnable* pTask)
 {
 	PostMessage(WM_EXECUTE_RUNNABLE, 0, (LPARAM)pTask);
 }
+
 LRESULT CMainWindow::OnExecuteRunnable(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/) 
 {
     rho::common::IRhoRunnable* pTask = (rho::common::IRhoRunnable*)lParam;
@@ -308,11 +343,13 @@ LRESULT CMainWindow::OnExecuteRunnable(UINT /*uMsg*/, WPARAM wParam, LPARAM lPar
         delete pTask;
     }
 	return 0;
-}	
+}
+
 LRESULT CMainWindow::OnSetText(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
 {
     return TRUE;
 }
+
 LRESULT CMainWindow::OnNotify(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& bHandled)
 {
     LPNMHDR pnmh = (LPNMHDR) lParam;
@@ -332,19 +369,28 @@ LRESULT CMainWindow::OnNotify(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, B
 
 HWND CMainWindow::getWebViewHWND() 
 {
+    if (!m_pBrowserEng)
+        return 0;
+
     return m_pBrowserEng->GetHTMLWND();
 }
 
 void CMainWindow::hideWebView() 
 {
-    ::ShowWindow( m_pBrowserEng->GetHTMLWND(), SW_HIDE );
-	mIsBrowserViewHided = true;
+    if ( m_pBrowserEng )
+    {
+        ::ShowWindow( m_pBrowserEng->GetHTMLWND(), SW_HIDE );
+	    mIsBrowserViewHided = true;
+    }
 }
 
 void CMainWindow::showWebView() 
 {
-    ::ShowWindow( m_pBrowserEng->GetHTMLWND(), SW_SHOW );
-	mIsBrowserViewHided = false;
+    if ( m_pBrowserEng )
+    {
+        ::ShowWindow( m_pBrowserEng->GetHTMLWND(), SW_SHOW );
+	    mIsBrowserViewHided = false;
+    }
 }
 
 LRESULT CMainWindow::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
@@ -357,7 +403,7 @@ LRESULT CMainWindow::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam
    	//SetFullScreen(false);
 #endif
 
-#if defined(OS_WINDOWS)
+#if defined(OS_WINDOWS_DESKTOP)
 	if(m_logView.IsWindow()) {
 		m_logView.DestroyWindow();
 	}
@@ -369,7 +415,9 @@ LRESULT CMainWindow::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam
     RHO_ASSERT(SUCCEEDED(AtlAdviseSinkMap(this, false)));
 #endif
 
-    delete m_pBrowserEng;
+    if ( m_pBrowserEng )
+        delete m_pBrowserEng;
+
     m_pBrowserEng = NULL;
 
     PostQuitMessage(0);
@@ -380,26 +428,30 @@ LRESULT CMainWindow::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam
 
 LRESULT CMainWindow::OnSize(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
 {
-    if ( (!m_pBrowserEng) || (!m_pBrowserEng->GetHTMLWND()) )
-        return 0;
+    resizeWindow(LOWORD(lParam), HIWORD(lParam));
+    return 0;
+}
 
-#if defined(OS_WINDOWS)
+void CMainWindow::resizeWindow( int xSize, int ySize)
+{
+    LOG(INFO)  + "resizeWindow: xSize=" + xSize + ";ySize=" + ySize;
+
+#if defined(OS_WINDOWS_DESKTOP)
 	USES_CONVERSION;
-    LOG(TRACE) + "Seting browser client area size to: " + (int)LOWORD(lParam) + " x " + (int)(HIWORD(lParam)-m_menuBarHeight-m_toolbar.getHeight());
-    //m_browser.MoveWindow(0, 0, LOWORD(lParam), HIWORD(lParam)-m_menuBarHeight-m_toolbar.getHeight());
-    RECT rect = {0, 0, LOWORD(lParam), HIWORD(lParam)-m_menuBarHeight-m_toolbar.getHeight()};
-    m_pBrowserEng->ResizeOnTab(0, rect);
+    LOG(TRACE) + "Seting browser client area size to: " + xSize + " x " + (ySize-m_menuBarHeight-m_toolbar.getHeight());
+    //m_browser.MoveWindow(0, 0, xSize, ySize-m_menuBarHeight-m_toolbar.getHeight());
+    RECT rect = {0, 0, xSize, ySize-m_menuBarHeight-m_toolbar.getHeight()};
+
+    if ( m_pBrowserEng && m_pBrowserEng->GetHTMLWND() )
+        m_pBrowserEng->ResizeOnTab(0, rect);
 
     if (m_menuBar.m_hWnd) {
-		m_menuBar.MoveWindow(0, HIWORD(lParam)-m_menuBarHeight, LOWORD(lParam), m_menuBarHeight);
+		m_menuBar.MoveWindow(0, ySize-m_menuBarHeight, xSize, m_menuBarHeight);
     }
     if ( m_toolbar.m_hWnd )
-        m_toolbar.MoveWindow(0, HIWORD(lParam)-m_menuBarHeight-m_toolbar.getHeight(), LOWORD(lParam), m_toolbar.getHeight());
+        m_toolbar.MoveWindow(0, ySize-m_menuBarHeight-m_toolbar.getHeight(), xSize, m_toolbar.getHeight());
 #else
-    LOG(INFO)  + "OnSize: x=" + (int)(LOWORD(lParam)) + ";y=" + (int)(HIWORD(lParam));
-
-    //m_browser.MoveWindow(0, 0, LOWORD(lParam), HIWORD(lParam)- m_toolbar.getHeight());
-    RECT rect = {0, 0, LOWORD(lParam), HIWORD(lParam) };//- m_toolbar.getHeight()};
+    RECT rect = {0, 0, xSize, ySize };//- m_toolbar.getHeight()};
 
     if ( m_toolbar.m_hWnd )
         rect.bottom -= m_toolbar.getHeight();
@@ -412,16 +464,19 @@ LRESULT CMainWindow::OnSize(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOO
         m_menuBarHeight = rcCmdBar.Height();
 
         rect.top += m_menuBarHeight;
+
+        rcCmdBar.right = rcCmdBar.left + ySize;
+        ::MoveWindow( g_hWndCommandBar, rcCmdBar.left, rcCmdBar.top, rcCmdBar.Width(), rcCmdBar.Height(), TRUE );
     }
 #endif
 
-    m_pBrowserEng->ResizeOnTab(0, rect);
+    if ( m_pBrowserEng && m_pBrowserEng->GetHTMLWND() )
+        m_pBrowserEng->ResizeOnTab(0, rect);
 
     if ( m_toolbar.m_hWnd )
-        m_toolbar.MoveWindow(0, HIWORD(lParam)-m_toolbar.getHeight(), LOWORD(lParam), m_toolbar.getHeight());
+        m_toolbar.MoveWindow(0, ySize-m_toolbar.getHeight(), xSize, m_toolbar.getHeight());
 #endif
 
-    return 0;
 }
 
 LRESULT CMainWindow::OnPaint(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled)
@@ -431,6 +486,14 @@ LRESULT CMainWindow::OnPaint(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
     rho_wmimpl_draw_splash_screen(m_hWnd);
 
     return 0;
+}
+
+LRESULT CMainWindow::OnWebKitMessages(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+{
+    if ( !m_pBrowserEng )
+        return 0;
+
+    return m_pBrowserEng->OnWebKitMessages(uMsg, wParam, lParam, bHandled);
 }
 
 #ifdef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
@@ -450,11 +513,6 @@ LRESULT CMainWindow::OnTitleChange (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lPa
 {
     ProcessTitleChange( (LPCTSTR)lParam );
     return 0;
-}
-
-LRESULT CMainWindow::OnWebKitMessages(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
-{
-    return m_pBrowserEng->OnWebKitMessages(uMsg, wParam, lParam, bHandled);
 }
 
 LRESULT CMainWindow::OnBeforeNavigate(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
@@ -483,6 +541,16 @@ LRESULT CMainWindow::OnAlertPopup (UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, 
     return RHODESAPP().getExtManager().OnAlertPopup(wParam, (void*)lParam);
 }
 
+LRESULT CMainWindow::OnAuthenticationRequest (UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+{
+    return RHODESAPP().getExtManager().OnAuthenticationRequest(wParam, (void*)lParam);
+}
+
+//LRESULT CMainWindow::OnGeolocationData (UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+//{
+//    return RHODESAPP().getExtManager().OnGeolocationData(wParam, (void*)lParam);
+//}
+
 #endif //APP_BUILD_CAPABILITY_WEBKIT_BROWSER
 
 LRESULT CMainWindow::OnActivate(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
@@ -491,9 +559,15 @@ LRESULT CMainWindow::OnActivate(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOO
         return 0;
 
     int fActive = LOWORD(wParam);
+
+    LOG(INFO) + "ACTIVATE: " + fActive;
+
+#if defined(_WIN32_WCE) 
+	if (RHOCONF().getBool("full_screen"))
+		SetFullScreen(fActive!=0);
+#endif
 	rho_rhodesapp_callAppActiveCallback(fActive);
     RHODESAPP().getExtManager().OnAppActivate(fActive!=0);
-
 #if defined(_WIN32_WCE)  && !defined (OS_PLATFORM_MOTCE)
     // Notify shell of our WM_ACTIVATE message
     SHHandleWMActivate(m_hWnd, wParam, lParam, &m_sai, 0);
@@ -514,7 +588,6 @@ LRESULT CMainWindow::OnActivate(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOO
 
     if (!fActive)
         rho_geoimpl_turngpsoff();
-
     return 0;
 }
 
@@ -522,7 +595,7 @@ LRESULT CMainWindow::OnSetCookieCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND
 {
     TCookieData* cd = (TCookieData*)hWndCtl;
     if (cd) {
-        if (cd->url && cd->cookie) {
+        if (m_pBrowserEng && cd->url && cd->cookie) {
             m_pBrowserEng->SetCookie(cd->url, cd->cookie);
             if (cd->url) free(cd->url);
             if (cd->cookie) free(cd->cookie);
@@ -649,16 +722,28 @@ void CMainWindow::restoreWebView() {
 }
 
 
-LRESULT CMainWindow::OnSettingChange(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+LRESULT CMainWindow::OnSettingChange(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& bHandled )
 {
+    LOG(INFO) + "OnSettingChange: " + wParam;
 #if defined(_WIN32_WCE)
+	//if (RHOCONF().getBool("full_screen"))
+	//	SetFullScreen(true);
 	
 	//handle sreen rotation
 	int width  = GetSystemMetrics(SM_CXSCREEN);	
 	int height = GetSystemMetrics(SM_CYSCREEN);
 	
 	if (wParam == SETTINGCHANGE_RESET) {
+
 		rho_rhodesapp_callScreenRotationCallback(width, height, 90);
+
+//        if (m_pBrowserEng)
+//            m_pBrowserEng->OnWebKitMessages(PB_SCREEN_ORIENTATION_CHANGED, wParam, lParam, bHandled);
+
+//#ifndef APP_BUILD_CAPABILITY_MOTOROLA
+        SetWindowPos(NULL, 0,0, width, height, SWP_FRAMECHANGED|SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
+//#endif
+
 	}
 	
 #if !defined (OS_PLATFORM_MOTCE)
@@ -685,14 +770,19 @@ LRESULT CMainWindow::OnExitCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hW
 LRESULT CMainWindow::OnNavigateBackCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
 	restoreWebView();
-    m_pBrowserEng->BackOnTab(0, 1);
+
+    if ( m_pBrowserEng )
+        m_pBrowserEng->BackOnTab(0, 1);
+
     return 0;
 }
 
 LRESULT CMainWindow::OnNavigateForwardCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
 	restoreWebView();
-    m_pBrowserEng->ForwardOnTab(0);
+
+    if ( m_pBrowserEng )
+        m_pBrowserEng->ForwardOnTab(0);
 
     return 0;
 }
@@ -705,7 +795,7 @@ LRESULT CMainWindow::OnBackCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hW
 
 LRESULT CMainWindow::OnLogCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-#if defined(OS_WINDOWS)
+#if defined(OS_WINDOWS_DESKTOP)
 	if ( !m_logView.IsWindow() ) {
 		LoadLibrary(_T("riched20.dll"));
 		m_logView.Create(NULL);
@@ -721,6 +811,7 @@ LRESULT CMainWindow::OnLogCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWn
 
 LRESULT CMainWindow::OnFullscreenCommand (WORD /*wNotifyCode*/, WORD /*wID*/, HWND hwnd, BOOL& /*bHandled*/)
 {
+    LOG(INFO) + "OnFullscreenCommand";
 #if defined (_WIN32_WCE)
     SetFullScreen( hwnd != 0 ? true : false);
 #endif
@@ -729,7 +820,9 @@ LRESULT CMainWindow::OnFullscreenCommand (WORD /*wNotifyCode*/, WORD /*wID*/, HW
 
 LRESULT CMainWindow::OnRefreshCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/)
 {
-    m_pBrowserEng->ReloadOnTab(false, 0);
+    if ( m_pBrowserEng )
+        m_pBrowserEng->ReloadOnTab(false, 0);
+
     return 0;
 }
 
@@ -749,7 +842,9 @@ LRESULT CMainWindow::OnExecuteJSCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND
 	LPTSTR wcurl = (LPTSTR)hWndCtl;
 	if (wcurl) 
     {
-        m_pBrowserEng->executeJavascript(wcurl,0);
+        if ( m_pBrowserEng )
+            m_pBrowserEng->executeJavascript(wcurl,0);
+
 		free(wcurl);
 	}
     return 0;
@@ -757,25 +852,30 @@ LRESULT CMainWindow::OnExecuteJSCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND
 
 LRESULT CMainWindow::OnStopNavigate(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& /*bHandled*/)
 {
-    m_pBrowserEng->StopOnTab((UINT)hWndCtl);
+    if ( m_pBrowserEng )
+        m_pBrowserEng->StopOnTab((UINT)hWndCtl);
+
     return 0;
 }
 
 LRESULT CMainWindow::OnZoomPage(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& /*bHandled*/)
 {
     float fZoom = (float)(long)(hWndCtl);
-    m_pBrowserEng->ZoomPageOnTab(fZoom, rho_webview_active_tab());
+    if ( m_pBrowserEng )
+        m_pBrowserEng->ZoomPageOnTab(fZoom, rho_webview_active_tab());
+
     return 0;
 }
 
 LRESULT CMainWindow::OnZoomText(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& /*bHandled*/)
 {
     int nZoom = (int)hWndCtl;
-    m_pBrowserEng->ZoomTextOnTab(nZoom, rho_webview_active_tab());
+    if ( m_pBrowserEng )
+        m_pBrowserEng->ZoomTextOnTab(nZoom, rho_webview_active_tab());
     return 0;
 }
 
-#if defined(OS_WINDOWS) || defined( OS_PLATFORM_MOTCE )
+#if defined (OS_WINDOWS_DESKTOP) || defined( OS_PLATFORM_MOTCE )
 LRESULT CMainWindow::OnPopupMenuCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) 
 {
 	createCustomMenu();
@@ -783,7 +883,7 @@ LRESULT CMainWindow::OnPopupMenuCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND
 }
 #endif
 
-#if defined(OS_WINDOWS)
+#if defined(OS_WINDOWS_DESKTOP)
 LRESULT CMainWindow::OnPosChanged(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& bHandled) 
 {
 	LPWINDOWPOS lp = (LPWINDOWPOS)lParam;
@@ -940,7 +1040,7 @@ LRESULT CMainWindow::OnBluetoothDiscover (UINT /*uMsg*/, WPARAM /*wParam*/, LPAR
 #if defined( OS_WINCE) && !defined( OS_PLATFORM_MOTCE )
 	RhoDiscoverDlg* dlg = RhoBluetoothManager::getInstance()->getDiscoverDlg();
 	dlg->openDialog(RhoBluetoothManager::getInstance());
-#endif // OS_WINDOWS
+#endif //
 	return 0;
 }
 
@@ -948,7 +1048,7 @@ LRESULT CMainWindow::OnBluetoothDiscovered (UINT /*uMsg*/, WPARAM /*wParam*/, LP
 #if defined( OS_WINCE) && !defined( OS_PLATFORM_MOTCE )
 	RhoDiscoveredDlg* dlg = RhoBluetoothManager::getInstance()->getDiscoveredDlg();
 	dlg->openDialog(RhoBluetoothManager::getInstance());
-#endif // OS_WINDOWS
+#endif // 
 	return 0;
 }
 
@@ -957,6 +1057,24 @@ LRESULT CMainWindow::OnExecuteCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM lPara
 	if (command != NULL) {
 		command->run();
 	}
+	return 0;
+}	
+
+
+LRESULT CMainWindow::OnLicenseScreen(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+{
+    LOG(INFO) + "OnLicenseScreen";
+#if defined( OS_WINCE )    
+	if (!RHOCONF().getBool("full_screen")) {
+		//SetFullScreen(wParam != 0);
+		HWND hTaskBar = FindWindow(_T("HHTaskBar"), NULL);
+		if(hTaskBar) {
+			bool bEnableTaskBar = (wParam == 0);
+			::ShowWindow(hTaskBar, (bEnableTaskBar ? SW_SHOW : SW_HIDE));
+			::EnableWindow(hTaskBar, bEnableTaskBar);
+		}
+	}
+#endif
 	return 0;
 }	
 
@@ -1077,7 +1195,7 @@ void __stdcall CMainWindow::OnNavigateComplete2(IDispatch* pDisp, VARIANT * pvtU
 
 void CMainWindow::ProcessNavigateComplete(LPCTSTR url)
 {
-	if ( !m_bLoading && !mIsBrowserViewHided )
+	if ( !m_bLoading && !mIsBrowserViewHided && m_pBrowserEng )
         ::ShowWindow(m_pBrowserEng->GetHTMLWND(), SW_SHOW);
 
 
@@ -1104,12 +1222,13 @@ void CMainWindow::ShowLoadingPage()
 		strTextW = L"<html><head><title>Loading...</title></head><body><h1>Loading...</h1></body></html>";
     }
 
-    m_pBrowserEng->NavigateToHtml(strTextW.c_str());
+    if ( m_pBrowserEng )
+        m_pBrowserEng->NavigateToHtml(strTextW.c_str());
 }
 
 void __stdcall CMainWindow::OnDocumentComplete(IDispatch* pDisp, VARIANT * pvtURL)
 {
-    USES_CONVERSION;
+	USES_CONVERSION;
 	
 	ProcessDocumentComplete( OLE2CT(V_BSTR(pvtURL)) );
 }
@@ -1135,10 +1254,14 @@ void CMainWindow::ProcessDocumentComplete(LPCTSTR url)
 	if (m_pageCounter > 2) //"loading" page + first page
 		SetToolbarButtonEnabled(IDM_SK1_EXIT, TRUE);
 #endif	
-    
+
     //CMetaHandler oHandler(m_spIWebBrowser2);
 
+    if ( m_pBrowserEng )
+        m_pBrowserEng->OnDocumentComplete(url);
+
     RHODESAPP().getExtManager().onDocumentComplete(url);
+
 }
 
 void __stdcall CMainWindow::OnCommandStateChange(long lCommand, BOOL bEnable)
@@ -1260,14 +1383,14 @@ BOOL CMainWindow::TranslateAccelerator(MSG* pMsg)
     return FALSE;
 }
 
-#if defined (OS_WINDOWS) || defined( OS_PLATFORM_MOTCE )
+#if defined (OS_WINDOWS_DESKTOP) || defined( OS_PLATFORM_MOTCE )
 void CMainWindow::createCustomMenu()
 {
 	CMenu menu;
 	CMenu sub;
 	CMenu popup;
 	
-    if (!m_pBrowserEng->GetHTMLWND())
+    if (!m_pBrowserEng || !m_pBrowserEng->GetHTMLWND())
         return;
 
 	VERIFY(menu.CreateMenu());
@@ -1383,43 +1506,48 @@ LRESULT CMainWindow::OnCustomToolbarItemCommand (WORD /*wNotifyCode*/, WORD  wID
 
 extern "C" LRESULT rho_wmimpl_draw_splash_screen(HWND hWnd)
 {
+    LOG(INFO) + "PAINT";
   	CSplashScreen& splash = RHODESAPP().getSplashScreen();
     splash.start();
-    StringW pathW = convertToStringW(RHODESAPP().getLoadingPngPath());
-
-	HBITMAP hbitmap = SHLoadImageFile(pathW.c_str());
-		
-	if (!hbitmap)
-		return 0;
 
     PAINTSTRUCT ps;
 	HDC hDC = BeginPaint(hWnd, &ps);
 
-	BITMAP bmp;
-	GetObject(hbitmap, sizeof(bmp), &bmp);
+    StringW pathW = convertToStringW(RHODESAPP().getLoadingPngPath());
 
-	HDC hdcMem = CreateCompatibleDC(hDC);
-	HGDIOBJ resObj = SelectObject(hdcMem, hbitmap);
+	HBITMAP hbitmap = SHLoadImageFile(pathW.c_str());
+		
+	if (hbitmap)
+    {
+	    BITMAP bmp;
+	    GetObject(hbitmap, sizeof(bmp), &bmp);
 
-    RECT rcClient;
-    GetClientRect(hWnd, &rcClient);
-    int nLeft = rcClient.left, nTop=rcClient.top, nWidth = bmp.bmWidth, nHeight=bmp.bmHeight, Width = rcClient.right - rcClient.left, Height = rcClient.bottom - rcClient.top;
-    if (splash.isFlag(CSplashScreen::HCENTER) )
-		nLeft = (Width-nWidth)/2;
-	if (splash.isFlag(CSplashScreen::VCENTER) )
-		nTop = (Height-nHeight)/2;
-	if (splash.isFlag(CSplashScreen::VZOOM) )
-		nHeight = Height;
-	if (splash.isFlag(CSplashScreen::HZOOM) )
-		nWidth = Width;
+        RECT rcClient;
+        GetClientRect(hWnd, &rcClient);
 
-	StretchBlt(hDC, nLeft, nTop, nWidth, nHeight,
-		hdcMem, 0, 0, bmp.bmWidth, bmp.bmHeight, SRCCOPY);
-	//BitBlt(hDC, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), hdcMem, 0, 0, SRCCOPY);
+	    CDC hdcMem = CreateCompatibleDC(hDC);
+        hdcMem.FillSolidRect(&rcClient, RGB(255,255,255));
 
-    SelectObject(hdcMem, resObj);
-	DeleteObject(hbitmap);
-	DeleteObject(hdcMem);
+	    HGDIOBJ resObj = SelectObject(hdcMem, hbitmap);
+
+        int nLeft = rcClient.left, nTop=rcClient.top, nWidth = bmp.bmWidth, nHeight=bmp.bmHeight, Width = rcClient.right - rcClient.left, Height = rcClient.bottom - rcClient.top;
+        if (splash.isFlag(CSplashScreen::HCENTER) )
+		    nLeft = (Width-nWidth)/2;
+	    if (splash.isFlag(CSplashScreen::VCENTER) )
+		    nTop = (Height-nHeight)/2;
+	    if (splash.isFlag(CSplashScreen::VZOOM) )
+		    nHeight = Height;
+	    if (splash.isFlag(CSplashScreen::HZOOM) )
+		    nWidth = Width;
+
+	    StretchBlt(hDC, nLeft, nTop, nWidth, nHeight,
+		    hdcMem, 0, 0, bmp.bmWidth, bmp.bmHeight, SRCCOPY);
+	    //BitBlt(hDC, 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN), hdcMem, 0, 0, SRCCOPY);
+
+        SelectObject(hdcMem, resObj);
+	    DeleteObject(hbitmap);
+	    //DeleteObject(hdcMem);
+    }
 
 	EndPaint(hWnd, &ps);
 	return 1;

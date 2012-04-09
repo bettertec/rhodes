@@ -4,10 +4,12 @@ import java.util.Hashtable;
 
 import android.view.View;
 
+import com.rhomobile.rhodes.Capabilities;
 import com.rhomobile.rhodes.Logger;
 import com.rhomobile.rhodes.RhodesActivity;
 import com.rhomobile.rhodes.RhodesService;
 import com.rhomobile.rhodes.WebView;
+import com.rhomobile.rhodes.mainview.MainView;
 
 public class RhoExtManagerImpl implements IRhoExtManager {
     private static final String TAG = RhoExtManagerImpl.class.getSimpleName();
@@ -44,12 +46,14 @@ public class RhoExtManagerImpl implements IRhoExtManager {
 
     @Override
 	public View getWebView() {
-        return RhodesActivity.safeGetInstance().getMainView().getWebView(WebView.activeTab()).getView();
+        MainView mainView = RhodesActivity.safeGetInstance().getMainView();
+        return mainView != null ? mainView.getWebView(mainView.activeTab()).getView() : null;
     }
 
     @Override
     public View getTopView() {
-        return RhodesActivity.safeGetInstance().getMainView().getView();
+        MainView mainView = RhodesActivity.safeGetInstance().getMainView();
+        return mainView != null ? mainView.getView() : null;
     }
 
     @Override
@@ -91,7 +95,8 @@ public class RhoExtManagerImpl implements IRhoExtManager {
 
     @Override
     public String getCurrentUrl() {
-        return RhodesActivity.safeGetInstance().getMainView().currentLocation(RhodesActivity.safeGetInstance().getMainView().activeTab());
+        MainView mainView = RhodesActivity.safeGetInstance().getMainView();
+        return mainView != null ? mainView.currentLocation(mainView.activeTab()) : "";
     }
 
     @Override
@@ -131,12 +136,12 @@ public class RhoExtManagerImpl implements IRhoExtManager {
 
     @Override
     public void zoomPage(float fZoom) {
-        // TODO Auto-generated method stub
+        WebView.setZoom((int)(fZoom * 100));
     }
 
     @Override
     public void zoomText(int nZoom) {
-        // TODO Auto-generated method stub
+        WebView.setTextZoom(nZoom);
     }
 
     @Override
@@ -244,10 +249,10 @@ public class RhoExtManagerImpl implements IRhoExtManager {
         }
     }
 
-    public void onPrompt(View view, String prompt, String arg2) {
+    public void onPrompt(View view, String prompt, String defaultResponse) {
         synchronized (mExtensions) {
             for (IRhoExtension ext : mExtensions.values()) {
-                ext.onConfirm(this, prompt, makeDefExtData(view));
+                ext.onPrompt(this, prompt, defaultResponse, makeDefExtData(view));
             }
         }
     }
@@ -275,5 +280,27 @@ public class RhoExtManagerImpl implements IRhoExtManager {
             }
         }
     }
+
+    public void startLocationUpdates(View view, boolean val) {
+        synchronized (mExtensions) {
+            for (IRhoExtension ext : mExtensions.values()) {
+                ext.startLocationUpdates(this, val, makeDefExtData(view));
+            }
+        }
+    }
+
+    public void stopLocationUpdates(View view) {
+        synchronized (mExtensions) {
+            for (IRhoExtension ext : mExtensions.values()) {
+                ext.stopLocationUpdates(this, makeDefExtData(view));
+            }
+        }
+    }
+    
+    // RE shared runtime detect
+    public boolean onStartNewConfig() {
+    	return Capabilities.SHARED_RUNTIME_ENABLED;
+    }
+
 }
 

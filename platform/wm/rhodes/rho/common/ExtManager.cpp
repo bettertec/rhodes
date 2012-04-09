@@ -202,7 +202,7 @@ void CExtManager::restoreApp()
 
 void CExtManager::resizeBrowserWindow(RECT rc)
 {
-    ::MoveWindow( getMainWnd(), rc.left, rc.top, rc.right-rc.left, rc.bottom-rc.top, TRUE );
+    //::MoveWindow( getMainWnd(), rc.left, rc.top, rc.right-rc.left, rc.bottom-rc.top, TRUE );
 }
 
 void CExtManager::zoomPage(float fZoom)
@@ -246,10 +246,12 @@ StringW CExtManager::getPageTitle(UINT iTab)
 }
 
 extern "C" unsigned long rb_require(const char *fname);
+extern "C" int  rho_ruby_is_started();
 
 void CExtManager::requireRubyFile( const char* szFilePath )
 {
-    rb_require(szFilePath);
+    if( rho_ruby_is_started() )
+        rb_require(szFilePath);
 }
 
 void CExtManager::rhoLog(int nSeverity, const char* szModule, const char* szMsg, const char* szFile, int nLine)
@@ -297,6 +299,30 @@ long CExtManager::OnAlertPopup(int nEnum, void* pData)
     for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
     {
         long lRes = (it->second)->OnAlertPopup( nEnum, pData, makeExtData() );
+        if ( lRes )
+            return lRes;
+    }
+
+    return 0;
+}
+
+long CExtManager::OnAuthenticationRequest(int nEnum, void* pData)
+{
+    for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
+    {
+        long lRes = (it->second)->OnAuthenticationRequest( nEnum, pData, makeExtData() );
+        if ( lRes )
+            return lRes;
+    }
+
+    return 0;
+}
+
+long CExtManager::OnGeolocationData(int nEnum, void* pData)
+{
+    for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
+    {
+        long lRes = (it->second)->OnGeolocationData( nEnum, pData, makeExtData() );
         if ( lRes )
             return lRes;
     }

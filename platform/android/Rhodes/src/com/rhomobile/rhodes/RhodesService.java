@@ -251,6 +251,9 @@ public class RhodesService extends Service {
 	
 	public static native String getInvalidSecurityTokenMessage();
 	
+	public static native void resetHttpLogging(String http_log_url);
+	
+	
 	public static RhodesService getInstance() {
 		return sInstance;
 	}
@@ -411,6 +414,9 @@ public class RhodesService extends Service {
 	}
 	
 	private void handleCommand(Intent intent, int startId) {
+		if (intent == null) {
+			return;
+		}
 		String source = intent.getStringExtra(INTENT_SOURCE);
 		Log.i(TAG, "handleCommand: startId=" + startId + ", source=" + source);
 		if (source == null)
@@ -831,7 +837,7 @@ public class RhodesService extends Service {
 			}
 			else if (name.equalsIgnoreCase("webview_framework")) {
 				//return "WEBKIT/" + Build.VERSION.RELEASE;
-			    return RhodesActivity.safeGetInstance().getMainView().getWebView(-1).getView().getClass().getCanonicalName();
+			    return "WEBKIT/" + RhodesActivity.safeGetInstance().getMainView().getWebView(-1).getView().getClass().getSimpleName();
 			}
 		}
 		catch (Exception e) {
