@@ -620,7 +620,6 @@ namespace "config" do
       $use_motosol_api_classpath = true unless $app_config['capabilities'].index('motoroladev').nil?
       raise 'Cannot use Motorola SDK addon and Google SDK addon together!' if $use_google_addon_api
     end
->>>>>>> 055906c7cfe7ed3dfc1158eced529b1ae8a61dd4
  
     $applog_path = nil
     $applog_file = $app_config["applog"]

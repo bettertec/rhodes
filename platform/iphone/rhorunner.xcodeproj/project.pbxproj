@@ -19,6 +19,7 @@
 		46B005F71033690F00D0C2F4 /* DateTime.m in Sources */ = {isa = PBXBuildFile; fileRef = 46B005F61033690F00D0C2F4 /* DateTime.m */; };
 		46B007071033776600D0C2F4 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 46B007061033776600D0C2F4 /* CoreGraphics.framework */; };
 		46C25E3B103240A400A26428 /* RhoDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 46C25E3A103240A400A26428 /* RhoDelegate.m */; };
+		5A078AF5153471D2002B4239 /* App-Icon-114x114.png in Resources */ = {isa = PBXBuildFile; fileRef = 5A078AF4153471D2002B4239 /* App-Icon-114x114.png */; };
 		5C0D0A2E121D28A30022E83C /* RhoClassFactory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5C0D0A2B121D28A30022E83C /* RhoClassFactory.cpp */; };
 		5C0D0A2F121D28A30022E83C /* RhoFileImpl.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C0D0A2D121D28A30022E83C /* RhoFileImpl.m */; };
 		5C0D0A32121D28BF0022E83C /* sslimpl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 5C0D0A30121D28BF0022E83C /* sslimpl.cpp */; };
@@ -189,6 +190,7 @@
 		46B007061033776600D0C2F4 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		46C25E39103240A400A26428 /* RhoDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RhoDelegate.h; sourceTree = "<group>"; };
 		46C25E3A103240A400A26428 /* RhoDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RhoDelegate.m; sourceTree = "<group>"; };
+		5A078AF4153471D2002B4239 /* App-Icon-114x114.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "App-Icon-114x114.png"; sourceTree = "<group>"; };
 		5C0D0A2B121D28A30022E83C /* RhoClassFactory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = RhoClassFactory.cpp; path = ../shared/common/iphone/RhoClassFactory.cpp; sourceTree = SOURCE_ROOT; };
 		5C0D0A2C121D28A30022E83C /* RhoClassFactory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RhoClassFactory.h; path = ../shared/common/iphone/RhoClassFactory.h; sourceTree = SOURCE_ROOT; };
 		5C0D0A2D121D28A30022E83C /* RhoFileImpl.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RhoFileImpl.m; path = ../shared/common/iphone/RhoFileImpl.m; sourceTree = SOURCE_ROOT; };
@@ -394,6 +396,7 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				5A078AF4153471D2002B4239 /* App-Icon-114x114.png */,
 				FA3C79E1136ED8BB002302E5 /* CoreMedia.framework */,
 				FA3C79AD136ED523002302E5 /* CoreVideo.framework */,
 				FA4D3F8C136B0A98009D6E63 /* libiconv.dylib */,
@@ -884,6 +887,7 @@
 				FA52317B12E7511700AB55CC /* esri.png in Resources */,
 				FA52317C12E7511700AB55CC /* esri@2x.png in Resources */,
 				FA52330112E9204300AB55CC /* BluePushpin@2x.png in Resources */,
+				5A078AF5153471D2002B4239 /* App-Icon-114x114.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1055,8 +1059,8 @@
 					armv6,
 				);
 				CODE_SIGN_ENTITLEMENTS = "";
-				CODE_SIGN_IDENTITY = "iPhone Developer: Marius Schatke (4T25QE87AA)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Marius Schatke (4T25QE87AA)";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Blue Moon GmbH";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Blue Moon GmbH";
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -1075,8 +1079,8 @@
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
 				PRODUCT_NAME = rhorunner;
-				PROVISIONING_PROFILE = "142076EA-16A4-450B-B37D-D790FC0FA883";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "142076EA-16A4-450B-B37D-D790FC0FA883";
+				PROVISIONING_PROFILE = "51D47A48-C79B-44BA-8083-95018BE6BE59";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "51D47A48-C79B-44BA-8083-95018BE6BE59";
 				SDKROOT = iphoneos;
 				STANDARD_C_PLUS_PLUS_LIBRARY_TYPE = dynamic;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -1094,8 +1098,8 @@
 					armv6,
 				);
 				CODE_SIGN_ENTITLEMENTS = Entitlements.plist;
-				CODE_SIGN_IDENTITY = "iPhone Developer: Marius Schatke (4T25QE87AA)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Marius Schatke (4T25QE87AA)";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Blue Moon GmbH";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Blue Moon GmbH";
 				COPY_PHASE_STRIP = YES;
 				EXTENSIONS_LDFLAGS = "-filelist $(TARGET_TEMP_DIR)/rhodeslibs.txt";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1113,8 +1117,8 @@
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
 				PRODUCT_NAME = rhorunner;
-				PROVISIONING_PROFILE = "142076EA-16A4-450B-B37D-D790FC0FA883";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "142076EA-16A4-450B-B37D-D790FC0FA883";
+				PROVISIONING_PROFILE = "51D47A48-C79B-44BA-8083-95018BE6BE59";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "51D47A48-C79B-44BA-8083-95018BE6BE59";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 				USER_HEADER_SEARCH_PATHS = "../shared/ruby/iphone ../shared/ruby/include ../shared/curl/include ../shared/ ../shared/syncengine ../shared/logging ../shared/common rhoextlib";
@@ -1127,7 +1131,8 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CODE_SIGN_ENTITLEMENTS = Entitlements.plist;
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Don't Code Sign";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Blue Moon GmbH";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Blue Moon GmbH";
 				EXTENSIONS_LDFLAGS = "-filelist $(TARGET_TEMP_DIR)/rhodeslibs.txt";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -1158,7 +1163,8 @@
 					"$(EXTENSIONS_LDFLAGS)",
 				);
 				PREBINDING = NO;
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
+				PROVISIONING_PROFILE = "51D47A48-C79B-44BA-8083-95018BE6BE59";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "51D47A48-C79B-44BA-8083-95018BE6BE59";
 				SDKROOT = iphoneos3.2;
 				USER_HEADER_SEARCH_PATHS = "../shared/ ../shared/syncengine ../shared/logging ../shared/common rhoextlib";
 			};
@@ -1173,8 +1179,8 @@
 					armv7,
 				);
 				CODE_SIGN_ENTITLEMENTS = Entitlements.plist;
-				CODE_SIGN_IDENTITY = "iPhone Developer: Marius Schatke (4T25QE87AA)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer: Marius Schatke (4T25QE87AA)";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Blue Moon GmbH";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Blue Moon GmbH";
 				COPY_PHASE_STRIP = YES;
 				EXTENSIONS_LDFLAGS = "-filelist $(TARGET_TEMP_DIR)/rhodeslibs.txt";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -1192,8 +1198,8 @@
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
 				PRODUCT_NAME = rhorunner;
-				PROVISIONING_PROFILE = "142076EA-16A4-450B-B37D-D790FC0FA883";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "142076EA-16A4-450B-B37D-D790FC0FA883";
+				PROVISIONING_PROFILE = "51D47A48-C79B-44BA-8083-95018BE6BE59";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "51D47A48-C79B-44BA-8083-95018BE6BE59";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 				USER_HEADER_SEARCH_PATHS = "../shared/ruby/iphone ../shared/ruby/include ../shared/curl/include ../shared/ ../shared/syncengine ../shared/logging ../shared/common rhoextlib";
@@ -1205,8 +1211,8 @@
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "";
-				CODE_SIGN_IDENTITY = "Don't Code Sign";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Don't Code Sign";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Blue Moon GmbH";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Blue Moon GmbH";
 				EXTENSIONS_LDFLAGS = "-filelist $(TARGET_TEMP_DIR)/rhodeslibs.txt";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
@@ -1240,8 +1246,8 @@
 					"$(EXTENSIONS_LDFLAGS)",
 				);
 				PREBINDING = NO;
-				PROVISIONING_PROFILE = "";
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
+				PROVISIONING_PROFILE = "51D47A48-C79B-44BA-8083-95018BE6BE59";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "51D47A48-C79B-44BA-8083-95018BE6BE59";
 				SDKROOT = iphonesimulator3.2;
 				STANDARD_C_PLUS_PLUS_LIBRARY_TYPE = dynamic;
 				SYMROOT = build;
@@ -1253,7 +1259,8 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Don't Code Sign";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Blue Moon GmbH";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution: Blue Moon GmbH";
 				EXTENSIONS_LDFLAGS = "-filelist $(TARGET_TEMP_DIR)/rhodeslibs.txt";
 				GCC_C_LANGUAGE_STANDARD = c99;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES;
@@ -1284,7 +1291,8 @@
 					"$(EXTENSIONS_LDFLAGS)",
 				);
 				PREBINDING = NO;
-				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
+				PROVISIONING_PROFILE = "51D47A48-C79B-44BA-8083-95018BE6BE59";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "51D47A48-C79B-44BA-8083-95018BE6BE59";
 				SDKROOT = iphoneos3.2;
 				USER_HEADER_SEARCH_PATHS = "../shared/ ../shared/syncengine ../shared/logging ../shared/common rhoextlib";
 			};
