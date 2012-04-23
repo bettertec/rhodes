@@ -80,7 +80,11 @@ namespace "framework" do
 end
 
 
+<<<<<<< HEAD
 $application_build_configs_keys = ['security_token', 'encrypt_database', 'android_title', 'iphone_db_in_approot', 'iphone_set_approot', 'iphone_userpath_in_approot']
+=======
+$application_build_configs_keys = ['security_token', 'encrypt_database', 'android_title', 'iphone_db_in_approot', 'iphone_set_approot', 'iphone_userpath_in_approot', "motorola_license", "motorola_license_company"]
+>>>>>>> 4c0674639c5f8354671dd7bbd0f93a274f89ed08
 
 def make_application_build_config_header_file
   f = StringIO.new("", "w+")      
@@ -272,47 +276,48 @@ namespace "config" do
     #Process rhoelements settings
     if $current_platform == "wm" || $current_platform == "android"
         if $app_config["app_type"] == 'rhoelements'
-            $app_config["capabilities"] += ["motorola"] unless $app_config["capabilities"].index("motorola")
-            $app_config["extensions"] += ["rhoelementsext"]
-            $app_config["extensions"] += ["motoapi"] #extension with plug-ins
-            $app_config["extensions"] += ["rhoelements"] unless $app_config['extensions'].index('rhoelements')
-
-            if !$app_config["capabilities"].index('native_browser')
-                $app_config["extensions"] += ['webkit-browser'] unless $app_config["extensions"].index("webkit-browser")
-            end
-            
-            #check for RE2 plugins
-            plugins = ""
-            $app_config["extensions"].each do |ext|
-                if ( ext.start_with?('moto-') )
-                    plugins += ',' if plugins.length() > 0
-                    plugins += ext[5, ext.length()-5]
+        
+            if !$app_config["capabilities"].index('non_motorola_device')        
+                $app_config["capabilities"] += ["motorola"] unless $app_config["capabilities"].index("motorola")
+                $app_config["extensions"] += ["rhoelementsext"]
+                $app_config["extensions"] += ["motoapi"] #extension with plug-ins
+                
+                #check for RE2 plugins
+                plugins = ""
+                $app_config["extensions"].each do |ext|
+                    if ( ext.start_with?('moto-') )
+                        plugins += ',' if plugins.length() > 0
+                        plugins += ext[5, ext.length()-5]
+                    end
                 end
+                
+                if plugins.length() == 0
+                    plugins = "ALL"    
+                end
+                
+                application_build_configs['moto-plugins'] = plugins if plugins.length() > 0
+                
             end
             
-            if plugins.length() == 0
-                plugins = "ALL"    
+            if !$app_config["capabilities"].index('native_browser')
+                $app_config["capabilities"] += ["motorola_browser"] unless $app_config["capabilities"].index('motorola_browser')
             end
-            
-            application_build_configs['moto-plugins'] = plugins if plugins.length() > 0
-            
-            if $current_platform == 'android'
-                barcode_idx = $app_config['extensions'].index('barcode')
-                $app_config['extensions'][barcode_idx] = 'barcode-moto' unless barcode_idx.nil?
-            end
-            
         end
 
         application_build_configs['shared-runtime'] = '1' if $app_config["capabilities"].index('shared_runtime')
 
         if $app_config["capabilities"].index("motorola_browser")
             $app_config['extensions'] += ['webkit-browser'] unless $app_config['extensions'].index('webkit-browser')
-            $app_config["extensions"] += ["rhoelements"] unless $app_config['extensions'].index('rhoelements')
         end
         
         if $app_config["extensions"].index("webkit-browser")
             $app_config["capabilities"] += ["webkit_browser"]
             $app_config["extensions"].delete("webkit-browser") unless $current_platform == 'android'
+        end
+        
+        if  $app_config["capabilities"].index("webkit_browser") || $app_config["capabilities"].index("motorola")
+            #contains wm code for webkit browser support
+            $app_config["extensions"] += ["rhoelements"] unless $app_config['extensions'].index('rhoelements')
         end
     end
 
@@ -332,15 +337,14 @@ namespace "config" do
       end
     end	
     $application_build_configs = application_build_configs
-
     #check for rhoelements gem
     $rhoelements_features = ""
     if $app_config['extensions'].index('barcode')
-        $app_config['extensions'].delete('barcode')
+        #$app_config['extensions'].delete('barcode')
         $rhoelements_features += "- Barcode extension\n"
     end
     if $app_config['extensions'].index('nfc')
-        $app_config['extensions'].delete('nfc')
+        #$app_config['extensions'].delete('nfc')
         $rhoelements_features += "- NFC extension\n"
     end
     
@@ -349,11 +353,19 @@ namespace "config" do
     end
     
     if $application_build_configs['encrypt_database'] && $application_build_configs['encrypt_database'].to_s == '1'
-        $application_build_configs.delete('encrypt_database')
+        #$application_build_configs.delete('encrypt_database')
         $rhoelements_features += "- Database encryption\n"
     end
+
+    if $app_config["capabilities"].index("motorola")
+        $rhoelements_features += "- Motorola device capabilities\n"                
+    end
+
+    if $app_config['extensions'].index('webkit-browser')
+        $rhoelements_features += "- Motorola WebKit Browser\n"                
+    end
     
-    invalid_licence = false
+    $invalid_license = false
 
     if $rhoelements_features.length() > 0     
         #check for RhoElements gem and license
@@ -362,37 +374,43 @@ namespace "config" do
             
             $rhoelements_features = ""
             
-            # check licence
+            # check license
             is_ET1 = (($current_platform == "android") and ($app_config["capabilities"].index("motorola")))
             is_win_platform = (($current_platform == "wm") or ($current_platform == "win32") or $is_rho_simulator )
 
             if (!is_ET1) and (!is_win_platform)
-                 # check the licence parameter
-                 if (!$app_config["motorola_licence"]) or (!$app_config["motorola_licence_company"])
-                    invalid_licence = true
+                 # check the license parameter
+                 if (!$application_build_configs["motorola_license"]) or (!$application_build_configs["motorola_license_company"])
+                    $invalid_license = true
                  end
             end
             
         rescue Exception => e
+            if $app_config['extensions'].index('barcode')
+                $app_config['extensions'].delete('barcode')
+            end
+            if $app_config['extensions'].index('nfc')
+                $app_config['extensions'].delete('nfc')
+            end
             
+            if $application_build_configs['encrypt_database'] && $application_build_configs['encrypt_database'].to_s == '1'
+                $application_build_configs.delete('encrypt_database')
+            end
         end
     end
         
     $app_config['extensions'].uniq!() if $app_config['extensions']
     $app_config['capabilities'].uniq!() if $app_config['capabilities']
     
-    if invalid_licence
-        puts '********* ERROR ************************************************************************'
-        puts ' License is required to run RhoElements application.'
-        puts ' Please, provide  "motorola_licence" and "motorola_licence_company" parameters in build.yml.'
-        puts '**************************************************************************************'
-        exit 1
+    if $invalid_license
+        $application_build_configs["motorola_license"] = '123' if !$application_build_configs["motorola_license"]
+        $application_build_configs["motorola_license_company"] = 'WRONG' if !$application_build_configs["motorola_license_company"]
     end
-    
     
     puts "$app_config['extensions'] : #{$app_config['extensions'].inspect}"   
     puts "$app_config['capabilities'] : #{$app_config['capabilities'].inspect}"   
 
+    
     if $current_platform == "bb"  
       make_application_build_config_java_file
     else  
@@ -703,6 +721,18 @@ def common_bundle_start(startdir, dest)
     end
   end
   cp app + '/rhoconfig.txt', File.join($srcdir,'apps'), :preserve => true
+
+  if $app_config["app_type"] == 'rhoelements'
+    config_xml = nil
+    if $app_config[$config["platform"]] && $app_config[$config["platform"]]["rhoelements"] && $app_config[$config["platform"]]["rhoelements"]["config"] && (File.exists? File.join(app, $app_config[$config["platform"]]["rhoelements"]["config"]))
+      config_xml = File.join(app, $app_config[$config["platform"]]["rhoelements"]["config"])
+    elsif $app_config["rhoelements"] && $app_config["rhoelements"]["config"] && (File.exists? File.join(app, $app_config["rhoelements"]["config"]))
+      config_xml = File.join(app, $app_config["rhoelements"]["config"])
+    end
+    if !(config_xml.nil?)
+      cp config_xml, File.join($srcdir,'apps/Config.xml'), :preserve => true
+    end
+  end
 
   app_version = "\r\napp_version='#{$app_config["version"]}'"  
   File.open(File.join($srcdir,'apps/rhoconfig.txt'), "a"){ |f| f.write(app_version) }
@@ -1495,4 +1525,13 @@ at_exit do
     puts ' For more information go to http://www.motorolasolutions.com/rhoelements '
     puts '**************************************************************************************'
   end
+  
+  if $invalid_license
+    puts '********* WARNING ************************************************************************'
+    puts ' License is required to run RhoElements application.'
+    puts ' Please, provide  "motorola_license" and "motorola_license_company" parameters in build.yml.'
+    puts ' For more information go to http://www.motorolasolutions.com/rhoelements '    
+    puts '**************************************************************************************'
+  end
+  
 end

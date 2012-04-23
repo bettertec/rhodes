@@ -86,7 +86,7 @@ CMainWindow::CMainWindow()
     mNativeViewType = "";
     g_hWndCommandBar = 0;
     m_pBrowserEng = NULL;
-#if defined( OS_PLATFORM_MOTCE )
+#if defined(OS_WINCE)
     m_bFullScreen = false;
 #endif
 
@@ -142,55 +142,45 @@ void CMainWindow::Navigate(BSTR URL)
 // WM_xxx handlers
 //
 // **************************************************************************
+#if defined(OS_WINCE)
 
-LRESULT CMainWindow::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+void hideSIPButton()
 {
-    return InitMainWindow();
+    HWND hg_sipbut = FindWindow(L"MS_SIPBUTTON", NULL);
+    if (hg_sipbut)
+        ::ShowWindow(hg_sipbut, SW_HIDE);
 }
 
-#if defined( OS_PLATFORM_MOTCE )
-void CMainWindow::SetFullScreen(bool bFull)
+void CMainWindow::RhoSetFullScreen(bool bFull, bool bDestroy /*=false*/)
 {
-    LOG(INFO) + "SetFullScreen";
-	HWND hTaskBar = FindWindow(_T("HHTaskBar"), NULL);
-	if(!hTaskBar) 
+    LOG(INFO) + "RhoSetFullScreen";
+
+    HWND hTaskBar = FindWindow(_T("HHTaskBar"), NULL);
+    if ( hTaskBar )
     {
-        LOG(INFO) + "SetFullScreen END 1";
-		return;
+        ::EnableWindow(hTaskBar, bFull ? FALSE : TRUE ); 
+        ::ShowWindow(hTaskBar, bFull ? SW_HIDE : SW_SHOW );
     }
 
-	::ShowWindow(hTaskBar, !bFull ? SW_SHOW : SW_HIDE);
-
+#if defined( OS_PLATFORM_MOTCE )
 
 	if(g_hWndCommandBar)
 		::ShowWindow(g_hWndCommandBar, !bFull ? SW_SHOW : SW_HIDE);
-
-    //return;
-	RECT rect = { 0 };
-	SystemParametersInfo(SPI_GETWORKAREA, NULL, &rect, FALSE);
-	
-	if(bFull)
-		rect.bottom =  GetSystemMetrics(SM_CYSCREEN);
-
-	m_bFullScreen = bFull;
-
-	MoveWindow(&rect);
-}
-#endif
-
-LRESULT CMainWindow::InitMainWindow()
-{
-    HRESULT hr = S_OK;
-
-    m_pBrowserEng = 0;
-#if defined(_WIN32_WCE)
-    SHMENUBARINFO mbi = { sizeof(mbi), 0 };
-    SIPINFO si = { sizeof(si), 0 };
-    RECT rcMenuBar = { 0 };
 #else
-	NONCLIENTMETRICS ncm = { sizeof(NONCLIENTMETRICS) };
-	int nSpiBorder = 0;
+    if (!bDestroy)
+    {
+        SetFullScreen(bFull);
+
+        if ( bFull )
+            hideSIPButton();
+    }
 #endif
+}
+#endif //OS_WINCE
+
+LRESULT CMainWindow::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)
+{
+    m_pBrowserEng = 0;
     int xScreenSize = GetSystemMetrics(SM_CXSCREEN);
     int yScreenSize = GetSystemMetrics(SM_CYSCREEN);
 
@@ -198,12 +188,8 @@ LRESULT CMainWindow::InitMainWindow()
 
 	RECT rcMainWindow = { 0,0,320,470 };
 
-    // In one step, create an "AtlAxWin" window for the PIEWebBrowser control,
-    // and also create the control itself. (AtlAxWin is a window class that
-    // ATL uses to support containment of controls in windows.)
-#if defined(_WIN32_WCE)    
-    //m_pBrowserEng = rho_wmimpl_createBrowserEngine(m_hWnd);
-#else
+#if defined(OS_WINDOWS_DESKTOP)    
+
 	LOGCONF().setLogView(&m_logView);
 
 	rcMainWindow.left = getIniInt(_T("main_view_left"),0);
@@ -226,61 +212,30 @@ LRESULT CMainWindow::InitMainWindow()
 
 	m_menuBar.Create(m_hWnd,CWindow::rcDefault);
 
+	NONCLIENTMETRICS ncm = { sizeof(NONCLIENTMETRICS) };
 	SystemParametersInfo ( SPI_GETNONCLIENTMETRICS, 0, &ncm, false );
 	m_menuBarHeight = ncm.iMenuHeight+ncm.iBorderWidth*4+2;
 	rcMainWindow.bottom += ncm.iCaptionHeight+ncm.iBorderWidth*8+m_menuBarHeight;
 	rcMainWindow.right += ncm.iScrollWidth;
 	rcMainWindow.right += ncm.iBorderWidth*6;
-#endif
 
-#ifndef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
-    // set up connection point
-    //hr = AtlAdviseSinkMap(this, true);
-#endif
+	m_screenWidth = rcMainWindow.right - rcMainWindow.left;
+	m_screenHeight = rcMainWindow.bottom - rcMainWindow.top;
 
-#if defined(_WIN32_WCE) && !defined( OS_PLATFORM_MOTCE )
+    MoveWindow(&rcMainWindow);
+#elif defined(OS_WINCE) && !defined( OS_PLATFORM_MOTCE )
     // Create a menubar
-    // (mbi was initialized above)
+    SHMENUBARINFO mbi = { sizeof(mbi), 0 };
+
     mbi.hwndParent = m_hWnd;
     mbi.nToolBarId = IDR_MAIN_MENUBAR; // ID of toolbar resource
     mbi.hInstRes   = _AtlBaseModule.GetResourceInstance();
     SHCreateMenuBar(&mbi);
 	m_hWndCECommandBar = mbi.hwndMB;
 	m_menuBar = m_hWndCECommandBar;
-
-	// Compute RECT for initial size and position.
-    // The following code should compute RECT appropriately
-    // on both Pocket PC and Smartphone. It should function correctly
-    // whether SIP is on or off, and
-    // whether device is in portrait or landscape mode.
-    // (rcMainWindow was initialized above)
-    RHO_ASSERT(SystemParametersInfo(SPI_GETWORKAREA, 0, &rcMainWindow, 0));
-
-    LOG(INFO)  + "SPI_GETWORKAREA: x=" + rcMainWindow.right + ";y=" + rcMainWindow.bottom;
-
-    // (rcMenuBar was initialized above)
-    m_menuBar.GetWindowRect(&rcMenuBar);
-    rcMainWindow.bottom = rcMenuBar.top;
-
-    // SIP state
-    // (si was initialized above)
-    if (SHSipInfo(SPI_GETSIPINFO, 0, &si, 0) &&
-        (si.fdwFlags & SIPF_ON) && (si.fdwFlags & SIPF_DOCKED))
-    {
-        rcMainWindow.bottom = si.rcVisibleDesktop.bottom;
-    }
-	
 	SetToolbarButtonEnabled(IDM_SK1_EXIT, FALSE);
-#endif
 
-#if !defined(_WIN32_WCE)
-	m_screenWidth = rcMainWindow.right - rcMainWindow.left;
-	m_screenHeight = rcMainWindow.bottom - rcMainWindow.top;
-#endif
-
-#if !defined( OS_PLATFORM_MOTCE )
-    MoveWindow(&rcMainWindow);
-#else
+#elif defined( OS_PLATFORM_MOTCE )
     g_hWndCommandBar = CommandBar_Create(_AtlBaseModule.GetResourceInstance(), m_hWnd, 1);
 
     TBBUTTON oBtn = {0};
@@ -296,20 +251,55 @@ LRESULT CMainWindow::InitMainWindow()
 
 #endif
 
-#if defined(_WIN32_WCE)
+#if defined(OS_WINCE)
 	//Set fullscreen after window resizing
-#if defined( OS_PLATFORM_MOTCE )
-	m_bFullScreen = RHOCONF().getBool("full_screen");
-#endif
-	if (RHOCONF().getBool("full_screen"))
-   	    SetFullScreen(true);
-#endif
+    m_bFullScreen = RHOCONF().getBool("full_screen");
+    RhoSetFullScreen(m_bFullScreen);
 
-	RHO_ASSERT(SUCCEEDED(hr));
+    calculateMainWindowRect(rcMainWindow);
+    MoveWindow(&rcMainWindow);
+
+#endif //OS_WINCE
 
 	rho_rhodesapp_callUiCreatedCallback();
 
-    return SUCCEEDED(hr) ? 0 : -1;
+    return 0;
+}
+
+void CMainWindow::calculateMainWindowRect(RECT& rcMainWindow)
+{
+	// Compute RECT for initial size and position.
+    // The following code should compute RECT appropriately
+    // on both Pocket PC and Smartphone. It should function correctly
+    // whether SIP is on or off, and
+    // whether device is in portrait or landscape mode.
+    // (rcMainWindow was initialized above)
+
+    SystemParametersInfo(SPI_GETWORKAREA, 0, &rcMainWindow, 0);
+    LOG(INFO)  + "SPI_GETWORKAREA: x=" + rcMainWindow.right + ";y=" + rcMainWindow.bottom;
+
+#if defined(OS_WINCE) && !defined( OS_PLATFORM_MOTCE )
+
+    RECT rcMenuBar = { 0 };
+    // (rcMenuBar was initialized above)
+    m_menuBar.GetWindowRect(&rcMenuBar);
+    rcMainWindow.bottom = rcMenuBar.top;
+
+    SIPINFO si = { sizeof(si), 0 };
+    // SIP state
+    // (si was initialized above)
+    if (SHSipInfo(SPI_GETSIPINFO, 0, &si, 0) &&
+        (si.fdwFlags & SIPF_ON) && (si.fdwFlags & SIPF_DOCKED))
+    {
+        rcMainWindow.bottom = si.rcVisibleDesktop.bottom;
+    }
+	
+#elif defined( OS_PLATFORM_MOTCE )
+	if (m_bFullScreen)
+		rcMainWindow.bottom =  GetSystemMetrics(SM_CYSCREEN);
+
+#endif
+
 }
 
 void CMainWindow::initBrowserWindow()
@@ -397,11 +387,12 @@ LRESULT CMainWindow::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam
 {
 	rho_rhodesapp_callUiDestroyedCallback();
 
-#if defined (_WIN32_WCE)  && !defined(OS_PLATFORM_MOTCE)
+#if defined (_WIN32_WCE)//  && !defined(OS_PLATFORM_MOTCE)
     m_menuBar = NULL;
-    ShowTaskBar(true, false);
-   	//SetFullScreen(false);
+    RhoSetFullScreen(false, true);
+
 #endif
+    
 
 #if defined(OS_WINDOWS_DESKTOP)
 	if(m_logView.IsWindow()) {
@@ -432,6 +423,18 @@ LRESULT CMainWindow::OnSize(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOO
     return 0;
 }
 
+#if defined(_WIN32_WCE)
+int getSIPVisibleTop() {
+	SIPINFO pSipInfo;
+	memset(&pSipInfo, 0, sizeof(SIPINFO));
+	pSipInfo.cbSize = sizeof(SIPINFO);
+	pSipInfo.dwImDataSize = 0;
+	if (SipGetInfo(&pSipInfo))
+		return (pSipInfo.fdwFlags & SIPF_ON) ? pSipInfo.rcSipRect.top : -1;
+	return -1;
+}
+#endif
+
 void CMainWindow::resizeWindow( int xSize, int ySize)
 {
     LOG(INFO)  + "resizeWindow: xSize=" + xSize + ";ySize=" + ySize;
@@ -451,6 +454,13 @@ void CMainWindow::resizeWindow( int xSize, int ySize)
     if ( m_toolbar.m_hWnd )
         m_toolbar.MoveWindow(0, ySize-m_menuBarHeight-m_toolbar.getHeight(), xSize, m_toolbar.getHeight());
 #else
+
+//#if defined(_WIN32_WCE)
+//	int SIPtop = getSIPVisibleTop();
+//	if (m_bFullScreen && (SIPtop>=0))
+//		ySize = SIPtop;
+//#endif
+
     RECT rect = {0, 0, xSize, ySize };//- m_toolbar.getHeight()};
 
     if ( m_toolbar.m_hWnd )
@@ -466,7 +476,9 @@ void CMainWindow::resizeWindow( int xSize, int ySize)
         rect.top += m_menuBarHeight;
 
         rcCmdBar.right = rcCmdBar.left + ySize;
-        ::MoveWindow( g_hWndCommandBar, rcCmdBar.left, rcCmdBar.top, rcCmdBar.Width(), rcCmdBar.Height(), TRUE );
+
+        ::SetWindowPos(g_hWndCommandBar, NULL, 0,0, rcCmdBar.Width(), rcCmdBar.Height(), SWP_FRAMECHANGED|SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
+        //::MoveWindow( g_hWndCommandBar, rcCmdBar.left, rcCmdBar.top, rcCmdBar.Width(), rcCmdBar.Height(), TRUE );
     }
 #endif
 
@@ -555,16 +567,21 @@ LRESULT CMainWindow::OnAuthenticationRequest (UINT /*uMsg*/, WPARAM wParam, LPAR
 
 LRESULT CMainWindow::OnActivate(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
 {
-    if (lParam) //We get activate from some internal window
-        return 0;
-
     int fActive = LOWORD(wParam);
-
     LOG(INFO) + "ACTIVATE: " + fActive;
 
+    if (lParam) //We get activate from some internal window
+    {
 #if defined(_WIN32_WCE) 
-	if (RHOCONF().getBool("full_screen"))
-		SetFullScreen(fActive!=0);
+	if (m_bFullScreen && fActive && (getSIPVisibleTop()<0))
+		RhoSetFullScreen(true);
+#endif
+        return 0;
+    }
+
+#if defined(_WIN32_WCE) 
+	if (m_bFullScreen)
+		RhoSetFullScreen(fActive!=0);
 #endif
 	rho_rhodesapp_callAppActiveCallback(fActive);
     RHODESAPP().getExtManager().OnAppActivate(fActive!=0);
@@ -726,8 +743,6 @@ LRESULT CMainWindow::OnSettingChange(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam
 {
     LOG(INFO) + "OnSettingChange: " + wParam;
 #if defined(_WIN32_WCE)
-	//if (RHOCONF().getBool("full_screen"))
-	//	SetFullScreen(true);
 	
 	//handle sreen rotation
 	int width  = GetSystemMetrics(SM_CXSCREEN);	
@@ -735,23 +750,117 @@ LRESULT CMainWindow::OnSettingChange(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam
 	
 	if (wParam == SETTINGCHANGE_RESET) {
 
-		rho_rhodesapp_callScreenRotationCallback(width, height, 90);
+		rho_rhodesapp_callScreenRotationCallback(width, height, (m_bFullScreen ? 0 : 90) );
 
 //        if (m_pBrowserEng)
 //            m_pBrowserEng->OnWebKitMessages(PB_SCREEN_ORIENTATION_CHANGED, wParam, lParam, bHandled);
 
-//#ifndef APP_BUILD_CAPABILITY_MOTOROLA
-        SetWindowPos(NULL, 0,0, width, height, SWP_FRAMECHANGED|SWP_NOMOVE|SWP_NOOWNERZORDER|SWP_NOZORDER);
-//#endif
+#if defined (OS_PLATFORM_MOTCE)
 
+        RECT rcMain;    
+        calculateMainWindowRect(rcMain);
+        MoveWindow( rcMain.left, rcMain.top, rcMain.right-rcMain.left, rcMain.bottom-rcMain.top, TRUE );
+#endif
+
+	//} else if (wParam == SPI_SIPMOVE) {
+	} else if (wParam == SPI_SETSIPINFO) {
+		SIPINFO pSipInfo;
+		memset(&pSipInfo, 0, sizeof(SIPINFO));
+		pSipInfo.cbSize = sizeof(SIPINFO);
+		pSipInfo.dwImDataSize = 0;
+		if (SipGetInfo(&pSipInfo)) {
+			bool isHiding = ((pSipInfo.fdwFlags & SIPF_ON) ^ SIPF_ON) != 0;
+
+            if ( isHiding && !m_bFullScreen )
+            {
+                RECT rcMain;    
+                calculateMainWindowRect(rcMain);
+                MoveWindow( rcMain.left, rcMain.top, rcMain.right-rcMain.left, rcMain.bottom-rcMain.top, TRUE );
+                return 0;
+            }
+
+			if (m_bFullScreen)
+				pSipInfo.rcVisibleDesktop.top = 0;
+
+			int bottom = height - ( m_bFullScreen ? 0 : GetSystemMetrics(SM_CYCAPTION) + GetSystemMetrics(SM_CYFIXEDFRAME) );
+
+			bool doSIPmove = false;
+			if (isHiding) {
+				// when hiding SIP, main window is expanded to cover an entire screen
+				pSipInfo.rcVisibleDesktop.bottom = bottom;
+			} else {
+				LONG deltaY = bottom - pSipInfo.rcSipRect.bottom;
+				if (deltaY != 0) {
+					pSipInfo.rcSipRect.top += deltaY;
+					pSipInfo.rcSipRect.bottom += deltaY;
+					doSIPmove = true;
+					pSipInfo.rcVisibleDesktop.bottom = pSipInfo.rcSipRect.top;
+				}
+			}
+			CRect cRect;
+			this->GetClientRect(&cRect);
+			if ((cRect.bottom != pSipInfo.rcVisibleDesktop.bottom) ||
+				(cRect.top != pSipInfo.rcVisibleDesktop.top) ||
+				(cRect.left != pSipInfo.rcVisibleDesktop.left) ||
+				(cRect.right != pSipInfo.rcVisibleDesktop.right)) 
+			{
+				MoveWindow(&pSipInfo.rcVisibleDesktop, TRUE);
+			}
+			if (doSIPmove && (!isHiding)) {
+				HWND sipHWND = FindWindow(L"SipWndClass", NULL);
+				if (sipHWND) {
+					::SetWindowPos(sipHWND, 0, pSipInfo.rcSipRect.left, pSipInfo.rcSipRect.top,
+						pSipInfo.rcSipRect.right-pSipInfo.rcSipRect.left, pSipInfo.rcSipRect.bottom-pSipInfo.rcSipRect.top,
+						SWP_SHOWWINDOW);
+				}
+			}
+			if (m_bFullScreen && m_toolbar.m_hWnd)
+				m_toolbar.MoveWindow(0, (isHiding ? bottom : pSipInfo.rcSipRect.top) - m_toolbar.getHeight(), width, m_toolbar.getHeight());
+
+            if ( m_bFullScreen && isHiding )
+                hideSIPButton();
+		}
 	}
 	
 #if !defined (OS_PLATFORM_MOTCE)
 	// Notify shell of our WM_SETTINGCHANGE message
-	SHHandleWMSettingChange(m_hWnd, wParam, lParam, &m_sai);
+	//SHHandleWMSettingChange(m_hWnd, wParam, lParam, &m_sai);
 #endif
 
 #endif
+    return 0;
+}
+
+LRESULT CMainWindow::OnHotKey (UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
+{
+    LOG(INFO) + "OnHotKey : " + wParam;
+    bHandled = TRUE;
+
+    return 1;
+}
+
+LRESULT CMainWindow::OnSetFocus (UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
+{
+    HWND hBrowserWnd = m_pBrowserEng ? m_pBrowserEng->GetHTMLWND() : NULL;
+
+    if (hBrowserWnd && !::IsIconic(m_hWnd))
+	{
+		HWND hWndLostFocus = (HWND)wParam;
+		if (hWndLostFocus == hBrowserWnd)
+	        return 0;
+
+		WCHAR wWindowName[30];
+		if (hWndLostFocus && GetClassName(hWndLostFocus, wWindowName, 30))
+		{
+			//  Allow the following windows to remain having focus, avoids
+			//  the bug where we're unable to select anything from a combo 
+			//  box
+			if (wcscmp(wWindowName, L"PopupWindowClass") == 0)
+		        return 0;
+		}
+        ::SetFocus(hBrowserWnd);
+	}
+
     return 0;
 }
 
@@ -813,7 +922,7 @@ LRESULT CMainWindow::OnFullscreenCommand (WORD /*wNotifyCode*/, WORD /*wID*/, HW
 {
     LOG(INFO) + "OnFullscreenCommand";
 #if defined (_WIN32_WCE)
-    SetFullScreen( hwnd != 0 ? true : false);
+	RhoSetFullScreen(m_bFullScreen = (hwnd != 0 ? true : false));
 #endif
 	return 0;
 };
@@ -900,7 +1009,13 @@ LRESULT CMainWindow::OnTakePicture(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lPar
     HRESULT status;
 #if defined (_WIN32_WCE)
 	Camera camera;
+#ifdef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
+	RHODESAPP().m_cameraOpened = true;
+#endif
 	status = camera.takePicture(this->m_hWnd,image_uri);
+#ifdef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
+	RHODESAPP().m_cameraOpened = false;
+#endif
 #else
     //TODO: show browse file dialog
     wsprintf( image_uri, L"%s", L"dashboard.PNG");
@@ -1064,15 +1179,15 @@ LRESULT CMainWindow::OnExecuteCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM lPara
 LRESULT CMainWindow::OnLicenseScreen(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
 {
     LOG(INFO) + "OnLicenseScreen";
-#if defined( OS_WINCE )    
-	if (!RHOCONF().getBool("full_screen")) {
-		//SetFullScreen(wParam != 0);
-		HWND hTaskBar = FindWindow(_T("HHTaskBar"), NULL);
+#if defined( OS_WINCE )
+	if (!m_bFullScreen) {
+		RhoSetFullScreen(wParam != 0);
+/*		HWND hTaskBar = FindWindow(_T("HHTaskBar"), NULL);
 		if(hTaskBar) {
 			bool bEnableTaskBar = (wParam == 0);
 			::ShowWindow(hTaskBar, (bEnableTaskBar ? SW_SHOW : SW_HIDE));
 			::EnableWindow(hTaskBar, bEnableTaskBar);
-		}
+		}*/
 	}
 #endif
 	return 0;
@@ -1315,19 +1430,12 @@ BOOL CMainWindow::TranslateAccelerator(MSG* pMsg)
 {
 #if defined( OS_WINCE) && !defined( OS_PLATFORM_MOTCE )
 	if (pMsg->message == WM_CONTEXTMENU){
-		/*
-		CMenuHandle menu;
-		menu.LoadMenu(IDR_MAIN_MENU);
-		menu = menu.GetSubMenu(0);
-		return menu.TrackPopupMenu( TPM_CENTERALIGN | TPM_VERTICAL, LOWORD(pMsg->lParam), HIWORD(pMsg->lParam), m_hWnd);
-		*/
-		
 		return TRUE;
 	}
 
 	if (m_bFullScreen && pMsg->message == WM_KEYUP && 
 		(pMsg->wParam == VK_F1 ||  pMsg->wParam == VK_F2))
-	        SetFullScreen(false);
+	        RhoSetFullScreen(false);
 #endif
 
     // Accelerators are only keyboard or mouse messages
