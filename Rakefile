@@ -595,19 +595,19 @@ def init_extensions(startdir, dest)
   puts "exts " + exts
   
   if $config["platform"] != "bb"
-    exists = []
+    #exists = []
       
-    if ( File.exists?(exts) )
-      File.new(exts, "r").read.split("\n").each do |line|
-        next if line !~ /^\s*extern\s+void\s+([A-Za-z_][A-Za-z0-9_]*)/
-        exists << $1
-      end
-    end
+    #if ( File.exists?(exts) )
+    #  File.new(exts, "r").read.split("\n").each do |line|
+    #    next if line !~ /^\s*extern\s+void\s+([A-Za-z_][A-Za-z0-9_]*)/
+    #    exists << $1
+    #  end
+    #end
   
     #if (exists.sort! != extentries.sort! ) || (!File.exists?(exts))
-      File.open(exts, "w") do |f|
-        puts "MODIFY : #{exts}"
-          
+      #File.open(exts, "w") do |f|
+      #  puts "MODIFY : #{exts}"
+        f = StringIO.new("", "w+")          
         f.puts "// WARNING! THIS FILE IS GENERATED AUTOMATICALLY! DO NOT EDIT IT MANUALLY!"
         #f.puts "// Generated #{Time.now.to_s}"
         if $config["platform"] == "wm" || $config["platform"] == "win32"
@@ -630,7 +630,8 @@ def init_extensions(startdir, dest)
           f.puts "    #{entry}();"
         end
         f.puts "}"
-      end
+      #end
+        Jake.modify_file_if_content_changed( exts, f )
     #end
 
     extlibs.each { |lib| add_linker_library(lib) }
@@ -844,7 +845,7 @@ namespace "build" do
       cp   compileERB, $srcdir
       puts "Running bb.rb"
 
-      puts `#{$rubypath} -I#{rhodeslib} "#{$srcdir}/bb.rb"`
+      puts `#{$rubypath} -I"#{rhodeslib}" "#{$srcdir}/bb.rb"`
       unless $? == 0
         puts "Error interpreting erb code"
         exit 1
@@ -887,7 +888,23 @@ namespace "build" do
     end
 
     # its task for compiling ruby code in rhostudio
-    task :rhostudio => ["config:wm", "build:bundle:noxruby"] do
+    # TODO: temporary fix I hope. This code is copied from line 207 of this file
+    task :rhostudio => ["config:wm"] do
+
+      if RUBY_PLATFORM =~ /(win|w)32$/
+        $all_files_mask = "*.*"
+        $rubypath = "res/build-tools/RhoRuby.exe"
+      else
+        $all_files_mask = "*"
+        if RUBY_PLATFORM =~ /darwin/
+          $rubypath = "res/build-tools/RubyMac"
+        else
+          $rubypath = "res/build-tools/rubylinux"
+        end
+      end
+
+      Rake::Task["build:bundle:noxruby"].invoke
+
       Jake.build_file_map( File.join($srcdir, "apps"), "rhofilelist.txt" )
     end
     
@@ -908,7 +925,7 @@ namespace "build" do
       cp   compileERB, $srcdir
       puts "Running default.rb"
 
-      puts `#{$rubypath} -I#{rhodeslib} "#{$srcdir}/default.rb"`
+      puts `#{$rubypath} -I"#{rhodeslib}" "#{$srcdir}/default.rb"`
       unless $? == 0
         puts "Error interpreting erb code"
         exit 1
@@ -918,7 +935,7 @@ namespace "build" do
 
       cp   compileRB, $srcdir
       puts "Running compileRB"
-      puts `#{$rubypath} -I#{rhodeslib} "#{$srcdir}/compileRB.rb"`
+      puts `#{$rubypath} -I"#{rhodeslib}" "#{$srcdir}/compileRB.rb"`
       unless $? == 0
         puts "Error interpreting ruby code"
         exit 1
