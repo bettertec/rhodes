@@ -640,7 +640,6 @@ namespace "build" do
       $stdout.flush
       $app_config["extensions"].each do |ext|
         $app_config["extpaths"].each do |p|
-	  if p
           extpath = File.join(p, ext, 'ext')
           build_script = File.join(extpath, 'build')
           
