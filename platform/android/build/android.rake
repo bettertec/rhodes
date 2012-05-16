@@ -149,7 +149,7 @@ def set_app_name_android(newname)
   rm_rf $appres
   cp_r $rhores, $appres
 
-  iconappname = File.join($app_path, "icon", "icon.png")
+  iconappname = File.join($app_path, "icon/android", "icon.png")
   iconresname = File.join($appres, "drawable", "icon.png")
   rm_f iconresname
   cp iconappname, iconresname
