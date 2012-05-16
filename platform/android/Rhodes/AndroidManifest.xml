@@ -11,15 +11,18 @@
         android:name="com.rhomobile.rhodes.RhodesApplication"
         android:icon="@drawable/icon"
         android:label="@string/app_name"
-        android:debuggable="true">
+        android:debuggable="true"
+		>
         
         <!-- Main activity -->
         <activity
             android:name="com.rhomobile.rhodes.RhodesActivity"
             android:label="@string/app_name"
             android:configChanges="orientation|keyboardHidden"
-            android:screenOrientation="unspecified"
-            android:launchMode="singleTask">
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask"
+			android:windowSoftInputMode="adjustPan"
+			>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -35,23 +38,26 @@
         <activity
             android:name="com.rhomobile.rhodes.alert.PopupActivity"
             android:theme="@android:style/Theme.Dialog"
-            android:screenOrientation="unspecified"
+            android:screenOrientation="portrait"
             android:configChanges="orientation"
+			android:windowSoftInputMode="adjustPan"
          />
 <!--             android:theme="@style/PopupTheme" -->         
          <!-- for show alert !-->
         <activity
             android:name="com.rhomobile.rhodes.AlertChooseActivity"
             android:theme="@android:style/Theme.Dialog"
-            android:screenOrientation="unspecified"
+            android:screenOrientation="portrait"
             android:configChanges="orientation"
             android:launchMode="singleInstance"
+			android:windowSoftInputMode="adjustPan"
          />
         
         <activity
             android:name="com.rhomobile.rhodes.camera.FileList"
-            android:screenOrientation="unspecified"
+            android:screenOrientation="portrait"
             android:configChanges="orientation"
+			android:windowSoftInputMode="adjustPan"
          />
 
         
@@ -68,25 +74,27 @@
         
         <activity
             android:name="com.rhomobile.rhodes.datetime.DateTimePickerScreen"
-            android:screenOrientation="unspecified"
+            android:screenOrientation="portrait"
             android:configChanges="orientation"
          />
         
         <activity
             android:name="com.rhomobile.rhodes.mapview.MapView" 
-            android:screenOrientation="unspecified"
+            android:screenOrientation="portrait"
             android:configChanges="orientation"
+			android:windowSoftInputMode="adjustPan"
          />
         
         <activity
             android:name="com.rhomobile.rhodes.mapview.GoogleMapView"
-            android:screenOrientation="unspecified"
+            android:screenOrientation="portrait"
             android:configChanges="orientation"
+			android:windowSoftInputMode="adjustPan"
          />
         
         <activity
             android:name="com.rhomobile.rhodes.bluetooth.RhoBluetoothDeviceListActivity"
-            android:screenOrientation="unspecified"
+            android:screenOrientation="portrait"
             android:configChanges="orientation"
          />
 
