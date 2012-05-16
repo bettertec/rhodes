@@ -82,6 +82,7 @@ CSyncThread::CSyncThread() : CThreadQueue()
 CSyncThread::~CSyncThread(void)
 {
     m_oSyncEngine.exitSync();
+    LOG(INFO) + "Stopping Sync thread";
     stop(SYNC_WAIT_BEFOREKILL_SECONDS);
 
     db::CDBAdapter::closeAll();
@@ -205,13 +206,21 @@ void CSyncThread::stopAll() {
             getCommands().clear();
         }
         
-		CSyncThread::getSyncEngine().stopSyncByUser();
+	CSyncThread::getSyncEngine().stopSyncByUser();
+
+	//don't wait if calling from notify callback
+	if ( CSyncThread::getSyncEngine().getNotify().isInsideCallback() )
+	{
+		LOG(INFO)+"STOP sync called inside notify.";
+		return;
+	}
+
         CSyncThread::getInstance()->stopWait();
-        
-        while (!CSyncThread::getInstance()->isWaiting()) {
+
+	 while (!CSyncThread::getInstance()->isWaiting()) {
             CSyncThread::getInstance()->sleep(100);
         }
-        
+
         while( CDBAdapter::isAnyInsideTransaction() )
 			CSyncThread::getInstance()->sleep(100);
 	}

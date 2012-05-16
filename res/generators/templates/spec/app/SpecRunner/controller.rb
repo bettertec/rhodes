@@ -5,6 +5,8 @@ class SpecRunnerController < Rho::RhoController
 
   #GET /SpecRunner
   def index
+    GC.enable() unless System::get_property('platform') == 'Blackberry'  
+  
     puts 'before render'
   
     @msg = 'MSpec version: '+MSpec::VERSION

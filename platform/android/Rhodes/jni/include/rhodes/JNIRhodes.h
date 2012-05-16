@@ -48,7 +48,8 @@ JavaVM *jvm();
 void store_thr_jnienv(JNIEnv *env);
 
 extern "C" {
-  void android_set_path(const rho::String& root, const rho::String& sqlite);
+  void android_set_path(const rho::String& root, const rho::String& sqlite, const rho::String& shared);
+  void android_set_log_path(const rho::String& path);
   void android_setup(JNIEnv *env);
 }
 
@@ -89,6 +90,13 @@ public:
 
     void clear() {}
 };
+
+class AndroidMemoryInfoCollector : public IMemoryInfoCollector
+{
+public:
+    virtual String collect();
+};
+
 
 
 } // namespace common

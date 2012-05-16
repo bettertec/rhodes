@@ -118,6 +118,7 @@ HRESULT Camera::selectPicture(HWND hwndOwner,LPTSTR pszFilename)
     pszFilename[0] = 0;
 
 	ofn.lStructSize     = sizeof(ofn);
+    ofn.hwndOwner       = hwndOwner;
 	ofn.lpstrFilter     = NULL;
 	ofn.lpstrFile       = pszFilename;
 	ofn.nMaxFile        = MAX_PATH;
@@ -252,7 +253,7 @@ void create_folder(LPTSTR Path)
 
 //#endif //_WIN32_WCE
 
-void choose_picture(char* callback_url) {
+void choose_picture(char* callback_url, rho_param *options_hash) {
 //#if defined(_WIN32_WCE)
 	HWND main_wnd = getMainWnd();
 	::PostMessage(main_wnd,WM_SELECTPICTURE,0,(LPARAM)strdup(callback_url));

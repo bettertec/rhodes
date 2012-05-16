@@ -134,8 +134,6 @@ namespace rho.views
             RHODESAPP().CurrentUri = m_currentUri;
             if (((!m_loadFirstTime && m_reload) || m_loadFirstTime) && m_strAction != null)
             {
-                if (m_loadFirstTime)
-                    m_loadFirstTime = false;
                 //bool callback = false;
                 if (m_strAction.startsWith("callback:"))
                 {
@@ -147,8 +145,11 @@ namespace rho.views
                 {
                     RhoClassFactory.createNetRequest().pushData(m_strAction, "rho_callback=1", null);
                 }
-                else
+                else if (!m_callback)
                     webBrowser1.Navigate(new Uri(m_strAction));
+
+                if (m_loadFirstTime)
+                    m_loadFirstTime = false;
             }
         }
 

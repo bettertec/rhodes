@@ -60,7 +60,8 @@ public class RhoFileApi {
     private static final String DB_FILES_FOLDER = "db/db-files";
     private static final String TMP_FOLDER = "tmp";
 
-	private static native void nativeInitPath(String rootPath, String sqliteJournalsPath, String apkPath);
+	private static native void nativeInitPath(String rootPath, String sqliteJournalsPath, String apkPath, String sharedPath);
+	private static native void nativeInitLogPath(String path);
 	private static native void nativeInit();
 	private static native void updateStatTable(String path, String type, long size, long mtime);
 	
@@ -69,6 +70,9 @@ public class RhoFileApi {
 	
 	private static native boolean needEmulate(String path);
 	private static native String makeRelativePath(String path);
+	
+    public static native void setFsModeTransparrent(boolean transparrent);
+	public static native void removeBundleUpgrade();
 
     private static void fillStatTable() throws IOException {
         InputStream is = null;
@@ -127,12 +131,10 @@ public class RhoFileApi {
 		}
 	}
 
-	public static String initRootPath(String dataDir, String sourceDir) {
+	public static String initRootPath(String dataDir, String sourceDir, String sharedDir) {
 		
 		root = dataDir + "/rhodata/";
 		String sqliteJournals = dataDir + "/sqlite_stmt_journals/";
-		Log.d(TAG, "App root path: " + root);
-		Log.d(TAG, "Sqlite journals path: " + sqliteJournals);
 		
 		File f = new File(getRootPath());
 		f.mkdirs();
@@ -145,9 +147,21 @@ public class RhoFileApi {
 		
 		String apkPath = sourceDir;
 		
-		nativeInitPath(root, sqliteJournals, apkPath);
-		return root;
-	}
+		if (sharedDir == null || sharedDir.length() == 0) {
+		    sharedDir = root;
+		}
+		
+        Log.d(TAG, "App root path: " + root);
+        Log.d(TAG, "Sqlite journals path: " + sqliteJournals);
+        Log.d(TAG, "Shared path: " + sharedDir);
+
+        nativeInitPath(root, sqliteJournals, apkPath, sharedDir);
+        return root;
+    }
+
+    public static void initLogPath(String path) {
+        nativeInitLogPath(path);
+    }
 
     public static String getRootPath() { return root; }
     public static String getDbFilesUriPath() { return DB_FILES_FOLDER; }
@@ -163,10 +177,13 @@ public class RhoFileApi {
 		fillStatTable();
 	}
 	
-	public static void initCopy(Context ctx, String assets[])
+	public static void initialCopy(Context ctx, String assets[])
 	{
 		am = ctx.getAssets();
-		copyAssets(assets);
+        for(String asset: assets)
+        {
+            forceFile(getRootPath() + asset);
+        }
 	}
 	
 	public static boolean copy(String path)
@@ -175,8 +192,6 @@ public class RhoFileApi {
 		InputStream is = null;
 		OutputStream os = null;
 		try {
-			//RhodesService r = RhodesService.getInstance();
-			
 			is = am.open(path);
 			
 			File dst = new File(root, path);
@@ -272,7 +287,7 @@ public class RhoFileApi {
 			return is;
 		}
 		catch (IOException e) {
-			//Log.e(TAG, "Can not open " + path);
+			Log.e(TAG, e.getMessage());
 			return null;
 		}
 	}

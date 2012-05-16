@@ -155,6 +155,21 @@ bool CExtManager::existsJavascript(const wchar_t* szJSFunction)
 #endif
 }
 
+void CExtManager::setBrowserGesturing(bool bEnableGesturing)
+{
+#ifndef RHODES_EMULATOR
+    getAppWindow().getWebKitEngine()->setBrowserGesturing(bEnableGesturing);
+#endif
+
+}
+
+void CExtManager::passSipPositionToEngine()
+{
+#ifndef RHODES_EMULATOR
+    getAppWindow().getWebKitEngine()->NotifyEngineOfSipPosition();
+#endif
+}
+
 void CExtManager::executeJavascript(const wchar_t* szJSFunction)
 {
     ::PostMessage( getMainWnd(), WM_COMMAND, IDM_EXECUTEJS, (LPARAM)_wcsdup(szJSFunction) );
@@ -190,19 +205,24 @@ void CExtManager::quitApp()
     rho_sys_app_exit();
 }
 
+static void __minimize_restoreApp(int nParam)
+{
+    ::ShowWindow(getMainWnd(), nParam );
+}
+
 void CExtManager::minimizeApp()
 {
-    ::ShowWindow(getMainWnd(), SW_MINIMIZE );
+    rho_callInUIThread(__minimize_restoreApp, SW_MINIMIZE);
 }
 
 void CExtManager::restoreApp()
 {
-    ::ShowWindow(getMainWnd(), SW_RESTORE );
+    rho_callInUIThread(__minimize_restoreApp, SW_RESTORE);
 }
 
 void CExtManager::resizeBrowserWindow(RECT rc)
 {
-    ::MoveWindow( getMainWnd(), rc.left, rc.top, rc.right-rc.left, rc.bottom-rc.top, TRUE );
+    //::MoveWindow( getMainWnd(), rc.left, rc.top, rc.right-rc.left, rc.bottom-rc.top, TRUE );
 }
 
 void CExtManager::zoomPage(float fZoom)
@@ -246,15 +266,51 @@ StringW CExtManager::getPageTitle(UINT iTab)
 }
 
 extern "C" unsigned long rb_require(const char *fname);
+extern "C" int  rho_ruby_is_started();
 
 void CExtManager::requireRubyFile( const char* szFilePath )
 {
-    rb_require(szFilePath);
+    if( rho_ruby_is_started() )
+        rb_require(szFilePath);
 }
 
-void CExtManager::rhoLog(int nSeverity, const char* szModule, const char* szMsg, const char* szFile, int nLine)
+extern "C" int rho_wmimpl_is_loglevel_enabled(int nLogLevel);
+extern "C" bool rho_wmimpl_get_is_version2();
+void CExtManager::rhoLog(ELogExtLevels eLogLevel, const char* szModule, const char* szMsg, const char* szFile, int nLine)
 {
+#if defined(APP_BUILD_CAPABILITY_SHARED_RUNTIME)
+    bool bRE1App = false;
+
+    if (!rho_wmimpl_get_is_version2())
+        bRE1App = true;
+
+    if (bRE1App && !rho_wmimpl_is_loglevel_enabled(eLogLevel))
+        return;
+#endif
+
+
+    int nSeverity = L_INFO;
+    switch (eLogLevel)
+    {
+    case eLogError:
+	    nSeverity = L_ERROR;
+	    break;
+    case eLogWarning:
+        nSeverity = L_WARNING;
+	    break;
+    case eLogInfo:
+        nSeverity = L_INFO;
+	    break;
+    case eLogUser:
+        nSeverity = L_INFO;
+	    break;
+    case eLogDebug:
+        nSeverity = L_TRACE;
+	    break;
+    }
+
     rhoPlainLog(szFile, nLine, nSeverity, szModule, szMsg);
+    
 }
 
 bool CExtManager::onWndMsg(MSG& oMsg)
@@ -304,6 +360,30 @@ long CExtManager::OnAlertPopup(int nEnum, void* pData)
     return 0;
 }
 
+long CExtManager::OnAuthenticationRequest(int nEnum, void* pData)
+{
+    for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
+    {
+        long lRes = (it->second)->OnAuthenticationRequest( nEnum, pData, makeExtData() );
+        if ( lRes )
+            return lRes;
+    }
+
+    return 0;
+}
+
+long CExtManager::OnGeolocationData(int nEnum, void* pData)
+{
+    for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
+    {
+        long lRes = (it->second)->OnGeolocationData( nEnum, pData, makeExtData() );
+        if ( lRes )
+            return lRes;
+    }
+
+    return 0;
+}
+
 long CExtManager::OnNavigateError(const wchar_t* szUrlBeingNavigatedTo)
 {
     for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
@@ -321,6 +401,14 @@ void CExtManager::OnAppActivate(bool bActivate)
     for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
     {
         (it->second)->OnAppActivate( bActivate, makeExtData() );
+    }
+}
+
+void CExtManager::OnWindowChanged(LPVOID lparam)
+{
+    for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
+    {
+        (it->second)->OnWindowChanged( lparam );
     }
 }
 

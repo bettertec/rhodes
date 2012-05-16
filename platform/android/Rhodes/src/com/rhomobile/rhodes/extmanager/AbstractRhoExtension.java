@@ -1,5 +1,7 @@
 package com.rhomobile.rhodes.extmanager;
 
+import android.graphics.Rect;
+
 public abstract class AbstractRhoExtension implements IRhoExtension {
 
     @Override
@@ -40,6 +42,10 @@ public abstract class AbstractRhoExtension implements IRhoExtension {
     }
 
     @Override
+    public void onPrompt(IRhoExtManager extManager, String message, String defaultResponse, IRhoExtData ext) {
+    }
+
+    @Override
     public void onSelect(IRhoExtManager extManager, String[] items, int selected, IRhoExtData ext) {
     }
 
@@ -56,7 +62,7 @@ public abstract class AbstractRhoExtension implements IRhoExtension {
     }
 
     @Override
-    public void onInputMethod(IRhoExtManager extManager, boolean enabled, IRhoExtData ext) {
+    public void onInputMethod(IRhoExtManager extManager, boolean enabled, String type, Rect rect, IRhoExtData ext) {
     }
 
     @Override
@@ -65,6 +71,21 @@ public abstract class AbstractRhoExtension implements IRhoExtension {
 
     @Override
     public void onAppActivate(IRhoExtManager extManager, boolean bActivate) {
+    }
+
+    //@Override
+    //EkiohLocation getCachedLocation(IRhoExtManager extManager, IRhoExtData ext);
+
+    @Override
+    public void startLocationUpdates(IRhoExtManager extManager, boolean highAccuracy, IRhoExtData ext) {
+    }
+
+    @Override
+    public void stopLocationUpdates(IRhoExtManager extManager, IRhoExtData ext) {
+    }
+
+    @Override
+    public void onAuthRequired(IRhoExtManager extManager, String type, String url, String realm, IRhoExtData ext) {
     }
 
 }

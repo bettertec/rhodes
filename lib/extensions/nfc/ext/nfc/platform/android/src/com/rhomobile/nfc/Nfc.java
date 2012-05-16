@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 
 import android.app.Activity;
+import android.app.Dialog;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -36,12 +37,14 @@ import android.os.Parcelable;
 import android.util.Log;
 
 import com.rhomobile.rhodes.RhodesActivity;
-import com.rhomobile.rhodes.RhodesActivityListener;
 import com.rhomobile.rhodes.RhodesService;
+import com.rhomobile.rhodes.extmanager.IRhoExtManager;;
+import com.rhomobile.rhodes.extmanager.IRhoListener;
+import com.rhomobile.rhodes.extmanager.RhoExtManager;;
 import com.rhomobile.rhodes.util.Utils;
 import com.rhomobile.rhodes.util.PerformOnUiThread;
 
-public class Nfc implements RhodesActivityListener {
+public class Nfc implements IRhoListener {
 
 	private static final String TAG = Nfc.class.getSimpleName();
 	
@@ -117,9 +120,6 @@ public class Nfc implements RhodesActivityListener {
 	}
 	
 	public static Nfc getInstance() {
-		if (ourInstance == null) {
-			ourInstance = new Nfc();
-		}
 		return ourInstance;
 	}
 	
@@ -199,8 +199,9 @@ public class Nfc implements RhodesActivityListener {
 	}
 	
 	@Override
-	public void onRhodesActivityStartup(RhodesActivity activity) {
-		activity.addRhodesActivityListener(getInstance());
+	public void onCreateApplication(IRhoExtManager extManager) {
+	    ourInstance = this;
+		extManager.addRhoListener(this);
 	}
 	
 	@Override
@@ -1156,8 +1157,9 @@ public class Nfc implements RhodesActivityListener {
 		}
 		return result;
 	}
-	
-	
-	
+
+    public Dialog onCreateDialog(RhodesActivity activity, int id) {
+        return null;
+    }
 
 }

@@ -59,19 +59,24 @@ typedef struct _RHO_CONNECT_NOTIFY
     char* source_name;
     char* status;
     char* sync_type;
+    char* bulk_status;
+    char* partition;
     int error_code;
     char* error_message;
     char* callback_params;
-    unsigned long create_errors;
+    
+    unsigned long create_errors_messages;
 
     unsigned long update_errors_obj;
     unsigned long update_errors_attrs;
+    unsigned long update_errors_messages;
 
     unsigned long update_rollback_obj;
     unsigned long update_rollback_attrs;
 
     unsigned long delete_errors_obj;
     unsigned long delete_errors_attrs;
+    unsigned long delete_errors_messages;
 
 }RHO_CONNECT_NOTIFY;
 
@@ -93,6 +98,8 @@ void rho_connectclient_initmodel(RHOM_MODEL* model);
 void rho_connectclient_destroymodel(RHOM_MODEL* model);
 
 void rho_connectclient_init(RHOM_MODEL* pModels, int nModels);
+void rho_connectclient_updatemodels(RHOM_MODEL* pModels, int nModels);
+
 void rho_connectclient_destroy();
 void rho_connectclient_database_client_reset();
 void rho_connectclient_database_full_reset_and_logout();
@@ -123,6 +130,7 @@ unsigned long rho_connectclient_find_all(const char* szModel, unsigned long hash
 unsigned long rho_connectclient_findbysql(const char* szModel, const char* szSql, unsigned long arParams );
 
 int rho_connectclient_is_changed(const char* szModel);
+void rho_connectclient_set_synctype(const char* szModel, RHOM_SYNC_TYPE sync_type);
 
 void rho_connectclient_save( const char* szModel, unsigned long hash );
 void rho_connectclient_itemdestroy( const char* szModel, unsigned long hash );
@@ -141,6 +149,7 @@ void rho_connectclient_stop_bulkupdate(const char* szModel);
 void rho_connectclient_on_sync_create_error(const char* szModel, RHO_CONNECT_NOTIFY* oNotify, const char* szAction );
 void rho_connectclient_on_sync_update_error(const char* szModel, RHO_CONNECT_NOTIFY* oNotify, const char* szAction );
 void rho_connectclient_on_sync_delete_error(const char* szModel, RHO_CONNECT_NOTIFY* oNotify, const char* szAction );
+void rho_connectclient_push_changes(const char* szModel );
 
 #ifdef __cplusplus
 };

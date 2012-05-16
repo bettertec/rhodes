@@ -53,6 +53,7 @@ using namespace rho;
 using namespace rho::common;
 extern "C" HWND getMainWnd();
 extern "C" char* wce_wctomb(const wchar_t* w);
+extern "C" int rho_wm_impl_CheckSymbolDevice();
 
 extern "C"
 {
@@ -307,7 +308,7 @@ VALUE rho_sys_get_locale()
 
 int rho_wmsys_has_touchscreen()
 {
-#if defined( OS_WINDOWS ) || defined( OS_PLATFORM_MOTCE )
+#if defined( OS_WINDOWS_DESKTOP ) || defined( OS_PLATFORM_MOTCE )
         return 1;
 #else
         BOOL bRet;
@@ -385,7 +386,7 @@ int get_msie_version(rho::String& msieVer)
 //    1  : Unable to open Registry Key
 //    2  : Unable to read key value
 {
-#ifdef OS_WINDOWS
+#ifdef OS_WINDOWS_DESKTOP
     LONG lResult;
     HKEY hKey;
     DWORD dwSize=100,dwType;
@@ -431,7 +432,7 @@ int rho_sysimpl_get_property(char* szPropName, VALUE* resValue)
 #ifdef RHODES_EMULATOR
 		*resValue = rho_ruby_create_string("WEBKIT/" QTWEBKIT_VERSION_STR);
 #elif defined(APP_BUILD_CAPABILITY_WEBKIT_BROWSER)
-		*resValue = rho_ruby_create_string("WEBKIT");
+		*resValue = rho_ruby_create_string("WEBKIT/MOTOROLA");
 #else
 		rho::String msieVer = "IE";
 		get_msie_version(msieVer);
@@ -472,7 +473,7 @@ int rho_sysimpl_get_property(char* szPropName, VALUE* resValue)
 
 	if (strcasecmp("device_name",szPropName) == 0)
 	{
-#ifdef OS_WINDOWS
+#ifdef OS_WINDOWS_DESKTOP
 		*resValue = rho_ruby_create_string("Win32");
         return 1;
 #else
@@ -518,7 +519,7 @@ int rho_sysimpl_get_property(char* szPropName, VALUE* resValue)
 	if (strcasecmp("is_emulator",szPropName) == 0)
     {
         bool bEmulator = false;
-#ifdef OS_WINDOWS
+#ifdef OS_WINDOWS_DESKTOP
         bEmulator = true;
 #else
 
@@ -589,6 +590,11 @@ int rho_sysimpl_get_property(char* szPropName, VALUE* resValue)
         *resValue = rho_ruby_create_boolean( g_rho_has_network != 0 );
         return 1;
     }
+
+#if defined( OS_WINCE )
+		if (strcasecmp("is_motorola_device",szPropName) == 0)
+        return rho_ruby_create_boolean(rho_wm_impl_CheckSymbolDevice());
+#endif
 
     return 0;
 }
@@ -743,7 +749,7 @@ int rho_sys_is_app_installed(const char *appname)
     }
 
     if ( wszOutput )
-        sys_free( wszOutput );
+        free( wszOutput );
 #endif
 
     return nRet;
@@ -778,7 +784,7 @@ void rho_sys_app_uninstall(const char *appname)
     }
 
     if ( wszOutput )
-        sys_free( wszOutput );
+        free( wszOutput );
 #endif
 }
 

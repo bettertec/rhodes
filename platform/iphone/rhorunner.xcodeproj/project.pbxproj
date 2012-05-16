@@ -54,6 +54,7 @@
 		BDFBD9A410B1B9E500BAAFAB /* forward_btn.png in Resources */ = {isa = PBXBuildFile; fileRef = BDFBD9A210B1B9E500BAAFAB /* forward_btn.png */; };
 		BDFBD9A510B1B9E500BAAFAB /* home_btn.png in Resources */ = {isa = PBXBuildFile; fileRef = BDFBD9A310B1B9E500BAAFAB /* home_btn.png */; };
 		BDFBD9A710B1BA2000BAAFAB /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = BDFBD9A610B1BA2000BAAFAB /* icon.png */; };
+		C5D0D0C1153F279A00B8BF21 /* InitMemoryInfoCollector.mm in Sources */ = {isa = PBXBuildFile; fileRef = C5D0D0C0153F279A00B8BF21 /* InitMemoryInfoCollector.mm */; };
 		F5128ADD1069752F002F00E5 /* MapAnnotation.m in Sources */ = {isa = PBXBuildFile; fileRef = F5128ADC1069752F002F00E5 /* MapAnnotation.m */; };
 		F5128C2C106C1FF3002F00E5 /* GoogleGeocoder.m in Sources */ = {isa = PBXBuildFile; fileRef = F5128C2B106C1FF3002F00E5 /* GoogleGeocoder.m */; };
 		F51668E00FFD5F740079F023 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F51668DF0FFD5F740079F023 /* AudioToolbox.framework */; };
@@ -94,6 +95,7 @@
 		FACA4C7B1270AC0900777CFF /* SplitViewDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FACA4C771270AC0900777CFF /* SplitViewDelegate.m */; };
 		FACC20CA123A60F40088A447 /* Bluetooth.m in Sources */ = {isa = PBXBuildFile; fileRef = FACC20C9123A60F40088A447 /* Bluetooth.m */; };
 		FACC2100123A759A0088A447 /* GameKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FACC20FF123A759A0088A447 /* GameKit.framework */; };
+		FAD42C58152CE61A000F906A /* libMotorolaLicence.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FAD42C57152CE61A000F906A /* libMotorolaLicence.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -235,6 +237,8 @@
 		BDFBD9A210B1B9E500BAAFAB /* forward_btn.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = forward_btn.png; sourceTree = "<group>"; };
 		BDFBD9A310B1B9E500BAAFAB /* home_btn.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = home_btn.png; sourceTree = "<group>"; };
 		BDFBD9A610B1BA2000BAAFAB /* icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon.png; sourceTree = SOURCE_ROOT; };
+		C5D0D0BF153F279300B8BF21 /* InitMemoryInfoCollector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InitMemoryInfoCollector.h; sourceTree = "<group>"; };
+		C5D0D0C0153F279A00B8BF21 /* InitMemoryInfoCollector.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = InitMemoryInfoCollector.mm; sourceTree = "<group>"; };
 		F5128ADB1069752F002F00E5 /* MapAnnotation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MapAnnotation.h; path = MapView/MapAnnotation.h; sourceTree = "<group>"; };
 		F5128ADC1069752F002F00E5 /* MapAnnotation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MapAnnotation.m; path = MapView/MapAnnotation.m; sourceTree = "<group>"; };
 		F5128C2A106C1FF3002F00E5 /* GoogleGeocoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GoogleGeocoder.h; path = Classes/MapView/GoogleGeocoder.h; sourceTree = SOURCE_ROOT; };
@@ -304,6 +308,7 @@
 		FACC20C8123A60F40088A447 /* Bluetooth.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Bluetooth.h; path = Bluetooth/Bluetooth.h; sourceTree = "<group>"; };
 		FACC20C9123A60F40088A447 /* Bluetooth.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Bluetooth.m; path = Bluetooth/Bluetooth.m; sourceTree = "<group>"; };
 		FACC20FF123A759A0088A447 /* GameKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameKit.framework; path = System/Library/Frameworks/GameKit.framework; sourceTree = SDKROOT; };
+		FAD42C57152CE61A000F906A /* libMotorolaLicence.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libMotorolaLicence.a; path = ../../res/libs/motorolalicence/iphone/libMotorolaLicence.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -336,6 +341,7 @@
 				5C59AB4212DDA22E00ED4A1E /* Security.framework in Frameworks */,
 				FA522FE112E49D6F00AB55CC /* QuartzCore.framework in Frameworks */,
 				FA52309412E55CA700AB55CC /* EventKit.framework in Frameworks */,
+				FAD42C58152CE61A000F906A /* libMotorolaLicence.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -408,6 +414,7 @@
 				BD72CCE4112D629F003B7D27 /* Info.plist */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
+				FAD42C57152CE61A000F906A /* libMotorolaLicence.a */,
 				46AD7DB21117AFB9009A974A /* MapKit.framework */,
 				46AD7DB61117AFBF009A974A /* CFNetwork.framework */,
 				FACC20FF123A759A0088A447 /* GameKit.framework */,
@@ -606,6 +613,8 @@
 		F547F3D10F9CEB05007C2CD2 /* Log */ = {
 			isa = PBXGroup;
 			children = (
+				C5D0D0C0153F279A00B8BF21 /* InitMemoryInfoCollector.mm */,
+				C5D0D0BF153F279300B8BF21 /* InitMemoryInfoCollector.h */,
 				F52181120F96B13500B7F974 /* LogViewController.m */,
 				F52181110F96B13500B7F974 /* LogViewController.h */,
 				F547F2860F9945D2007C2CD2 /* LogOptionsController.h */,
@@ -1008,6 +1017,7 @@
 				FA52300D12E4BBC700AB55CC /* MapViewManager.m in Sources */,
 				FAC6EE6D143B3AF100B8E352 /* RhoMapViewController.m in Sources */,
 				FA14CECD150130DB00734801 /* DateTimePickerViewController.m in Sources */,
+				C5D0D0C1153F279A00B8BF21 /* InitMemoryInfoCollector.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1065,6 +1075,7 @@
 					"$(inherited)",
 					"$(SRCROOT)",
 					"$(SRCROOT)/build/Debug-iphonesimulator",
+					"\"$(SRCROOT)/../../res/libs/motorolalicence/iphone\"",
 				);
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = "";
@@ -1089,10 +1100,6 @@
 					armv6,
 				);
 				CODE_SIGN_ENTITLEMENTS = Entitlements.plist;
-				ARCHS = (
-					armv7,
-					armv6,
-				);
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
@@ -1106,6 +1113,7 @@
 					"$(inherited)",
 					"$(SRCROOT)",
 					"$(SRCROOT)/build/Release-iphoneos",
+					"\"$(SRCROOT)/../../res/libs/motorolalicence/iphone\"",
 				);
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = "";
@@ -1184,6 +1192,7 @@
 					"$(SRCROOT)",
 					"$(SRCROOT)/build/Debug-iphonesimulator",
 					"$(SRCROOT)/openssl/build",
+					"\"$(SRCROOT)/../../res/libs/motorolalicence/iphone\"",
 				);
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = "";

@@ -1,18 +1,40 @@
 package com.rhomobile.rhodes.extmanager;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Hashtable;
 
+import android.app.Dialog;
+import android.content.Intent;
+import android.graphics.Rect;
+import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 
+import com.rhomobile.rhodes.Capabilities;
 import com.rhomobile.rhodes.Logger;
+import com.rhomobile.rhodes.R;
 import com.rhomobile.rhodes.RhodesActivity;
 import com.rhomobile.rhodes.RhodesService;
 import com.rhomobile.rhodes.WebView;
+import com.rhomobile.rhodes.mainview.MainView;
+import com.rhomobile.rhodes.util.PerformOnUiThread;
+import com.rhomobile.rhodes.util.Utils;
 
 public class RhoExtManagerImpl implements IRhoExtManager {
     private static final String TAG = RhoExtManagerImpl.class.getSimpleName();
 
-	private Hashtable<String, IRhoExtension> mExtensions;
+    private Hashtable<String, IRhoExtension> mExtensions = new Hashtable<String, IRhoExtension>();
+    private ArrayList<IRhoListener> mListeners = new ArrayList<IRhoListener>();
+    private Object mLicense;
+    private boolean mFirstNavigate = true;
+    private boolean mLogError = true;
+    private boolean mLogWarning = true;
+    private boolean mLogInfo = true;
+    private boolean mLogUser = true;
+    private boolean mLogDebug = true;
 
     private IRhoExtData makeDefExtData(View view) {
         return new RhoExtDataImpl(view, RhodesActivity.safeGetInstance().getMainView().activeTab());
@@ -20,10 +42,17 @@ public class RhoExtManagerImpl implements IRhoExtManager {
     
     private static native void nativeRequireRubyFile(String path);
 
-	public RhoExtManagerImpl() {
-		mExtensions = new Hashtable<String, IRhoExtension>();
-	}
-	
+    static int getResId(String className, String idName) {
+        className = R.class.getCanonicalName() + "$" + className;
+        try {
+            Class<?> rClass = Class.forName(className);
+            Field field = rClass.getDeclaredField(idName);
+            return field.getInt(null);
+        } catch (Throwable e) {
+            throw new IllegalArgumentException("Cannot get " + className + "." + idName, e);
+        }
+    }
+
 	@Override
 	public IRhoExtension getExtByName(String strName) {
 	    synchronized (mExtensions) {
@@ -43,13 +72,22 @@ public class RhoExtManagerImpl implements IRhoExtManager {
     }
 
     @Override
+    public void addRhoListener(IRhoListener listener) {
+        if (!mListeners.contains(listener)) {
+            mListeners.add(listener);
+        }
+    }
+
+    @Override
 	public View getWebView() {
-        return RhodesActivity.safeGetInstance().getMainView().getWebView(WebView.activeTab()).getView();
+        MainView mainView = RhodesActivity.safeGetInstance().getMainView();
+        return mainView != null ? mainView.getWebView(mainView.activeTab()).getView() : null;
     }
 
     @Override
     public View getTopView() {
-        return RhodesActivity.safeGetInstance().getMainView().getView();
+        MainView mainView = RhodesActivity.safeGetInstance().getMainView();
+        return mainView != null ? mainView.getView() : null;
     }
 
     @Override
@@ -91,7 +129,8 @@ public class RhoExtManagerImpl implements IRhoExtManager {
 
     @Override
     public String getCurrentUrl() {
-        return RhodesActivity.safeGetInstance().getMainView().currentLocation(RhodesActivity.safeGetInstance().getMainView().activeTab());
+        MainView mainView = RhodesActivity.safeGetInstance().getMainView();
+        return mainView != null ? mainView.currentLocation(mainView.activeTab()) : "";
     }
 
     @Override
@@ -120,6 +159,11 @@ public class RhoExtManagerImpl implements IRhoExtManager {
     }
 
     @Override
+    public void setFullScreen(boolean fullScreen) {
+        
+    }
+
+    @Override
     public void minimizeApp() {
         // TODO Auto-generated method stub
     }
@@ -131,12 +175,12 @@ public class RhoExtManagerImpl implements IRhoExtManager {
 
     @Override
     public void zoomPage(float fZoom) {
-        // TODO Auto-generated method stub
+        WebView.setZoom((int)(fZoom * 100));
     }
 
     @Override
     public void zoomText(int nZoom) {
-        // TODO Auto-generated method stub
+        WebView.setTextZoom(nZoom);
     }
 
     @Override
@@ -144,10 +188,68 @@ public class RhoExtManagerImpl implements IRhoExtManager {
         return RhodesService.getBuildConfig(name);
     }
 
+    /** 
+     * @return is extension allowed to navigate to its start page
+     */
+    @Override
+    public boolean onStartNewConfig() {
+        return Capabilities.SHARED_RUNTIME_ENABLED;
+    }
 
+    /**
+     * @param name - parameter name
+     * @param value - parameter value
+     * @return is parameter accepted by rhodes platform
+     */
+    @Override
+    public boolean onNewConfigValue(String name, String value) {
+        return false;
+    }
     //-----------------------------------------------------------------------------------------------------------------
     // Rhodes implementation related methods are below
 
+    public void enableLogLevelError(boolean enabled) {
+        Log.i(TAG, "RE Error log: " + enabled);
+        mLogError = enabled;
+    }
+    public void enableLogLevelWarning(boolean enabled) { 
+        Log.i(TAG, "RE Warning log: " + enabled);
+        mLogWarning = enabled; 
+    }
+    public void enableLogLevelInfo(boolean enabled) { 
+        Log.i(TAG, "RE Info log: " + enabled);
+        mLogInfo = enabled;
+    }
+    public void enableLogLevelUser(boolean enabled) { 
+        Log.i(TAG, "RE User log: " + enabled);
+        mLogUser = enabled;
+    }
+    public void enableLogLevelDebug(boolean enabled) { 
+        Log.i(TAG, "RE Debug log: " + enabled);
+        mLogDebug = enabled;
+    }
+
+    void logT(String tag, String msg) {
+        if (mLogDebug)
+            Logger.I(tag, msg);
+    }
+
+    void logI(String tag, String msg) {
+        if (mLogInfo || mLogUser)
+            Logger.I(tag, msg);
+    }
+
+    void logW(String tag, String msg) {
+        if (mLogWarning)
+            Logger.W(tag, msg);
+    }
+
+    void logE(String tag, String msg) {
+        if (mLogError)
+            Logger.E(tag, msg);
+    }
+
+    
     public void onSetPropertiesData(View view,String propId, String data, int position, int total) {
         synchronized (mExtensions) {
             for (IRhoExtension ext : mExtensions.values()) {
@@ -161,6 +263,30 @@ public class RhoExtManagerImpl implements IRhoExtManager {
             for (IRhoExtension ext : mExtensions.values()) {
                 ext.onBeforeNavigate(this, url, makeDefExtData(view));
             }
+        }
+        if(mFirstNavigate) {
+            if(Capabilities.MOTOROLA_ENABLED) {
+                PerformOnUiThread.exec(new Runnable() {
+                    @SuppressWarnings("deprecation")
+                    @Override
+                    public void run() {
+                        Logger.I(TAG, "Init license now");
+                        try {
+                            RhodesActivity activity = RhodesActivity.safeGetInstance();
+                            LayoutInflater inflater = activity.getLayoutInflater();
+                            View licenseView = inflater.inflate(getResId("layout", "license"), null);  
+                            activity.addContentView(licenseView, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.FILL_PARENT, ViewGroup.LayoutParams.FILL_PARENT));
+                            Class<?> licenseClass = Class.forName("com.motorolasolutions.rhoelements.License");
+                            Constructor<?> licenseCtor = licenseClass.getConstructor();
+                            mLicense = licenseCtor.newInstance();
+                        } catch(Throwable e) {
+                            Logger.E(TAG, e);
+                            Logger.T(TAG, "No motorola runtime licensing");
+                        }
+                    }
+                });
+            }
+            mFirstNavigate = false;
         }
     }
 
@@ -204,10 +330,10 @@ public class RhoExtManagerImpl implements IRhoExtManager {
         }
     }
 
-    public void onInputMethod(View view, boolean enabled) {
+    public void onInputMethod(View view, boolean enabled, String type, Rect area) {
         synchronized (mExtensions) {
             for (IRhoExtension ext : mExtensions.values()) {
-                ext.onInputMethod(this, enabled, makeDefExtData(view));
+                ext.onInputMethod(this, enabled, type, area, makeDefExtData(view));
             }
         }
     }
@@ -244,10 +370,10 @@ public class RhoExtManagerImpl implements IRhoExtManager {
         }
     }
 
-    public void onPrompt(View view, String prompt, String arg2) {
+    public void onPrompt(View view, String prompt, String defaultResponse) {
         synchronized (mExtensions) {
             for (IRhoExtension ext : mExtensions.values()) {
-                ext.onConfirm(this, prompt, makeDefExtData(view));
+                ext.onPrompt(this, prompt, defaultResponse, makeDefExtData(view));
             }
         }
     }
@@ -275,5 +401,104 @@ public class RhoExtManagerImpl implements IRhoExtManager {
             }
         }
     }
+    
+    public void onAuthRequired(View view, String type, String url, String realm) {
+        synchronized (mExtensions) {
+            for (IRhoExtension ext : mExtensions.values()) {
+                ext.onAuthRequired(this, type, url, realm, makeDefExtData(view));
+            }
+        }
+    }
+
+    public void startLocationUpdates(View view, boolean val) {
+        synchronized (mExtensions) {
+            for (IRhoExtension ext : mExtensions.values()) {
+                ext.startLocationUpdates(this, val, makeDefExtData(view));
+            }
+        }
+    }
+
+    public void stopLocationUpdates(View view) {
+        synchronized (mExtensions) {
+            for (IRhoExtension ext : mExtensions.values()) {
+                ext.stopLocationUpdates(this, makeDefExtData(view));
+            }
+        }
+    }
+
+    public void createRhoListeners() {
+        for (String classname: RhodesStartupListeners.ourRunnableList) {
+            if (classname.length() == 0) continue;
+            
+            Class<? extends IRhoListener> klass = null;
+            try {
+                klass = Class.forName(classname).asSubclass(IRhoListener.class);
+            } catch (ClassNotFoundException e) {
+                Utils.platformLog("RhodesActivity", "processStartupListeners() : ClassNotFoundException for ["+classname+"]");
+                e.printStackTrace();
+            }
+            IRhoListener listener = null;
+            try {
+                if (klass != null) {
+                    listener = klass.newInstance();
+                }
+            } catch (InstantiationException e) {
+                Utils.platformLog("RhodesActivity", "processStartupListeners() : InstantiationException for ["+classname+"]");
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                Utils.platformLog("RhodesActivity", "processStartupListeners() : IllegalAccessException for ["+classname+"]");
+                e.printStackTrace();
+            }
+            if (listener != null) {
+                listener.onCreateApplication(this);
+            }
+        }
+    }
+
+    public void onCreateActivity(RhodesActivity activity, Intent intent) {
+        for (IRhoListener listener: mListeners) {
+            listener.onCreate(activity, intent);
+        }
+    }
+    public void onStartActivity(RhodesActivity activity) {
+        for (IRhoListener listener: mListeners) {
+            listener.onStart(activity);
+        }
+    }
+    public void onResumeActivity(RhodesActivity activity) {
+        for (IRhoListener listener: mListeners) {
+            listener.onResume(activity);
+        }
+    }
+    public void onPauseActivity(RhodesActivity activity) {
+        for (IRhoListener listener: mListeners) {
+            listener.onPause(activity);
+        }
+    }
+    public void onStopActivity(RhodesActivity activity) {
+        for (IRhoListener listener: mListeners) {
+            listener.onStop(activity);
+        }
+    }
+    public void onDestroyActivity(RhodesActivity activity) {
+        for (IRhoListener listener: mListeners) {
+            listener.onDestroy(activity);
+        }
+    }
+    public void onNewIntent(RhodesActivity activity, Intent intent) {
+        for (IRhoListener listener: mListeners) {
+            listener.onNewIntent(activity, intent);
+        }
+    }
+    public Dialog onCreateDialog(RhodesActivity activity, int id/*, Bundle args*/) {
+        Dialog res = null;
+        for (IRhoListener listener: mListeners) {
+            res = listener.onCreateDialog(activity, id);
+            if (res != null)
+                break;
+        }
+        return res;
+    }
+
 }
 

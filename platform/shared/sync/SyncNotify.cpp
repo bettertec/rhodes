@@ -31,6 +31,10 @@
 #include "common/RhoAppAdapter.h"
 #include "common/RhodesApp.h"
 
+#ifndef RHO_NO_RUBY
+    #include "rubyext/WebView.h"
+#endif
+
 namespace rho {
 namespace sync {
 IMPLEMENT_LOGCLASS(CSyncNotify,"Sync");
@@ -163,7 +167,9 @@ void CSyncNotify::fireObjectsNotification()
         callNotify( CSyncNotification(strUrl,"",false), strBody);
     }else if (m_pObjectNotify->m_cCallback)
     {
+        m_isInsideCallback = true;
         (*m_pObjectNotify->m_cCallback)(strBody.c_str(), m_pObjectNotify->m_cCallbackData);
+        m_isInsideCallback = false;
         //callNotify( CSyncNotification(m_pObjectNotify->m_cCallback,m_pObjectNotify->m_cCallbackData,false), strBody);
     }
 }
@@ -438,6 +444,11 @@ CSyncNotification* CSyncNotify::getSyncNotifyBySrc(CSyncSource* src)
     return pSN != null ? pSN : &m_emptyNotify;
 }
 
+void CSyncNotify::fireSyncNotification2( CSyncSource* src, boolean bFinish, int nErrCode, String strServerError)
+{
+    doFireSyncNotification(src, bFinish, nErrCode, "", "", strServerError);
+}
+
 void CSyncNotify::doFireSyncNotification( CSyncSource* src, boolean bFinish, int nErrCode, String strError, String strParams, String strServerError)
 {
 	if ( getSync().isStoppedByUser() )
@@ -495,8 +506,6 @@ void CSyncNotify::doFireSyncNotification( CSyncSource* src, boolean bFinish, int
 
                     if ( strServerError.length() > 0 )
                         strBody += "&" + strServerError;
-                    else if ( src != null && (*src).m_strServerError.length() > 0  )
-                        strBody += "&" + (*src).m_strServerError;
 	            }
 
                 if ( src != null )
@@ -523,21 +532,44 @@ void CSyncNotify::doFireSyncNotification( CSyncSource* src, boolean bFinish, int
         clearNotification(src);
 }
 
+const String& CSyncNotify::getNotifyBody()
+{
+    const static String emptyBody = String();
+    if ( m_arNotifyBody.size() == 0 )
+        return emptyBody;
+
+    if ( isFakeServerResponse() )
+        return m_arNotifyBody[0];
+
+    return m_arNotifyBody[m_arNotifyBody.size()-1];
+}
+
 boolean CSyncNotify::callNotify(const CSyncNotification& oNotify, const String& strBody )
 {
     String strUrl = oNotify.m_strUrl; //Need to copy url since notify may be cleared in callback
     if ( getSync().isNoThreadedMode() )
     {
-        m_strNotifyBody = strBody;
+        m_arNotifyBody.addElement( strBody );
         return false;
     }
     if ( oNotify.m_cCallback )
     {
+        m_isInsideCallback = true;        
         int nRet = (*oNotify.m_cCallback)(strBody.c_str(), oNotify.m_cCallbackData);
+        m_isInsideCallback = false;
         return nRet == 1;
     }
     if ( strUrl.length() == 0 )
         return true;
+
+#ifndef RHO_NO_RUBY
+    if (0 == strUrl.find("javascript:"))
+    {
+        String js = strUrl.substr(11) + "('" + strBody + "');";
+        rho_webview_execute_js(js.c_str(), -1);
+    	return true;
+    }
+#endif
 
     NetResponse resp = getNet().pushData( strUrl, strBody, null );
     if ( !resp.isOK() )
@@ -627,6 +659,7 @@ void CSyncNotify::callLoginCallback(const CSyncNotification& oNotify, int nErrCo
 	//	LOG.ERROR("Call Login callback failed.", exc);
 	//}
 }
+
 }
 }
 

@@ -33,8 +33,10 @@ platform/win32/bin/*
 platform/shared/*/win32/bin/*
 platform/wm/target/*
 platform/wm/build/cleanup.js
+platform/wm/build/regs.txt
 platform/iphone/*/rholog.txt
 platform/win32/**/*.pch
+platform/win32/RhoSimulator
 platform/wm/**/*.pch
 platform/wp7/bin/*
 platform/wp7/IronRuby/bin/*
@@ -44,6 +46,7 @@ platform/wp7/WPApplication/Bin/*
 platform/wp7/*.sdf
 platform/wp7/rhodes/obj/*
 platform/wp7/**/obj/*
+platform/wp7/IronRuby/bin/Silverlight3Debug
 platform/symbian/rhodes/apps/*
 platform/symbian/rhodes/db/*
 platform/symbian/rhodes/lib/*
@@ -196,6 +199,7 @@ spec/phone_spec/last_bbver
 
 platform/shared/curl/lib/rhoconf.h
 .idea
+.project
 #*.plist
 #Info.plist
 
@@ -213,7 +217,6 @@ Manifest.java
 platform/shared/qt/rhodes/GeneratedFiles/*
 platform/shared/qt/*/Makefile*
 platform/shared/qt/Makefile*
-platform/osx/bin/*
 platform/shared/qtrhodes/generatedfiles/*
 platform/wm/rhodes/emulator/generatedfiles/*
 platform/shared/RhoSimulator-build*

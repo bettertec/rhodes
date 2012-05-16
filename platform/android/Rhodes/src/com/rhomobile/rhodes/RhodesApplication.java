@@ -27,12 +27,19 @@
 package com.rhomobile.rhodes;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
 import java.util.Collection;
 import java.util.Vector;
 
+import com.rhomobile.rhodes.extmanager.Config;
 import com.rhomobile.rhodes.extmanager.RhoExtManager;
+import com.rhomobile.rhodes.extmanager.RhoExtManagerImpl;
+import com.rhomobile.rhodes.extmanager.WebkitExtension;
 import com.rhomobile.rhodes.file.RhoFileApi;
+import com.rhomobile.rhodes.signature.Signature;
 import com.rhomobile.rhodes.util.Utils;
 import com.rhomobile.rhodes.util.Utils.AssetsSource;
 import com.rhomobile.rhodes.util.Utils.FileSource;
@@ -41,6 +48,7 @@ import android.app.Application;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Process;
 import android.util.Log;
@@ -49,6 +57,7 @@ public class RhodesApplication extends Application{
 	
     private static final String TAG = RhodesApplication.class.getSimpleName();
     private static Handler mHandler;
+
     static AppEventObserver sRhodesAppActiveWatcher;
     static {
         NativeLibraries.load();
@@ -132,12 +141,88 @@ public class RhodesApplication extends Application{
         initClassLoader(getClassLoader());
 
         ApplicationInfo appInfo = getAppInfo();
+        //File sharedDir = getExternalFilesDir(null);
+        String sharedPath = null;
         String rootPath;
 
-        try {
-            rootPath = RhoFileApi.initRootPath(appInfo.dataDir, appInfo.sourceDir);
-            Log.d(TAG, "Root path: " + rootPath);
+        rootPath = RhoFileApi.initRootPath(appInfo.dataDir, appInfo.sourceDir, sharedPath);
+        Log.d(TAG, "Root path: " + rootPath);
 
+        InputStream configIs = null;
+        Config config = new Config();
+        try {
+            if (Capabilities.MOTOROLA_ENABLED || Capabilities.WEBKIT_BROWSER_ENABLED || Capabilities.MOTOROLA_BROWSER_ENABLED) {
+                String externalSharedPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + appInfo.packageName;
+                File configXmlFile = new File(externalSharedPath, "Config.xml");
+                if (configXmlFile.exists()) {
+                    Log.i(TAG, "Loading Config.xml from " + configXmlFile.getAbsolutePath());
+                    configIs = new FileInputStream(configXmlFile);
+                    config.load(configIs, configXmlFile.getParent());
+                } else {
+                    Log.i(TAG, "Loading Config.xml from resources");
+                    configIs = getResources().openRawResource(RhoExtManager.getResourceId("raw", "config"));
+                    config.load(configIs, externalSharedPath);
+                }
+                if (Capabilities.SHARED_RUNTIME_ENABLED) {
+                    String startPage = config.getSetting("startpage");
+                    Log.i(TAG,"Start page: " + startPage);
+                    if (startPage != null) {
+                        URI startUri = new URI(startPage);
+                        sharedPath = new File(startUri.getPath()).getParent();
+                        rootPath = RhoFileApi.initRootPath(appInfo.dataDir, appInfo.sourceDir, sharedPath);
+                    }
+                    String logURI = config.getSetting("LogURI");
+                    Log.i(TAG, "Log URI: " + logURI);
+                    if (logURI != null) {
+                        URI logUri = new URI(logURI);
+                        if (logUri.getScheme().equalsIgnoreCase("file")) {
+                            String logPath = new File(logUri.getPath()).getParent();
+                            RhoFileApi.initLogPath(logPath);
+                        }
+                    }
+                }
+                RhoExtManagerImpl extManager = RhoExtManager.getImplementationInstance();
+
+                String logError = config.getSetting("LogError");
+                if (logError != null)
+                    extManager.enableLogLevelError(logError.equals("1"));
+
+                String logWarning = config.getSetting("LogWarning");
+                if (logWarning != null)
+                    extManager.enableLogLevelWarning(logWarning.equals("1"));
+
+                String logInfo = config.getSetting("LogInfo");
+                if (logInfo != null)
+                    extManager.enableLogLevelInfo(logInfo.equals("1"));
+
+                String logUser = config.getSetting("LogUser");
+                if (logUser != null)
+                    extManager.enableLogLevelUser(logUser.equals("1"));
+
+                String logDebug = config.getSetting("LogDebug");
+                if (logDebug != null)
+                    extManager.enableLogLevelDebug(logDebug.equals("1"));
+            }
+        } catch (Throwable e) {
+            Log.e(TAG, "Error loading RhoElements configuraiton ("+e.getClass().getSimpleName()+"): " + e.getMessage());
+        } finally {
+            if (configIs != null) {
+                try {
+                    configIs.close();
+                } catch (IOException e) {
+                    // just nothing to do
+                }
+            }
+        }
+
+        boolean hashChanged = isAppHashChanged(rootPath);
+        if (hashChanged) {
+            Log.i(TAG, "Application hash was changed");
+            
+            RhoFileApi.initialCopy(this, new String[] {"hash", "rho.dat", "apps/rhoconfig.txt"});
+        }
+        
+        try {
             RhoFileApi.init(this);
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
@@ -145,32 +230,40 @@ public class RhodesApplication extends Application{
             return;
         }
 
-        if (this.isAppHashChanged(rootPath)) {
+        setupRhodesApp();
+
+        if (hashChanged) {
             try {
-                Log.i(TAG, "Application hash was changed");
+                RhoFileApi.removeBundleUpgrade();
+                RhoFileApi.copy("apps/rhoconfig.txt");
                 
                 File libDir = new File(rootPath, "lib");
                 File testLib = new File(libDir.getPath(), "rhoframework.iseq");
                 if(libDir.isDirectory() && testLib.isFile())
                 {
-                    Log.i(TAG, "Updating from very old rhodes version, clean filesystem.");
+                    Logger.I(TAG, "Updating from very old rhodes version, clean filesystem.");
                     Utils.deleteChildrenIgnoreFirstLevel(new File(rootPath, "apps"), "rhoconfig.txt");
                     Utils.deleteRecursively(libDir);
                 }
 
-                rootPath = RhoFileApi.initRootPath(appInfo.dataDir, appInfo.sourceDir);
-                Log.d(TAG, "Root path: " + rootPath);
-
-                RhoFileApi.init(this);
-                RhoFileApi.copy("hash");
+                rootPath = RhoFileApi.initRootPath(appInfo.dataDir, appInfo.sourceDir, sharedPath);
             } catch (IOException e) {
-                Log.e(TAG, e.getMessage());
+                Logger.E(TAG, e.getMessage());
                 stop();
                 return;
             }
         }
-        
-        setupRhodesApp();
+
+        Logger.T(TAG, "Root path: " + rootPath);
+
+        RhoFileApi.setFsModeTransparrent(true);
+
+        if(Capabilities.WEBKIT_BROWSER_ENABLED || Capabilities.MOTOROLA_BROWSER_ENABLED) {
+            WebkitExtension.registerWebkitExtension(config);
+        }
+        Signature.registerSignatureCaptureExtension();
+        RhoExtManager.getImplementationInstance().createRhoListeners();
+
         Logger.I(TAG, "Initialized");
     }
     private static boolean sRhodesActivityStarted = false;

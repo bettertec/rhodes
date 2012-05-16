@@ -194,11 +194,11 @@ using namespace ATL;
     #endif
 #endif
 
-#include "tcmalloc/rhomem.h"
+//#include "tcmalloc/rhomem.h"
 #include "logging/RhoLog.h"
 //#include <afxwin.h>
 
-#if defined(OS_WINDOWS) && !defined(RHO_SYMBIAN)
+#if defined(OS_WINDOWS_DESKTOP) && !defined(RHO_SYMBIAN)
 #include <atlapp.h>
 //#include <atlwin.h>
 //#include <atlcrack.h>

@@ -56,12 +56,17 @@ struct IRhoExtension
     virtual long OnNavigateTimeout(const wchar_t* szUrlBeingNavigatedTo, const CRhoExtData& oExtData){return 0;}
     virtual long OnSIPState(bool bSIPState, const CRhoExtData& oExtData){return 0;}
     virtual long OnAlertPopup(int nEnum, void* pData, const CRhoExtData& oExtData){return 0;}
+    virtual long OnAuthenticationRequest(int nEnum, void* pData, const CRhoExtData& oExtData){return 0;}
+    virtual long OnGeolocationData(int nEnum, void* pData, const CRhoExtData& oExtData){return 0;}
     virtual long OnNavigateError(const wchar_t* szUrlBeingNavigatedTo, const CRhoExtData& oExtData){return 0;}
     virtual void OnAppActivate(bool bActivate, const CRhoExtData& oExtData){}
+    virtual void OnWindowChanged(LPVOID lparam){}
 };
 
 struct IRhoExtManager
 {
+    enum ELogExtLevels { eLogError = 0, eLogWarning, eLogInfo, eLogUser, eLogDebug, eLogLevelsCount };
+
     virtual ~IRhoExtManager(){}
 
     virtual void onUnhandledProperty( const wchar_t* pModuleName, const wchar_t* pName, const wchar_t* pValue, const CRhoExtData& oExtData ) = 0;
@@ -75,7 +80,7 @@ struct IRhoExtManager
     virtual bool existsJavascript(const wchar_t* szJSFunction) = 0;
     virtual void executeJavascript(const wchar_t* szJSFunction) = 0;
 
-    virtual void rhoLog(int nSeverity, const char* szModule, const char* szMsg, const char* szFile, int nLine) = 0;
+    virtual void rhoLog(ELogExtLevels eLogLevel, const char* szModule, const char* szMsg, const char* szFile, int nLine) = 0;
     virtual StringW getCurrentUrl() = 0;
     virtual void stopNavigate() = 0;
     virtual void historyForward() = 0;
@@ -91,6 +96,9 @@ struct IRhoExtManager
     virtual StringW getPageTitle(UINT iTab) = 0;
 
     virtual StringW getConfigPath() = 0;
+
+    virtual void setBrowserGesturing(bool bEnableGesturing) = 0;
+    virtual void passSipPositionToEngine() = 0;
 };
 
 class CExtManager : public IRhoExtManager
@@ -112,8 +120,11 @@ public:
     long OnNavigateTimeout(const wchar_t* szUrlBeingNavigatedTo);
     long OnSIPState(bool bSIPState);
     long OnAlertPopup(int nEnum, void* pData);
+    long OnAuthenticationRequest(int nEnum, void* pData);
+    long OnGeolocationData(int nEnum, void* pData);
     long OnNavigateError(const wchar_t* szUrlBeingNavigatedTo);
     void OnAppActivate(bool bActivate);
+    void OnWindowChanged(LPVOID lparam);
 
     CRhoExtData makeExtData();
     void close();
@@ -129,7 +140,7 @@ public:
 
     virtual void executeJavascript(const wchar_t* szJSFunction);
     virtual bool existsJavascript(const wchar_t* szJSFunction);
-    virtual void rhoLog(int nSeverity, const char* szModule, const char* szMsg, const char* szFile, int nLine);
+    virtual void rhoLog(ELogExtLevels eLogLevel, const char* szModule, const char* szMsg, const char* szFile, int nLine);
     virtual StringW getCurrentUrl();
     virtual void stopNavigate();
     virtual void historyForward();
@@ -144,6 +155,8 @@ public:
     virtual int getTextZoom(); //Enum (0 to 4)
     virtual StringW getPageTitle(UINT iTab);
     virtual StringW getConfigPath();
+    virtual void setBrowserGesturing(bool bEnableGesturing);
+    virtual void passSipPositionToEngine();
 };
 
 } //namespace common

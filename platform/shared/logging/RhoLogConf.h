@@ -32,6 +32,8 @@
 #include "common/RhoStd.h"
 //#include "RhoPlainLog.h"
 #include "common/RhoMutexLock.h"
+#include "common/RhoTime.h"
+#include "common/RhoThread.h"
 
 namespace rho {
 
@@ -45,7 +47,32 @@ struct ILogSink{
     virtual void clear() = 0;
 };
 
+class IMemoryInfoCollector
+{
+public:
+    virtual ~IMemoryInfoCollector() {}
+    virtual String collect() = 0;
+};
+
 class LogSettings{
+    
+    class MemoryInfoCollectorThread : public common::CRhoThread
+    {
+        unsigned int            m_collectMemoryIntervalMilliseconds;
+        IMemoryInfoCollector*   m_pCollector;
+        LogSettings&            m_logSettings;
+        
+        mutable common::CMutex  m_accessLock;
+    public:
+        MemoryInfoCollectorThread( LogSettings& logSettings );
+        virtual void run();
+        
+        void setCollectMemoryInfoInterval( unsigned int interval );
+        void setMemoryInfoCollector( IMemoryInfoCollector* memInfoCollector );
+        
+        boolean willCollect() const;
+    };
+    
     LogSeverity m_nMinSeverity;
     bool        m_bLogToOutput;
     bool        m_bLogToSocket;
@@ -54,6 +81,8 @@ class LogSettings{
     String      m_strLogFilePath;
 //    String      m_strLogConfFilePath;
     unsigned int m_nMaxLogFileSize;
+    
+    MemoryInfoCollectorThread* m_pMemoryCollectorThread;
 
 	String      m_strLogURL;
 
@@ -66,6 +95,7 @@ class LogSettings{
     ILogSink*   m_pOutputSink;
     ILogSink*   m_pLogViewSink;
     ILogSink*   m_pSocketSink;
+    IMemoryInfoCollector* m_pMemoryInfoCollector;
 
     static common::CMutex m_FlushLock;
     static common::CMutex m_CatLock;
@@ -102,6 +132,7 @@ public:
 	void setLogURL(const char* szLogURL) { m_strLogURL = rho::String(szLogURL); }
 
 	void initRemoteLog();
+    void reinitRemoteLog();
 	void closeRemoteLog();
 
     void setEnabledCategories( const char* szCatList );
@@ -109,6 +140,9 @@ public:
     const String& getEnabledCategories(){ return m_strEnabledCategories; }
     const String& getDisabledCategories(){ return m_strDisabledCategories; }
     bool isCategoryEnabled(const LogCategory& cat)const;
+    
+    void setCollectMemoryInfoInterval( unsigned int interval );
+    void setMemoryInfoCollector( IMemoryInfoCollector* memInfoCollector );
 
     void setExcludeFilter( const String& strExcludeFilter );
     Vector<String>& getExcludeAttribs(){ return m_arExcludeAttribs; }
@@ -118,7 +152,7 @@ public:
     void getLogText(String& strText);
     void getLogTextW(StringW& strTextW);
     int  getLogTextPos();
-	
+
 	void setLogView(ILogSink* logView) { 
 		m_pLogViewSink = logView; 
 	}
@@ -132,6 +166,8 @@ public:
     void saveToFile();
     void loadFromConf(rho::common::RhoSettings& oRhoConf);
 
+private:
+	void internalSinkLogMessage( String& strMsg );
 };
 
 extern LogSettings g_LogSettings;
@@ -167,6 +203,8 @@ void rho_logconf_freeString(char* str);
 
 int rho_conf_send_log(const char* callback_url);
 void rho_conf_clean_log();
+    
+void rho_log_resetup_http_url(const char* http_log_url);    
 
 #ifdef __cplusplus
 }
