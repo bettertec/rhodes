@@ -166,19 +166,20 @@ public class TabbedMainView implements MainView {
 			int c_B = (color & 0xFF);
 			int height = rect.bottom - rect.top + 1;
 			
-			int gap = 3;
+			//int gap = 3;
+			int gap = 0;
 
 			Context ctx = RhodesActivity.getContext();
 			DisplayMetrics metrics = new DisplayMetrics();
 			WindowManager wm = (WindowManager)ctx.getSystemService(Context.WINDOW_SERVICE);
 			wm.getDefaultDisplay().getMetrics(metrics);
 			
-			int lcd_density = metrics.densityDpi;
-			if (lcd_density > 200) gap = 4;
+			//int lcd_density = metrics.densityDpi;
+			//if (lcd_density > 200) gap = 4;
 			int left_gap = gap;
 			int right_gap = gap;
-			if (lcd_density > 200) left_gap += 1;
-			if (lcd_density > 200) right_gap += 1;
+			//if (lcd_density > 200) left_gap += 1;
+			//if (lcd_density > 200) right_gap += 1;
 			if (first_tab) left_gap = 0; 
 			if (last_tab) right_gap = 0; 
 			
@@ -186,25 +187,28 @@ public class TabbedMainView implements MainView {
 				case NORMAL: {
 					int dark_k = 16;
 					int dark_k2 = 128;
-					int c_dark_R = modifyColorComponent( c_R, -dark_k);
-					int c_dark_G = modifyColorComponent( c_G, -dark_k);
-					int c_dark_B = modifyColorComponent( c_B, -dark_k);
+					int c_dark_R = 00;
+					int c_dark_G = 00;
+					int c_dark_B = 00;
 
-					int c_dark2_R = modifyColorComponent( c_R, -dark_k2);
-					int c_dark2_G = modifyColorComponent( c_G, -dark_k2);
-					int c_dark2_B = modifyColorComponent( c_B, -dark_k2);
+					int c_dark2_R = 60;
+					int c_dark2_G = 60;
+					int c_dark2_B = 60;
 					
-					int y0 = rect.top;
+					/*int y0 = rect.top;
 					int y1 = rect.top + ((height-gap)/10); 
 					int y2 = rect.top + ((height-gap)/2); 
 					int y3 = rect.bottom - ((height-gap)/10) - gap; 
-					int y4 = rect.bottom - gap; 
+					int y4 = rect.bottom - gap; */
+					
+					int y0 = rect.top;
+					int y1 = rect.bottom-gap; 
 				
 					drawVerticalGradient(	canvas, rect.left+left_gap, y0, rect.right-right_gap, y1,
 											c_dark2_R, c_dark2_G, c_dark2_B,
 											c_dark_R, c_dark_G, c_dark_B);
 					
-					drawVerticalGradient(	canvas, rect.left+left_gap, y1, rect.right-right_gap, y2,
+					/*drawVerticalGradient(	canvas, rect.left+left_gap, y1, rect.right-right_gap, y2,
 							c_dark_R, c_dark_G, c_dark_B,
 							c_R, c_G, c_B);
 
@@ -214,7 +218,7 @@ public class TabbedMainView implements MainView {
 
 					drawVerticalGradient(	canvas, rect.left+left_gap, y3, rect.right-right_gap, y4,
 							c_dark_R, c_dark_G, c_dark_B,
-							c_dark2_R, c_dark2_G, c_dark2_B);
+							c_dark2_R, c_dark2_G, c_dark2_B);*/
 					
 			        Paint paint = new Paint();
 			        paint.setAntiAlias(false);
@@ -225,12 +229,20 @@ public class TabbedMainView implements MainView {
 				}
 				break;
 				case SELECTED: {
-					int light_k = 16;
+					/*int light_k = 16;
 					int dark_k = 16;
 					int light_k2 = 64;
-					int dark_k2 = 64;
+					int dark_k2 = 64;*/
 					
-					int c_0_R = modifyColorComponent( c_R, light_k2);
+					int c_0_R = 182;
+					int c_0_G = 219;
+					int c_0_B = 80;
+					
+					int c_1_R = 138;
+					int c_1_G = 170;
+					int c_1_B = 59;
+					
+					/*int c_0_R = modifyColorComponent( c_R, light_k2);
 					int c_0_G = modifyColorComponent( c_G, light_k2);
 					int c_0_B = modifyColorComponent( c_B, light_k2);
 					
@@ -244,19 +256,21 @@ public class TabbedMainView implements MainView {
 
 					int c_4_R = modifyColorComponent( c_R, -dark_k2);
 					int c_4_G = modifyColorComponent( c_G, -dark_k2);
-					int c_4_B = modifyColorComponent( c_B, -dark_k2);
+					int c_4_B = modifyColorComponent( c_B, -dark_k2);*/
 					
 					int y0 = rect.top;
-					int y1 = rect.top + ((height-gap)/4); 
-					int y2 = rect.top + ((height-gap)/2); 
+					int y1 = rect.bottom-gap;
+					/*int y1 = rect.top + ((height-gap) * 1/3); 
+					int y2 = rect.top + ((height-gap) * 2/3);
+					int y3 = rect.bottom-gap;
 					int y3 = rect.bottom - ((height-gap)/4) - gap; 
-					int y4 = rect.bottom-gap; 
+					int y4 = rect.bottom-gap; */
 				
 					drawVerticalGradient(	canvas, rect.left+left_gap, y0, rect.right-right_gap, y1,
 											c_0_R, c_0_G, c_0_B,
 											c_1_R, c_1_G, c_1_B);
 					
-					drawVerticalGradient(	canvas, rect.left+left_gap, y1, rect.right-right_gap, y2,
+					/*drawVerticalGradient(	canvas, rect.left+left_gap, y1, rect.right-right_gap, y2,
 							c_1_R, c_1_G, c_1_B,
 							c_R, c_G, c_B);
 
@@ -266,15 +280,15 @@ public class TabbedMainView implements MainView {
 
 					drawVerticalGradient(	canvas, rect.left+left_gap, y3, rect.right-right_gap, y4,
 							c_3_R, c_3_G, c_3_B,
-							c_4_R, c_4_G, c_4_B);
+							c_4_R, c_4_G, c_4_B);*/
 					
 			        Paint paint = new Paint();
 			        paint.setAntiAlias(false);
 			        paint.setARGB(32, 0, 0, 0);
 		       		canvas.drawRect(rect.left+left_gap, rect.top, rect.left+left_gap+1, rect.bottom, paint);
 		       		canvas.drawRect(rect.right-right_gap-1, rect.top, rect.right-right_gap, rect.bottom, paint);
-			        paint.setARGB(255, c_4_R, c_4_G, c_4_B);
-		       		canvas.drawRect(rect.left, rect.bottom-gap, rect.right, rect.bottom-1, paint);
+			        //paint.setARGB(255, c_4_R, c_4_G, c_4_B);
+		       		//canvas.drawRect(rect.left, rect.bottom-gap, rect.right, rect.bottom-1, paint);
 				}
 				break;
 				case DISABLED: {
