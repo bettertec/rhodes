@@ -108,7 +108,8 @@ public class SimpleMainView implements MainView {
 	
 	private class ActionHome implements View.OnClickListener {
 		public void onClick(View v) {
-			navigate(RhodesAppOptions.getStartUrl(), 0);
+			//navigate(RhodesAppOptions.getStartUrl(), 0);
+			navigate(RhodesService.getInstance().getMainView().currentStartUrl(), 0);
 		}
 	};
 	
@@ -164,6 +165,23 @@ public class SimpleMainView implements MainView {
 	public IRhoWebView getWebView(int tab_index) {
 		return webView;
 	}
+	
+	/**
+     * Returns the start URL when there is only one view.
+     * @return The start url from rhoconfig.txt
+     */
+    @Override
+    public String currentStartUrl() {
+        return RhodesAppOptions.getStartUrl();
+    }
+
+    /**
+     *  Returns true if we are on the rhoconfig.txt start page (when there is only one view).
+     * @return True if we are on the rhoconfig.txt start page, false otherwise.
+     */
+    public boolean isOnStartPage() {
+        return RhodesService.isOnStartPage();
+    }
 
     public void setCustomView(IRhoCustomView customView) {
         restoreWebView();
@@ -547,10 +565,14 @@ public class SimpleMainView implements MainView {
     public void back(int index) {
         restoreWebView();
         
-        boolean bStartPage = RhodesService.isOnStartPage();
+        //boolean bStartPage = RhodesService.isOnStartPage();
+		boolean bStartPage = RhodesService.getInstance().getMainView().isOnStartPage();
+		Utils.platformLog(TAG, "** WURL goBack: Are we on start Page? "+bStartPage);
 
         if ( !bStartPage && webView.canGoBack() ) {
+			Utils.platformLog(TAG, "** WURL goBack: We are not on start page and we can go back. Going back then.");
             webView.goBack();
+			Utils.platformLog(TAG, "** WURL goBack: Done going back. URL: "+webView.getUrl());
         }
         else
         {    

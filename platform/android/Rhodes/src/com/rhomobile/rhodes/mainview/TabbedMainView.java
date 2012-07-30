@@ -29,8 +29,10 @@ package com.rhomobile.rhodes.mainview;
 import java.util.Map;
 import java.util.Vector;
 
+import android.net.Uri;
 import com.rhomobile.rhodes.Logger;
 import com.rhomobile.rhodes.RhodesActivity;
+import com.rhomobile.rhodes.RhodesAppOptions;
 import com.rhomobile.rhodes.RhodesService;
 import com.rhomobile.rhodes.file.RhoFileApi;
 import com.rhomobile.rhodes.util.ContextFactory;
@@ -367,6 +369,37 @@ public class TabbedMainView implements MainView {
 		TabData data = tabData.elementAt(index);
 		return data.view;
 	}
+	
+	/**
+     * Returns the start URL for the current tab. On a TabbedMainView, the start URL
+     * is as it was defined in its tabData.
+     * @return The start URL for the currently selected tab.
+     */
+    @Override
+    public String currentStartUrl() {
+        TabData data = tabData.elementAt(activeTab());
+        return data.url;
+    }
+
+    /**
+     *  Returns true if we are on the rhoconfig.txt start page (when there is only one view).
+     * @return True if we are on the rhoconfig.txt start page, false otherwise.
+     */
+    public boolean isOnStartPage() {
+        String currentLocation = currentLocation(activeTab());
+        if (currentLocation == null) {
+            return false;
+        }
+        try {
+            Uri uri = Uri.parse(currentLocation);
+            currentLocation = uri.getPath();
+        }catch (Exception exc) {
+            android.util.Log.e(TAG, "** Current location not parsable! "+currentLocation);
+        }
+        android.util.Log.d(TAG, "** WURL - Start Page? Current URL is "+currentLocation+", start URL is "+currentStartUrl());
+        //return currentLocation.equals(currentStartUrl());
+		return currentStartUrl().contains(currentLocation) || currentLocation.contains(currentStartUrl());
+    }
 	
 	private void processTabHostColors(TabHost tabHost, int SelectedColor, boolean useSelectedColor) {
 		tabHost.getTabWidget().setStripEnabled(false); 

@@ -10,6 +10,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebChromeClient;
 import android.webkit.WebViewClient;
+import android.webkit.WebView;
+import android.view.MotionEvent;
 
 public class GoogleWebView implements IRhoWebView {
     private static final String TAG = GoogleWebView.class.getSimpleName(); 
@@ -19,6 +21,7 @@ public class GoogleWebView implements IRhoWebView {
     private static Boolean mInitialized = false;
 
     private android.webkit.WebView mWebView;
+	//private HackedWebView mWebView;
     private ViewGroup mContainerView;
 
     public GoogleWebView(Activity activity) {
@@ -28,6 +31,30 @@ public class GoogleWebView implements IRhoWebView {
             }
         }
         mWebView = new android.webkit.WebView(activity);
+		//mWebView = new HackedWebView(activity);
+		
+		/*mWebView.getSettings().setLightTouchEnabled(true);
+		mWebView.setFocusable(true);
+		mWebView.setFocusableInTouchMode(true);
+		
+		
+		mWebView.requestFocus(View.FOCUS_DOWN);
+		Logger.I(TAG, "Adding Google HackedWebView onTouch from Caller");
+		mWebView.setOnTouchListener(new View.OnTouchListener() {
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				Logger.I(GoogleWebView.class.getSimpleName(), "Processing Google HackedWebView onTouch from Caller: " + event.toString());
+				switch (event.getAction()) {
+					case MotionEvent.ACTION_DOWN:
+					case MotionEvent.ACTION_UP:
+						if (!v.hasFocus()) {
+							v.requestFocus();
+						}
+						break;
+				}
+				return false;
+			}
+		});*/
     }
 
     private static void initWebStuff(Activity activity) {
@@ -174,3 +201,16 @@ public class GoogleWebView implements IRhoWebView {
         return "WEBKIT/GOOGLE/" + Build.VERSION.RELEASE;
     }
 }
+
+/*class HackedWebView extends WebView {
+
+	public HackedWebView(Activity activity) {
+		super(activity);
+        Logger.I(GoogleWebView.class.getSimpleName(), "Starting Google HackedWebView from Constructor");
+	}
+
+	@Override
+	public boolean onCheckIsTextEditor() {
+		return true; 
+	}
+}*/

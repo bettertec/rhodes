@@ -54,6 +54,9 @@ public interface MainView {
 	
 	public String currentLocation(int index);
 	
+	public String currentStartUrl();
+	public boolean isOnStartPage();
+	
 	public void switchTab(int index);
 	public int activeTab();
 	public int getTabsCount();

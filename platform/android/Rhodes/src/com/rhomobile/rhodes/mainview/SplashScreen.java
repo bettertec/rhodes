@@ -213,9 +213,19 @@ public class SplashScreen implements MainView {
 	public void reload(int index) {
 	}
 	@Override
+	
 	public String currentLocation(int index) {
 		return null;
 	}
+	@Override
+    public String currentStartUrl() {
+        return null;
+    }
+
+    @Override
+    public boolean isOnStartPage() {
+        return false;
+    }
 	@Override
 	public void switchTab(int index) {
 	}
