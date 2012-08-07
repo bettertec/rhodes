@@ -58,6 +58,8 @@ import android.widget.FrameLayout;
 import android.widget.TabHost;
 import android.widget.TabWidget;
 
+import android.widget.TextView;
+
 public class TabbedMainView implements MainView {
 	
 	private static final String TAG = "TabbedMainView";
@@ -405,6 +407,18 @@ public class TabbedMainView implements MainView {
 		tabHost.getTabWidget().setStripEnabled(false); 
 		
 		for (int i = 0; i < tabHost.getTabWidget().getChildCount(); i++) { 
+		
+			// Hack to modify the color of tab labels
+		    TextView tv = (TextView) tabHost.getTabWidget().getChildAt(i).findViewById(android.R.id.title); //Unselected Tabs
+            if (tv != null) {
+                tv.setTextColor(Color.parseColor("#ffffff"));
+            }
+            TextView tv2 = (TextView) tabHost.getCurrentTabView().findViewById(android.R.id.title); // Selected Tab
+            if (tv2 != null) {
+                tv2.setTextColor(Color.parseColor("#ffffff"));
+            }
+			// hack end
+
 			if ((i == tabHost.getCurrentTab()) && useSelectedColor) {
 				tabHost.getTabWidget().getChildAt(i).setBackgroundColor(SelectedColor);
 				
@@ -971,5 +985,4 @@ public class TabbedMainView implements MainView {
     public void stopNavigate(int index) {
         getTabMainView(index).stopNavigate(0);
     }
-
 }
