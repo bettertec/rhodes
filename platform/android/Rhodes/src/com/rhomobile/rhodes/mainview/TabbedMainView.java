@@ -643,6 +643,10 @@ public class TabbedMainView implements MainView {
 			Object iconObj = hash.get("icon");
 			if (iconObj != null && (iconObj instanceof String))
 				icon = "apps/" + (String)iconObj;
+				
+			// use the double sized one for high density displays
+			if (metrics.densityDpi >= DisplayMetrics.DENSITY_HIGH)
+				icon = icon.substring(0, icon.length() - 4) + "@2x.png";
 			
 			Object reloadObj = hash.get("reload");
 			if (reloadObj != null && (reloadObj instanceof String))
@@ -690,9 +694,11 @@ public class TabbedMainView implements MainView {
 				}
 				
 				if (bitmap != null)
-					bitmap.setDensity(DisplayMetrics.DENSITY_MEDIUM);//Bitmap.DENSITY_NONE);
+					//bitmap.setDensity(DisplayMetrics.DENSITY_MEDIUM);//Bitmap.DENSITY_NONE);
+					bitmap.setDensity(metrics.densityDpi >= DisplayMetrics.DENSITY_HIGH ? DisplayMetrics.DENSITY_HIGH : DisplayMetrics.DENSITY_MEDIUM);
 					drawable = new BitmapDrawable(bitmap);
-					drawable.setTargetDensity(metrics);
+					//drawable.setTargetDensity(metrics);
+					drawable.setTargetDensity(metrics.densityDpi >= DisplayMetrics.DENSITY_HIGH ? DisplayMetrics.DENSITY_HIGH : DisplayMetrics.DENSITY_MEDIUM);
 			}
 			if (drawable == null)
 				spec.setIndicator(label);
