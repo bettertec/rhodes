@@ -53,8 +53,6 @@
 static bool UnzipApplication(const char* appRoot, const void* zipbuf, unsigned int ziplen);
 //const char* RhoGetRootPath();
 
-VALUE rho_sys_has_wifi_network();
-VALUE rho_sys_has_cell_network();
 
 
 BOOL isPathIsSymLink(NSFileManager *fileManager, NSString* path) {
@@ -147,8 +145,8 @@ BOOL isPathIsSymLink(NSFileManager *fileManager, NSString* path) {
 		NSError *error;
 		[fileManager removeItemAtPath:appPath error:&error];
 	}
-    [fileManager createDirectoryAtPath:appPath attributes:NULL];
-	
+    [fileManager createDirectoryAtPath:appPath withIntermediateDirectories: NO attributes:NULL error: NULL];
+
 	static char appRoot[FILENAME_MAX];
 	[appPath getFileSystemRepresentation:appRoot maxLength:sizeof(appRoot)];
 	return UnzipApplication( appRoot, [appData bytes], [appData length]);
@@ -406,7 +404,7 @@ BOOL isPathIsSymLink(NSFileManager *fileManager, NSString* path) {
 #endif
 	}
     
-	rho_logconf_Init_with_separate_user_path(rho_native_rhopath(), rho_native_rhopath(), "", rho_native_rhouserpath());
+	rho_logconf_Init_with_separate_user_path(rho_native_rhopath(), "", rho_native_rhouserpath());
 	rho_rhodesapp_create_with_separate_user_path(rho_native_rhopath(), rho_native_rhouserpath());
 	RAWLOG_INFO("Rhodes started");
 }
@@ -493,11 +491,6 @@ const char* rho_native_rhopath()
 	}
 	
 	return root;
-}
-
-const char* rho_native_reruntimepath()
-{
-    return rho_native_rhopath();
 }
 
 const char* rho_native_rhouserpath() 
@@ -673,7 +666,6 @@ static const double RHO_IPHONE_PPI = 163.0;
 static const double RHO_IPHONE4_PPI = 326.0;
 // http://www.apple.com/ipad/specs/
 static const double RHO_IPAD_PPI = 132.0;
-static const double RHO_NEW_IPAD_PPI = 264.0;
 
 static float get_scale() {
     float scales = 1;//[[UIScreen mainScreen] scale];
@@ -725,10 +717,6 @@ int rho_sysimpl_get_property(char* szPropName, VALUE* resValue)
     }
     else if (strcasecmp("has_network", szPropName) == 0)
         {*resValue = rho_sys_has_network(); return 1; }
-    else if (strcasecmp("has_wifi_network", szPropName) == 0)
-    {*resValue = rho_sys_has_wifi_network(); return 1; }
-    else if (strcasecmp("has_cell_network", szPropName) == 0)
-    {*resValue = rho_sys_has_cell_network(); return 1; }
     else if (strcasecmp("has_camera", szPropName) == 0) {
         int has_camera = [UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera];
         *resValue = rho_ruby_create_boolean(has_camera);
@@ -738,12 +726,7 @@ int rho_sysimpl_get_property(char* szPropName, VALUE* resValue)
              strcasecmp("ppi_y", szPropName) == 0) {
 #ifdef __IPHONE_3_2
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-            if (get_scale() > 1.2) {
-                *resValue = rho_ruby_create_double(RHO_NEW_IPAD_PPI);
-            }
-            else {
-                *resValue = rho_ruby_create_double(RHO_IPAD_PPI);
-            }
+            *resValue = rho_ruby_create_double(RHO_IPAD_PPI);
             return 1;
         }
 #endif

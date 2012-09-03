@@ -85,14 +85,8 @@
     int             bitmapByteCount;
     int             bitmapBytesPerRow;
 	
-    float scale = 1.0;
-    
-    if (([[UIScreen mainScreen] respondsToSelector:@selector(scale)])) {
-        scale = [UIScreen mainScreen].scale;
-    }
-
-    size_t pixelsWide = 2;
-    size_t pixelsHigh = height*scale;
+    size_t pixelsWide = 1;
+    size_t pixelsHigh = height;
 	
     bitmapBytesPerRow   = (pixelsWide) << 2;
     bitmapByteCount     = (bitmapBytesPerRow * pixelsHigh);
@@ -100,7 +94,7 @@
     colorSpace = CGColorSpaceCreateDeviceRGB();//CGColorSpaceCreateDeviceGray();//(kCGColorSpaceGenericRGB);
 	
     bitmapData = malloc( bitmapByteCount );
-    
+	
     context = CGBitmapContextCreate (bitmapData,
 									 pixelsWide,
 									 pixelsHigh,
@@ -143,9 +137,9 @@
 	if (color12_b > 1) color12_b = 1;
 	
 	int  y0 =0;
-	int  y1 = ((float)pixelsHigh)*0.5;
-	int  y2 = ((float)pixelsHigh)*0.5;
-	int  y3 = (float)pixelsHigh;
+	int  y1 = ((float)height)*0.5;
+	int  y2 = ((float)height)*0.5;
+	int  y3 = (float)height;
 	
 	rect.origin.x = 0;
 	rect.origin.y = y0;
@@ -190,7 +184,7 @@
 	
 	CGImageRef cgImage = CGBitmapContextCreateImage(context);
 	
-	UIImage* ui = [UIImage imageWithCGImage:cgImage scale:scale orientation:UIImageOrientationUp];
+	UIImage* ui = [UIImage imageWithCGImage:cgImage];
 	
 	CGContextRelease(context);
 	
@@ -209,14 +203,14 @@
 	int cR = (self.bkgColor & 0xFF0000) >> 16;
 	int cG = (self.bkgColor & 0xFF00) >> 8;
 	int cB = (self.bkgColor & 0xFF);
-    
-	UIImage *i = [self makeUIImageWithGradient:(int)(frame.size.height) colorR:cR colorG:cG colorB:cB];
+	
+	UIImage *i = [self makeUIImageWithGradient:(int)frame.size.height colorR:cR colorG:cG colorB:cB];
 	
     UIColor *c = [[UIColor alloc] initWithPatternImage:i];
     v.backgroundColor = c;
 	v.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [c release];
-    [[self tabBar] insertSubview:v atIndex:1];
+    [[self tabBar] insertSubview:v atIndex:0];
     [v release];
 	
 }
@@ -275,15 +269,7 @@
     CGPoint itemImagePosition; 
     itemImagePosition.x = ceilf((contextRect.size.width - itemImageSize.width) / 2);
     itemImagePosition.y = ceilf((contextRect.size.height - itemImageSize.height) / 2);
-    
-    
-    float scale = image.scale;
-    
-    //if (([[UIScreen mainScreen] respondsToSelector:@selector(scale)])) {
-    //    scale = [UIScreen mainScreen].scale;
-    //}
-    
-    UIGraphicsBeginImageContextWithOptions(contextRect.size, NO, scale);
+    UIGraphicsBeginImageContext(contextRect.size);
     CGContextRef c = UIGraphicsGetCurrentContext();
 
     CGContextSetShadowWithColor(c, shadowOffset, shadowBlur, cgShadowColor);
@@ -592,11 +578,6 @@
     tabbar.selectedIndex = index;
 	[self onSwitchTab];
 }
-
--(UIViewController*)getMainViewController {
-    return self;
-}
-
 
 - (void)onSwitchTab {
 	int new_index = tabbar.selectedIndex;

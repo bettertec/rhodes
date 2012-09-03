@@ -38,18 +38,16 @@
 
 @implementation RhoCameraSettings
 
-@synthesize callback_url, camera_type, color_model, format, width, height, enable_editing, enable_editing_setted, save_to_shared_gallery;
+@synthesize callback_url, camera_type, color_model, format, width, height, enable_editing;
 
 - (id)init:(void*)data url:(NSString*)url{
     self.callback_url = url;
     self.camera_type = CAMERA_SETTINGS_TYPE_MAIN;
     self.color_model = CAMERA_SETTINGS_COLOR_MODEL_RGB;
-    self.format = CAMERA_SETTINGS_FORMAT_NOT_SETTED;
+    self.format = CAMERA_SETTINGS_FORMAT_JPG;
     self.width = 0;
     self.height = 0;
     self.enable_editing = 1;
-    self.enable_editing_setted = 0;
-    self.save_to_shared_gallery = false;
         
     if (data != NULL) {
         rho_param* p =(rho_param*)data; 
@@ -73,10 +71,6 @@
                     if (strcasecmp(value->v.string, "png") == 0) {
                         self.format = CAMERA_SETTINGS_FORMAT_PNG;
                     }
-                    else {
-                        self.format = CAMERA_SETTINGS_FORMAT_JPG;
-                    }
-                    
                 }
                 if (strcasecmp(name, "desired_width") == 0) {
                     NSString* s = [NSString stringWithUTF8String:value->v.string];
@@ -88,14 +82,8 @@
                 }
                 if (strcasecmp(name, "enable_editing") == 0) {
                     self.enable_editing = 1;
-                    self.enable_editing_setted = 1;
                     if (strcasecmp(value->v.string, "false") == 0) {
                         self.enable_editing = 0;
-                    }
-                }
-                if (strcasecmp(name, "save_to_shared_gallery") == 0 ) {
-                    if ( strcasecmp(value->v.string, "true") == 0 ) {
-                        self.save_to_shared_gallery = true;
                     }
                 }
                 
@@ -276,9 +264,6 @@
     int imageWidth = (int)img.size.width;
     int imageHeight = (int)img.size.height;
     
-    if ( settings.save_to_shared_gallery ) {    
-        UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil);
-    }    
     
     
     NSString *filename = nil; 	
@@ -336,58 +321,10 @@
     //        isError ? "Can't write image to the storage." : "", 0 );
 } 
 
-
-- (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info
-{
-    if (settings.format == CAMERA_SETTINGS_FORMAT_NOT_SETTED) {
-        NSURL* url = (NSURL*)[info objectForKey:UIImagePickerControllerReferenceURL];
-        //const char* cs_url = [[url path] UTF8String];
-        if (url != nil) {
-            NSString* ext = [url pathExtension];
-            //const char* cs_ext = [ext UTF8String];
-            if (ext != nil) {
-                if (([ext compare:@"jpg" options:NSCaseInsensitiveSearch] == NSOrderedSame) || ([ext compare:@"jpeg" options:NSCaseInsensitiveSearch] == NSOrderedSame)) {
-                    // jpg
-                    settings.format = CAMERA_SETTINGS_FORMAT_JPG;
-                }
-                if (([ext compare:@"png" options:NSCaseInsensitiveSearch] == NSOrderedSame)) {
-                    // png
-                    settings.format = CAMERA_SETTINGS_FORMAT_PNG;
-                }
-            }
-        }
-        if (settings.format == CAMERA_SETTINGS_FORMAT_NOT_SETTED) {
-            settings.format = CAMERA_SETTINGS_FORMAT_JPG;
-        }
-    }
-    UIImage* image = (UIImage*)[info objectForKey:UIImagePickerControllerEditedImage];
-    if (image == nil) {
-        image = (UIImage*)[info objectForKey:UIImagePickerControllerOriginalImage];
-    }
-    if (image != nil) {     
-        [self useImage:image];
-    }
-    else {
-        rho_rhodesapp_callCameraCallback([postUrl UTF8String], "", "", 1);
-    }
-    // Remove the picker interface and release the picker object. 
-    [picker dismissModalViewControllerAnimated:YES];
-    [picker.view removeFromSuperview];
-	//picker.view.hidden = YES;
-    [picker release];
-#ifdef __IPHONE_3_2
-    [popover dismissPopoverAnimated:YES];
-#endif
-}
-
-
 - (void)imagePickerController:(UIImagePickerController *)picker 
 		didFinishPickingImage:(UIImage *)image 
 		editingInfo:(NSDictionary *)editingInfo 
 { 
-    if (settings.format == CAMERA_SETTINGS_FORMAT_NOT_SETTED) {
-        settings.format = CAMERA_SETTINGS_FORMAT_JPG;
-    }
     //If image editing is enabled and the user successfully picks an image, the image parameter of the 
     //imagePickerController:didFinishPicking Image:editingInfo:method contains the edited image. 
     //You should treat this image as the selected image, but if you want to store the original image, you can get 
@@ -436,22 +373,14 @@
 void take_picture(char* callback_url, rho_param *options_hash) {
     NSString *url = [NSString stringWithUTF8String:callback_url];
     RhoCameraSettings* settings = [[RhoCameraSettings alloc] init:options_hash url:url];
-    if (settings.format == CAMERA_SETTINGS_FORMAT_NOT_SETTED) {
-        settings.format = CAMERA_SETTINGS_FORMAT_JPG;
-    }
     [[Rhodes sharedInstance] performSelectorOnMainThread:@selector(takePicture:)
                                               withObject:settings waitUntilDone:NO];
 }
 
-void choose_picture(char* callback_url, rho_param *options_hash) {
+void choose_picture(char* callback_url) {
     NSString *url = [NSString stringWithUTF8String:callback_url];
-    RhoCameraSettings* settings = [[RhoCameraSettings alloc] init:options_hash url:url];
-    if (!settings.enable_editing_setted) {
-        settings.enable_editing = 1;
-    }
-    settings.camera_type = CAMERA_SETTINGS_TYPE_CHOOSE_IMAGE;
     [[Rhodes sharedInstance] performSelectorOnMainThread:@selector(choosePicture:)
-                                              withObject:settings waitUntilDone:NO];
+                                              withObject:url waitUntilDone:NO];
 }
 
 
@@ -556,39 +485,14 @@ VALUE get_camera_info(const char* camera_type) {
         }
     }
     
-	if ([platform hasPrefix:@"iPad1"])  {
+	if ([platform isEqualToString:@"iPad1,1"])  {
         // iPad
     }
-    else
-	if ([platform hasPrefix:@"iPad2"])  {
+	if ([platform isEqualToString:@"iPad2,1"])  {
         // iPad 2
         if (!isFront) {
             w = 960;
             h = 720;
-        }
-        else {
-            w = 640;
-            h = 480;
-        }
-    } 
-    else 
-    if ([platform hasPrefix:@"iPad3"])  {
-        // iPad 3
-        if (!isFront) {
-            w = 2592;
-            h = 1936;
-        }
-        else {
-            w = 640;
-            h = 480;
-        }
-    } 
-    else 
-    if ([platform hasPrefix:@"iPad"]) {
-        // iPad 3/4 ?
-        if (!isFront) {
-            w = 2592;
-            h = 1936;
         }
         else {
             w = 640;

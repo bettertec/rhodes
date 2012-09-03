@@ -204,15 +204,8 @@ def prepare_production_ipa (app_path, app_name)
   payload_dir = File.join(tmp_dir, "Payload")  
   mkdir_p payload_dir
   app_file = File.join(app_path, app_name + ".app")
-  app_in_payload = File.join(payload_dir,  app_name + ".app")
-
-  mprovision_in_app = File.join(app_file,  "embedded.mobileprovision") 
-  mprovision_in_payload = File.join(payload_dir,  app_name + ".mobileprovision") 
-  
+  app_in_payload = File.join(payload_dir,  app_name + ".app") 
   cp_r app_file, app_in_payload
-  
-  cp mprovision_in_app, mprovision_in_payload
-  
   
   itunes_artwork = File.join($config["build"]["iphonepath"], "iTunesArtwork.jpg")
   itunes_artwork_dst = File.join(tmp_dir, "iTunesArtwork")
@@ -482,23 +475,8 @@ namespace "config" do
     $tmpdir =  $bindir +"/tmp"
 
     $devroot = '/Developer' if $devroot.nil?
-    $iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim') if $iphonesim.nil?
-
 
     $xcodebuild = $devroot + "/usr/bin/xcodebuild"
-    
-    if !File.exists? $xcodebuild
-        $xcodebuild = "/Applications/Xcode.app/Contents/Developer" + "/usr/bin/xcodebuild"
-        $devroot = '/Applications/Xcode.app/Contents/Developer'
-        $iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim_43')
-    end
-    
-    if !File.exists? $xcodebuild
-        puts 'ERROR: can not found XCode command line tools'
-        puts 'Install XCode to default location' 
-        puts 'For XCode from 4.3 and later - you should install Command Line Tools package ! Open XCode - Preferences... - Downloads - Components - Command Line Tools'
-        exit 1
-    end
 
     $homedir = ENV['HOME']
     $simdir = "#{$homedir}/Library/Application Support/iPhone Simulator/"
@@ -641,30 +619,10 @@ namespace "build" do
       $app_config["extensions"].each do |ext|
         $app_config["extpaths"].each do |p|
           extpath = File.join(p, ext, 'ext')
-          build_script = File.join(extpath, 'build')
-          
-          # modify executable attribute
-          if File.exists? build_script
-              if !File.executable? build_script
-                   puts 'change executable attribute for build script in extension : '+build_script
-                   begin
-                       File.chmod 0700, build_script
-                       puts 'executable attribute was writed for : '+build_script
-                   rescue Exception => e
-                       puts 'ERROR: can not change attribute for build script in extension ! Try to run build command with sudo: prefix.' 
-                   end    
-              else
-                   puts 'build script in extension already executable : '+build_script
-              end
-              if File.executable? build_script
-                   puts Jake.run('./build', [], extpath)
-                   exit 1 unless $? == 0
-              else
-                   puts 'ERROR: build script in extension is not executable !' 
-              end
-            else
-              puts 'build script in extension not found => pure ruby extension'
-          end
+          next unless File.executable? File.join(extpath, 'build')
+
+          puts Jake.run('./build', [], extpath)
+          exit 1 unless $? == 0
         end
       end
     end
@@ -803,8 +761,8 @@ namespace "run" do
       Thread.new {
             # run spec
             rhorunner = File.join($startdir, $config["build"]["iphonepath"],"build/#{$configuration}-iphonesimulator/rhorunner.app")
-            #iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim')
-            commandis = $iphonesim + ' launch "' + rhorunner + '" ' + $sdkver.gsub(/([0-9]\.[0-9]).*/,'\1') + ' ' + $emulatortarget + ' "' +log_name+'"'
+            iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim')
+            commandis = iphonesim + ' launch "' + rhorunner + '" ' + $sdkver.gsub(/([0-9]\.[0-9]).*/,'\1') + ' ' + $emulatortarget + ' "' +log_name+'"'
             puts 'use iphonesim tool - open iPhone Simulator and execute our application, also support device family (iphone/ipad)'
             puts 'execute command : ' + commandis
             system(commandis)
@@ -828,13 +786,7 @@ namespace "run" do
         
             io.each do |line|
                 puts line
-                
-                if line.class.method_defined? "valid_encoding?" 
-                    $iphone_end_spec = !Jake.process_spec_output(line) if line.valid_encoding?
-                else 
-                    $iphone_end_spec = !Jake.process_spec_output(line)
-                end                    
-               
+                $iphone_end_spec = !Jake.process_spec_output(line)
                 break if $iphone_end_spec
             end
             io.close
@@ -954,7 +906,6 @@ namespace "run" do
       exit $failed.to_i
     end
 
-    desc "Run application on RhoSimulator"    
     task :rhosimulator => ["config:set_iphone_platform","config:common"] do        
         $rhosim_config = "platform='iphone'\r\n"
         
@@ -1146,8 +1097,10 @@ namespace "run" do
   desc "Builds everything, launches iphone simulator"
   task :iphone => :buildsim do
     
+    iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim')
+
     rhorunner = File.join($startdir, $config["build"]["iphonepath"],"build/#{$configuration}-iphonesimulator/rhorunner.app")
-    commandis = $iphonesim + ' launch "' + rhorunner + '" ' + $sdkver.gsub(/([0-9]\.[0-9]).*/,'\1') + ' ' + $emulatortarget
+    commandis = iphonesim + ' launch "' + rhorunner + '" ' + $sdkver.gsub(/([0-9]\.[0-9]).*/,'\1') + ' ' + $emulatortarget
 
     thr = Thread.new do
        puts 'start thread with execution of application' 

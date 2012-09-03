@@ -36,8 +36,6 @@
 
 #include "NativeBar.h"
 
-#import "SignatureDelegate.h"
-
 #undef DEFAULT_LOGCATEGORY
 #define DEFAULT_LOGCATEGORY "SimpleMainView"
 
@@ -640,11 +638,11 @@ static BOOL makeHiddenUntilLoadContent = YES;
 	self.webView.backgroundColor = bc;
 	self.view.backgroundColor = bc;
 	
-	NSString* datas = [NSString stringWithFormat:@"<body bgcolor=\"#%6X\"></body>", bkg_color]; 
-	    
+	NSString* data = [NSString stringWithFormat:@"<body bgcolor=\"#%6$X\"></body>", bkg_color]; 
+	
 	self.webView.hidden = YES;
 	
-	[self loadHTMLString:datas];
+	[self loadHTMLString:data];
 }
 
 
@@ -661,7 +659,6 @@ static BOOL makeHiddenUntilLoadContent = YES;
 	//[webView setNeedsDisplay];
 	//}
 	//else {
-        [[SignatureDelegate getSharedInstance] hideSignatureInlineView];
 		[webView goBack];
 	//}
 }
@@ -719,9 +716,6 @@ static BOOL makeHiddenUntilLoadContent = YES;
 	[self restoreWebView];
 }
 
--(UIViewController*)getMainViewController {
-    return self;
-}
 
 
 - (NSString*)processForNativeView:(NSString*)url {
@@ -995,7 +989,6 @@ static BOOL makeHiddenUntilLoadContent = YES;
         NSMutableURLRequest *r = (NSMutableURLRequest*)request;
         [r addValue:c forHTTPHeaderField:@"Cookie"];
     }
-    [[SignatureDelegate getSharedInstance] hideSignatureInlineView];
     return YES;
 }
 

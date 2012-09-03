@@ -40,8 +40,6 @@
 
 #include "common/app_build_capabilities.h"
 
-#include "InitMemoryInfoCollector.h"
-
 
 
 /*
@@ -351,8 +349,7 @@ static Rhodes *instance = NULL;
                 picker.cameraDevice = UIImagePickerControllerCameraDeviceFront;
             }
             
-            //[window addSubview:picker.view];
-            [[mainView getMainViewController] presentModalViewController:picker animated:NO];
+            [window addSubview:picker.view];
         }
     } @catch(NSException* theException) {
         RAWLOG_ERROR2("startCameraPickerFromViewController failed(%s): %s", [[theException name] UTF8String], [[theException reason] UTF8String] );
@@ -385,14 +382,9 @@ static Rhodes *instance = NULL;
 		rect.origin.y = 0;
 		SignatureViewController* svc = [[SignatureViewController alloc] initWithRect:rect delegate:signatureDelegate];
 		[signatureDelegate setSignatureViewControllerValue:svc];
-        
-        [[mainView getMainViewController] presentModalViewController:svc animated:YES];
- 
-        
-        
-		//[mainView.view retain];
-		//[mainView.view removeFromSuperview];
-		//[window addSubview:svc.view];
+		[mainView.view retain];
+		[mainView.view removeFromSuperview];
+		[window addSubview:svc.view];
     } @catch(NSException* theException) {
         RAWLOG_ERROR2("startSignatureViewController failed(%s): %s", [[theException name] UTF8String], [[theException reason] UTF8String] );
     }
@@ -429,11 +421,10 @@ static Rhodes *instance = NULL;
 }
 
 
-- (void)choosePicture:(RhoCameraSettings*) settings {
+- (void)choosePicture:(NSString*) url {
     if (!rho_rhodesapp_check_mode())
         return;
-    [pickImageDelegate setPostUrl:settings.callback_url];
-    pickImageDelegate.settings = settings;
+    [pickImageDelegate setPostUrl:url];
     [self startCameraPicker:pickImageDelegate 
                  sourceType:UIImagePickerControllerSourceTypePhotoLibrary];
 }
@@ -576,8 +567,7 @@ static Rhodes *instance = NULL;
         const char *szRootPath = rho_native_rhopath();
         const char *szUserPath = rho_native_rhouserpath();
         NSLog(@"Init logconf");
-        rho_logconf_Init_with_separate_user_path(szRootPath, szRootPath, "", szUserPath);
-        InitMemoryInfoCollector();
+        rho_logconf_Init_with_separate_user_path(szRootPath, "", szUserPath);
         NSLog(@"Create rhodes app");
         rho_rhodesapp_create_with_separate_user_path(szRootPath, szUserPath);
         app_created = YES;
@@ -613,7 +603,7 @@ static Rhodes *instance = NULL;
     NSLog(@"Init all windows");
     
     
-    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault animated:NO];
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleBlackTranslucent animated:NO];
     
     window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     window.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
@@ -646,7 +636,7 @@ static Rhodes *instance = NULL;
     NSLog(@"Init delegates");
     dateTimePickerDelegate = [[DateTimePickerDelegate alloc] init];
     pickImageDelegate = [[PickImageDelegate alloc] init];
-    signatureDelegate = [SignatureDelegate getSharedInstance];
+    signatureDelegate = [[SignatureDelegate alloc] init];
     nvDelegate = [[NVDelegate alloc] init];
     
 #ifdef APP_BUILD_CAPABILITY_PUSH    
@@ -937,22 +927,6 @@ static Rhodes *instance = NULL;
         }
         */
         //exit(EXIT_SUCCESS);
-    }
-    if (!rho_can_app_started_with_current_licence()) {
-		NSLog(@"############################");
-		NSLog(@" ");
-		NSLog(@"ERROR: motorola_license is INVALID !");
-		NSLog(@" ");
-		NSLog(@"############################");
-        //exit(EXIT_SUCCESS);
-        //[self exit_with_errormessage:@"Motorola Licence" message:@"Your licence key is invalid !"];
-            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Motorola License" 
-                                                            message:@"Please provide RhoElements license key."
-                                                           delegate:nil 
-                                                  cancelButtonTitle:@"OK" 
-                                                  otherButtonTitles: nil];
-            [alert show];
-            [alert release];
     }
 	
 	return NO;

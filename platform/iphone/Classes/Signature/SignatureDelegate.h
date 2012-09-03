@@ -27,7 +27,6 @@
 #import <UIKit/UIKit.h>
 #import <Foundation/Foundation.h>
 #import "RhoDelegate.h"
-#import "SignatureView.h"
 #import "SignatureViewController.h"
 
 @interface SignatureDelegate : RhoDelegate {
@@ -38,11 +37,8 @@
     unsigned int penColor;
     float penWidth;
     unsigned int bgColor;
-    SignatureView* signatureInlineView;
 }
 
-
-+(id) getSharedInstance;
 
 -(void)doDone:(UIImage*)image;
 -(void)doCancel;
@@ -55,6 +51,6 @@
 -(void)setPenWidth:(float)value;
 -(void)setBgColor:(unsigned int)value;
 
--(void)hideSignatureInlineView;
+
 
 @end

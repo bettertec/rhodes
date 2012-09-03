@@ -56,6 +56,4 @@
 -(void)closeNativeView:(int)tab_index;
 
 -(void)setTabBarBadge:(NSString*)badge_text tab_index:(int)tab_index;
-
--(UIViewController*)getMainViewController;
 @end

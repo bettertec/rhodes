@@ -28,26 +28,20 @@
 
 @interface LocationController : NSObject<CLLocationManagerDelegate> {
 	CLLocationManager* _locationManager;
-	NSTimer*  timer;
-    int gps_callback_interval;
-    BOOL isFirstUpdateFromPlatform;
-    bool isErrorState;
-    BOOL isEnabled;
+	CFRunLoopTimerRef  _timer;
 	
 @public	
 	double _dLatitude, _dLongitude, _dAccuracy;
 	bool _bKnownPosition;
 	
-	//SEL onUpdateLocation;	
+	SEL onUpdateLocation;	
 }
 
 @property (nonatomic, retain) CLLocationManager *_locationManager;
 @property (assign) SEL onUpdateLocation;
 
-- (void) initLocationManager:(NSObject*)param;
+- (void) initLocationManager;
 - (void)  stop; 
-
-- (void)doUpdateLocation;
 
 - (double) getLatitude;
 - (double) getLongitude;
@@ -61,10 +55,6 @@
 
 - (void)locationManager:(CLLocationManager *)manager
 	   didFailWithError:(NSError *)error;
-
-- (void)onTimerFired:(NSTimer*)theTimer; 
-
-- (void)resetTimerWithNewInterval:(int)interval;
 
 + (LocationController *)sharedInstance;
 
