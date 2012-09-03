@@ -155,7 +155,7 @@ void hideSIPButton()
 
 void CMainWindow::RhoSetFullScreen(bool bFull, bool bDestroy /*=false*/)
 {
-    LOG(INFO) + "RhoSetFullScreen";
+    LOG(INFO) + "RhoSetFullScreen: " + (bFull ? 1 : 0);
 
     HWND hTaskBar = FindWindow(_T("HHTaskBar"), NULL);
     if ( hTaskBar )
@@ -168,15 +168,24 @@ void CMainWindow::RhoSetFullScreen(bool bFull, bool bDestroy /*=false*/)
 
 	if(g_hWndCommandBar)
 		::ShowWindow(g_hWndCommandBar, !bFull ? SW_SHOW : SW_HIDE);
-#else
+#endif
+
     if (!bDestroy)
     {
+#if !defined( OS_PLATFORM_MOTCE )
         SetFullScreen(bFull);
+#endif
 
         if ( bFull )
             hideSIPButton();
-    }
+
+#if defined( OS_PLATFORM_MOTCE )
+        CRect rcMainWindow;
+        calculateMainWindowRect(rcMainWindow);
+        MoveWindow(&rcMainWindow);
 #endif
+    }
+
 }
 #endif //OS_WINCE
 
@@ -258,8 +267,8 @@ LRESULT CMainWindow::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*
     m_bFullScreen = RHOCONF().getBool("full_screen");
     RhoSetFullScreen(m_bFullScreen);
 
-    calculateMainWindowRect(rcMainWindow);
-    MoveWindow(&rcMainWindow);
+    //calculateMainWindowRect(rcMainWindow);
+    //MoveWindow(&rcMainWindow);
 
 #endif //OS_WINCE
 
@@ -796,8 +805,15 @@ LRESULT CMainWindow::OnSettingChange(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam
 					pSipInfo.rcSipRect.top += deltaY;
 					pSipInfo.rcSipRect.bottom += deltaY;
 					doSIPmove = true;
-					pSipInfo.rcVisibleDesktop.bottom = pSipInfo.rcSipRect.top;
 				}
+#if defined (OS_PLATFORM_MOTCE)
+				if ((pSipInfo.rcSipRect.left != 0) || (pSipInfo.rcSipRect.right != width)) {
+					pSipInfo.rcSipRect.left = 0;
+					pSipInfo.rcSipRect.right = width;
+					doSIPmove = true;
+				}
+#endif
+				pSipInfo.rcVisibleDesktop.bottom = pSipInfo.rcSipRect.top;
 			}
 			CRect cRect;
 			this->GetClientRect(&cRect);
@@ -816,7 +832,11 @@ LRESULT CMainWindow::OnSettingChange(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam
 						SWP_SHOWWINDOW);
 				}
 			}
+#if defined (OS_PLATFORM_MOTCE)
+			if (m_toolbar.m_hWnd)
+#else
 			if (m_bFullScreen && m_toolbar.m_hWnd)
+#endif
 				m_toolbar.MoveWindow(0, (isHiding ? bottom : pSipInfo.rcSipRect.top) - m_toolbar.getHeight(), width, m_toolbar.getHeight());
 
             if ( m_bFullScreen && isHiding )

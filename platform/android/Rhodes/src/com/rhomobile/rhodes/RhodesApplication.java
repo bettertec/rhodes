@@ -36,6 +36,7 @@ import java.util.Vector;
 
 import com.rhomobile.rhodes.extmanager.Config;
 import com.rhomobile.rhodes.extmanager.RhoExtManager;
+import com.rhomobile.rhodes.extmanager.RhoExtManagerImpl;
 import com.rhomobile.rhodes.extmanager.WebkitExtension;
 import com.rhomobile.rhodes.file.RhoFileApi;
 import com.rhomobile.rhodes.signature.Signature;
@@ -150,7 +151,7 @@ public class RhodesApplication extends Application{
         InputStream configIs = null;
         Config config = new Config();
         try {
-            if (Capabilities.MOTOROLA_ENABLED) {
+            if (Capabilities.MOTOROLA_ENABLED || Capabilities.WEBKIT_BROWSER_ENABLED || Capabilities.MOTOROLA_BROWSER_ENABLED) {
                 String externalSharedPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/Android/data/" + appInfo.packageName;
                 File configXmlFile = new File(externalSharedPath, "Config.xml");
                 if (configXmlFile.exists()) {
@@ -160,7 +161,7 @@ public class RhodesApplication extends Application{
                 } else {
                     Log.i(TAG, "Loading Config.xml from resources");
                     configIs = getResources().openRawResource(RhoExtManager.getResourceId("raw", "config"));
-                    config.load(configIs, rootPath);
+                    config.load(configIs, externalSharedPath);
                 }
                 if (Capabilities.SHARED_RUNTIME_ENABLED) {
                     String startPage = config.getSetting("startpage");
@@ -170,17 +171,40 @@ public class RhodesApplication extends Application{
                         sharedPath = new File(startUri.getPath()).getParent();
                         rootPath = RhoFileApi.initRootPath(appInfo.dataDir, appInfo.sourceDir, sharedPath);
                     }
+                    String logURI = config.getSetting("LogURI");
+                    Log.i(TAG, "Log URI: " + logURI);
+                    if (logURI != null) {
+                        URI logUri = new URI(logURI);
+                        if (logUri.getScheme().equalsIgnoreCase("file")) {
+                            String logPath = new File(logUri.getPath()).getParent();
+                            RhoFileApi.initLogPath(logPath);
+                        }
+                    }
                 }
-            } else if(Capabilities.WEBKIT_BROWSER_ENABLED || Capabilities.MOTOROLA_BROWSER_ENABLED) {
-                Log.i(TAG, "Loading Config.xml from assets");
-                configIs = getAssets().open("config.xml");
-                config.load(configIs, rootPath);
+                RhoExtManagerImpl extManager = RhoExtManager.getImplementationInstance();
+
+                String logError = config.getSetting("LogError");
+                if (logError != null)
+                    extManager.enableLogLevelError(logError.equals("1"));
+
+                String logWarning = config.getSetting("LogWarning");
+                if (logWarning != null)
+                    extManager.enableLogLevelWarning(logWarning.equals("1"));
+
+                String logInfo = config.getSetting("LogInfo");
+                if (logInfo != null)
+                    extManager.enableLogLevelInfo(logInfo.equals("1"));
+
+                String logUser = config.getSetting("LogUser");
+                if (logUser != null)
+                    extManager.enableLogLevelUser(logUser.equals("1"));
+
+                String logDebug = config.getSetting("LogDebug");
+                if (logDebug != null)
+                    extManager.enableLogLevelDebug(logDebug.equals("1"));
             }
-            
         } catch (Throwable e) {
-            //e.printStackTrace();
-            //Log.e(TAG, e.getMessage());
-            Log.e(TAG, "Erorr loading RhoElements configuraiton");
+            Log.e(TAG, "Error loading RhoElements configuraiton ("+e.getClass().getSimpleName()+"): " + e.getMessage());
         } finally {
             if (configIs != null) {
                 try {

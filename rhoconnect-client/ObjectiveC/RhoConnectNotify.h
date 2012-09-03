@@ -43,6 +43,9 @@
 @property(readonly) NSString* partition;
 @property(readonly) NSString* error_message;
 @property(readonly) NSString* callback_params;
+@property(readonly) NSMutableDictionary* create_errors;
+@property(readonly) NSMutableDictionary* update_errors;
+@property(readonly) NSMutableDictionary* delete_errors;
 @property(readonly) RHO_CONNECT_NOTIFY notify_data;
 
 - (id) init: (RHO_CONNECT_NOTIFY*) data;

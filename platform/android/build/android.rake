@@ -83,8 +83,7 @@ ANDROID_PERMISSIONS = {
   'calendar' => ['READ_CALENDAR', 'WRITE_CALENDAR'],
   'sdcard' => 'WRITE_EXTERNAL_STORAGE',
   'push' => proc do |manifest| add_push(manifest) end,
-  'motorola' => ['SYSTEM_ALERT_WINDOW', 'BROADCAST_STICKY', proc do |manifest| add_motosol_sdk(manifest) end],
-  'motoroladev' => ['SYSTEM_ALERT_WINDOW', 'BROADCAST_STICKY', proc do |manifest| add_motosol_sdk(manifest) end],
+  'motorola' => nil,
   'webkit_browser' => nil,
   'shared_runtime' => nil,
   'motorola_browser' => nil
@@ -150,7 +149,7 @@ def set_app_name_android(newname)
   rm_rf $appres
   cp_r $rhores, $appres
 
-  iconappname = File.join($app_path, "icon", "icon.png")
+  iconappname = File.join($app_path, "icon/android", "icon.png")
   iconresname = File.join($appres, "drawable", "icon.png")
   rm_f iconresname
   cp iconappname, iconresname
@@ -447,7 +446,6 @@ namespace "config" do
     $targetdir = File.join($bindir, "target/android")
     $excludelib = ['**/builtinME.rb','**/ServeME.rb','**/dateME.rb','**/rationalME.rb']
     $tmpdir = File.join($bindir, "tmp")
-    $resourcedir = File.join($tmpdir, "resource")
     $libs = File.join($androidpath, "Rhodes", "libs")
 
     $rhomanifest = File.join $androidpath, "Rhodes", "AndroidManifest.xml"
@@ -587,7 +585,6 @@ namespace "config" do
     $app_config["capabilities"].map! { |cap| cap.is_a?(String) ? cap : nil }.delete_if { |cap| cap.nil? }
     $use_google_addon_api = true unless $app_config["capabilities"].index("push").nil?
     $use_motosol_barcode_api = false #true unless $app_config["extensions"].index("barcode").nil?
-    
     $appname = $app_config["name"]
     $appname = "Rhodes" if $appname.nil?
     $vendor = $app_config["vendor"]
@@ -615,11 +612,6 @@ namespace "config" do
       $uri_path_prefix = "/#{$app_package_name}"
     end
 
-    unless $app_config['capabilities'].index('motorola').nil? and $app_config['capabilities'].index('motoroladev').nil?
-      $use_motosol_barcode_api = true
-      $use_motosol_api_classpath = true unless $app_config['capabilities'].index('motoroladev').nil?
-      raise 'Cannot use Motorola SDK addon and Google SDK addon together!' if $use_google_addon_api
-    end
  
     $applog_path = nil
     $applog_file = $app_config["applog"]
@@ -834,10 +826,10 @@ namespace "config" do
                 # modify executable attribute
                 if File.exists? build_script
                   if !File.executable? build_script
-                       puts 'change executable attribute for build script in extension : '+build_script
+                       #puts 'change executable attribute for build script in extension : '+build_script
                        begin
-                           File.chmod 0700, build_script
-                           puts 'executable attribute was writed for : '+build_script
+                           #File.chmod 0700, build_script
+                           #puts 'executable attribute was writed for : '+build_script
                        rescue Exception => e
                            puts 'ERROR: can not change attribute for build script in extension ! Try to run build command with sudo: prefix.' 
                        end    
@@ -930,19 +922,33 @@ namespace "build" do
       ENV["RHO_ROOT"] = $startdir
       ENV["BUILD_DIR"] ||= $startdir + "/platform/android/build"
       ENV["RHO_INC"] = $appincdir
+      ENV["RHO_RES"] = $appres
       ENV["RHO_ANDROID_TMP_DIR"] = $tmpdir
       ENV["NEON_ROOT"] = $neon_root unless $neon_root.nil?
+      ENV["CONFIG_XML"] = $config_xml unless $config_xml.nil?
 
       mkdir_p $extensionsdir unless File.directory? $extensionsdir
 
       $ext_android_build_scripts.each do |extpath, script|
         ext = File.basename(File.dirname(extpath))
         puts "Executing extension build script: #{ext}"
+
         ENV['TEMP_FILES_DIR'] = File.join(ENV["TARGET_TEMP_DIR"], ext)
-        Jake.run(script, [], extpath)
+
+        if RUBY_PLATFORM =~ /(win|w)32$/
+             Jake.run(script, [], extpath)
+        else
+             #puts '$$$$$$$$$$$$$$$$$$     START'
+             currentdir = Dir.pwd()      
+             Dir.chdir extpath 
+             sh %{$SHELL ./build}
+             Dir.chdir currentdir 
+             #puts '$$$$$$$$$$$$$$$$$$     FINISH'
+        end
         raise "Cannot build #{extpath}" unless $?.success?
         puts "Extension build script finished"
       end
+
     end #task :extensions
 
     task :libsqlite => "config:android" do
@@ -982,6 +988,8 @@ namespace "build" do
       objdir = $objdir["ruby"]
       libname = $libname["ruby"]
       args = []
+      args << "-Wno-uninitialized"
+      args << "-Wno-missing-field-initializers"
       args << "-I\"#{srcdir}/include\""
       args << "-I\"#{srcdir}/android\""
       args << "-I\"#{srcdir}/generated\""
@@ -1458,6 +1466,12 @@ namespace "build" do
              end
           end
       end
+      
+      unless $config_xml.nil?
+        rawres_path = File.join($tmpdir, 'res', 'raw')
+        mkdir_p rawres_path unless File.exist? rawres_path
+        cp $config_xml, File.join(rawres_path,'config.xml')
+      end
 
       generate_rjava
 
@@ -1498,7 +1512,7 @@ namespace "build" do
       classpath = $androidjar
       classpath += $path_separator + $gapijar unless $gapijar.nil?
       classpath += $path_separator + $motosol_jar unless $motosol_jar.nil?
-      classpath += $path_separator + File.join($tmpdir, 'Rhodes')
+      classpath += $path_separator + "#{$tmpdir}/Rhodes"
 #      Dir.glob(File.join($extensionsdir, "*.jar")).each do |f|
 #        classpath += $path_separator + f
 #      end
@@ -1552,14 +1566,20 @@ namespace "build" do
         File.open(list, "r") do |f|
           while line = f.gets
             line.chomp!
-            srclist.write "#{File.join(extpath, line)}\n"
+            srclist.write "\"#{File.join(extpath, line)}\"\n"
+            #srclist.write "#{line}\n"
           end
         end
         srclist.close
         
         mkdir_p File.join($tmpdir, ext)
         
+        #puts '$$$$$$$$$$$$$$$$$$     START'
+        #currentdir = Dir.pwd()      
+        #Dir.chdir extpath 
         java_compile(File.join($tmpdir, ext), classpath, [srclist.path])
+        #Dir.chdir currentdir 
+        #puts '$$$$$$$$$$$$$$$$$$     FINISH'
 
         extjar = File.join $bindir, ext + '.jar'
         args = ["cf", extjar, '.']
@@ -1652,7 +1672,7 @@ namespace "package" do
     args = ["uf", resourcepkg]
     # Strip them all to decrease size
     Dir.glob($tmpdir + "/lib/armeabi/lib*.so").each do |lib|
-      cc_run($stripbin, [lib])
+      cc_run($stripbin, ['"'+lib+'"'])
       args << "lib/armeabi/#{File.basename(lib)}"
     end
     puts Jake.run($jarbin, args, $tmpdir)
@@ -1745,6 +1765,10 @@ namespace "device" do
 
       puts "Signing APK file"
       args = []
+      args << "-sigalg"
+      args << "MD5withRSA"
+      args << "-digestalg"
+      args << "SHA1"
       args << "-verbose"
       args << "-keystore"
       args << $keystore
@@ -2032,6 +2056,7 @@ namespace "run" do
       #puts 'Sleep for 5 sec. waiting for "adb start-server"'
       #sleep 5
 
+      rm_f $applog_path if !$applog_path.nil?
       AndroidTools.logcat_process()
 
       running = AndroidTools.is_emulator_running
@@ -2091,6 +2116,7 @@ namespace "run" do
               Jake.run($adb, ['start-server'], nil, true)
               adbRestarts += 1
 
+              rm_f $applog_path if !$applog_path.nil?
               AndroidTools.logcat_process()
             else
               puts "Still waiting..."
@@ -2148,8 +2174,9 @@ namespace "run" do
     task :device => "device:android:install" do
       puts "Starting application..."
       AndroidTools.run_application("-d")
-      
+      puts "Application was started"
       AndroidTools.logcat_process("-d")
+      puts "Starting log process ..."
     end
   end
 

@@ -29,8 +29,10 @@ package com.rhomobile.rhodes.mainview;
 import java.util.Map;
 import java.util.Vector;
 
+import android.net.Uri;
 import com.rhomobile.rhodes.Logger;
 import com.rhomobile.rhodes.RhodesActivity;
+import com.rhomobile.rhodes.RhodesAppOptions;
 import com.rhomobile.rhodes.RhodesService;
 import com.rhomobile.rhodes.file.RhoFileApi;
 import com.rhomobile.rhodes.util.ContextFactory;
@@ -55,6 +57,8 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.FrameLayout;
 import android.widget.TabHost;
 import android.widget.TabWidget;
+
+import android.widget.TextView;
 
 public class TabbedMainView implements MainView {
 	
@@ -166,45 +170,65 @@ public class TabbedMainView implements MainView {
 			int c_B = (color & 0xFF);
 			int height = rect.bottom - rect.top + 1;
 			
-			int gap = 3;
+			//int gap = 3;
+			int gap = 0;
 
 			Context ctx = RhodesActivity.getContext();
 			DisplayMetrics metrics = new DisplayMetrics();
 			WindowManager wm = (WindowManager)ctx.getSystemService(Context.WINDOW_SERVICE);
 			wm.getDefaultDisplay().getMetrics(metrics);
 			
-			int lcd_density = metrics.densityDpi;
-			if (lcd_density > 200) gap = 4;
+			//int lcd_density = metrics.densityDpi;
+			//if (lcd_density > 200) gap = 4;
 			int left_gap = gap;
 			int right_gap = gap;
-			if (lcd_density > 200) left_gap += 1;
-			if (lcd_density > 200) right_gap += 1;
+			//if (lcd_density > 200) left_gap += 1;
+			//if (lcd_density > 200) right_gap += 1;
 			if (first_tab) left_gap = 0; 
 			if (last_tab) right_gap = 0; 
 			
 			switch (style) {
 				case NORMAL: {
-					int dark_k = 16;
-					int dark_k2 = 128;
-					int c_dark_R = modifyColorComponent( c_R, -dark_k);
-					int c_dark_G = modifyColorComponent( c_G, -dark_k);
-					int c_dark_B = modifyColorComponent( c_B, -dark_k);
+					//int dark_k = 16;
+					//int dark_k2 = 128;
+					/*int c_dark_R = 00;
+					int c_dark_G = 00;
+					int c_dark_B = 00;
 
-					int c_dark2_R = modifyColorComponent( c_R, -dark_k2);
-					int c_dark2_G = modifyColorComponent( c_G, -dark_k2);
-					int c_dark2_B = modifyColorComponent( c_B, -dark_k2);
+					int c_dark2_R = 60;
+					int c_dark2_G = 60;
+					int c_dark2_B = 60;*/
+					
+					int c_dark_R = 26;
+					int c_dark_G = 26;
+					int c_dark_B = 26;
+
+					int c_dark1_R = 38;
+					int c_dark1_G = 38;
+					int c_dark1_B = 38;
+
+					int c_dark2_R = 54;
+					int c_dark2_G = 54;
+					int c_dark2_B = 54;
 					
 					int y0 = rect.top;
-					int y1 = rect.top + ((height-gap)/10); 
-					int y2 = rect.top + ((height-gap)/2); 
-					int y3 = rect.bottom - ((height-gap)/10) - gap; 
-					int y4 = rect.bottom - gap; 
+					//nt y1 = rect.bottom-gap;
+					int y1 = rect.top + ((height-gap) * 1/2); 
+					int y2 = rect.bottom-gap;
+					/*int y2 = rect.top + ((height-gap) * 2/3);
+					int y3 = rect.bottom-gap;
+					int y3 = rect.bottom - ((height-gap)/4) - gap; 
+					int y4 = rect.bottom-gap; */
 				
 					drawVerticalGradient(	canvas, rect.left+left_gap, y0, rect.right-right_gap, y1,
 											c_dark2_R, c_dark2_G, c_dark2_B,
+											c_dark1_R, c_dark1_G, c_dark1_B);
+				
+					drawVerticalGradient(	canvas, rect.left+left_gap, y1, rect.right-right_gap, y2,
+											c_dark1_R, c_dark1_G, c_dark1_B,
 											c_dark_R, c_dark_G, c_dark_B);
 					
-					drawVerticalGradient(	canvas, rect.left+left_gap, y1, rect.right-right_gap, y2,
+					/*drawVerticalGradient(	canvas, rect.left+left_gap, y1, rect.right-right_gap, y2,
 							c_dark_R, c_dark_G, c_dark_B,
 							c_R, c_G, c_B);
 
@@ -214,23 +238,43 @@ public class TabbedMainView implements MainView {
 
 					drawVerticalGradient(	canvas, rect.left+left_gap, y3, rect.right-right_gap, y4,
 							c_dark_R, c_dark_G, c_dark_B,
-							c_dark2_R, c_dark2_G, c_dark2_B);
+							c_dark2_R, c_dark2_G, c_dark2_B);*/
 					
-			        Paint paint = new Paint();
+			        /*Paint paint = new Paint();
 			        paint.setAntiAlias(false);
 			        paint.setARGB(32, 0, 0, 0);
 		       		canvas.drawRect(rect.left+left_gap, rect.top, rect.left+left_gap+1, rect.bottom-gap, paint);
-		       		canvas.drawRect(rect.right-right_gap-1, rect.top, rect.right-right_gap, rect.bottom-gap, paint);
+		       		canvas.drawRect(rect.right-right_gap-1, rect.top, rect.right-right_gap, rect.bottom-gap, paint);*/
 					
 				}
 				break;
 				case SELECTED: {
-					int light_k = 16;
+					/*int light_k = 16;
 					int dark_k = 16;
 					int light_k2 = 64;
-					int dark_k2 = 64;
+					int dark_k2 = 64;*/
 					
-					int c_0_R = modifyColorComponent( c_R, light_k2);
+					/*int c_0_R = 182;
+					int c_0_G = 219;
+					int c_0_B = 80;
+					
+					int c_1_R = 138;
+					int c_1_G = 170;
+					int c_1_B = 59;*/
+					
+					int c_0_R = 178;
+					int c_0_G = 221;
+					int c_0_B = 77;
+					
+					int c_1_R = 171;
+					int c_1_G = 212;
+					int c_1_B = 74;
+					
+					int c_2_R = 144;
+					int c_2_G = 178;
+					int c_2_B = 62;
+					
+					/*int c_0_R = modifyColorComponent( c_R, light_k2);
 					int c_0_G = modifyColorComponent( c_G, light_k2);
 					int c_0_B = modifyColorComponent( c_B, light_k2);
 					
@@ -244,13 +288,16 @@ public class TabbedMainView implements MainView {
 
 					int c_4_R = modifyColorComponent( c_R, -dark_k2);
 					int c_4_G = modifyColorComponent( c_G, -dark_k2);
-					int c_4_B = modifyColorComponent( c_B, -dark_k2);
+					int c_4_B = modifyColorComponent( c_B, -dark_k2);*/
 					
 					int y0 = rect.top;
-					int y1 = rect.top + ((height-gap)/4); 
-					int y2 = rect.top + ((height-gap)/2); 
+					//nt y1 = rect.bottom-gap;
+					int y1 = rect.top + ((height-gap) * 1/2); 
+					int y2 = rect.bottom-gap;
+					/*int y2 = rect.top + ((height-gap) * 2/3);
+					int y3 = rect.bottom-gap;
 					int y3 = rect.bottom - ((height-gap)/4) - gap; 
-					int y4 = rect.bottom-gap; 
+					int y4 = rect.bottom-gap; */
 				
 					drawVerticalGradient(	canvas, rect.left+left_gap, y0, rect.right-right_gap, y1,
 											c_0_R, c_0_G, c_0_B,
@@ -258,23 +305,23 @@ public class TabbedMainView implements MainView {
 					
 					drawVerticalGradient(	canvas, rect.left+left_gap, y1, rect.right-right_gap, y2,
 							c_1_R, c_1_G, c_1_B,
-							c_R, c_G, c_B);
+							c_2_R, c_2_G, c_2_B);
 
-					drawVerticalGradient(	canvas, rect.left+left_gap, y2, rect.right-right_gap, y3,
+					/*drawVerticalGradient(	canvas, rect.left+left_gap, y2, rect.right-right_gap, y3,
 							c_R, c_G, c_B,
 							c_3_R, c_3_G, c_3_B);
 
 					drawVerticalGradient(	canvas, rect.left+left_gap, y3, rect.right-right_gap, y4,
 							c_3_R, c_3_G, c_3_B,
-							c_4_R, c_4_G, c_4_B);
+							c_4_R, c_4_G, c_4_B);*/
 					
-			        Paint paint = new Paint();
+			        /*Paint paint = new Paint();
 			        paint.setAntiAlias(false);
 			        paint.setARGB(32, 0, 0, 0);
 		       		canvas.drawRect(rect.left+left_gap, rect.top, rect.left+left_gap+1, rect.bottom, paint);
-		       		canvas.drawRect(rect.right-right_gap-1, rect.top, rect.right-right_gap, rect.bottom, paint);
-			        paint.setARGB(255, c_4_R, c_4_G, c_4_B);
-		       		canvas.drawRect(rect.left, rect.bottom-gap, rect.right, rect.bottom-1, paint);
+		       		canvas.drawRect(rect.right-right_gap-1, rect.top, rect.right-right_gap, rect.bottom, paint);*/
+			        //paint.setARGB(255, c_4_R, c_4_G, c_4_B);
+		       		//canvas.drawRect(rect.left, rect.bottom-gap, rect.right, rect.bottom-1, paint);
 				}
 				break;
 				case DISABLED: {
@@ -354,10 +401,53 @@ public class TabbedMainView implements MainView {
 		return data.view;
 	}
 	
+	/**
+     * Returns the start URL for the current tab. On a TabbedMainView, the start URL
+     * is as it was defined in its tabData.
+     * @return The start URL for the currently selected tab.
+     */
+    @Override
+    public String currentStartUrl() {
+        TabData data = tabData.elementAt(activeTab());
+        return data.url;
+    }
+
+    /**
+     *  Returns true if we are on the rhoconfig.txt start page (when there is only one view).
+     * @return True if we are on the rhoconfig.txt start page, false otherwise.
+     */
+    public boolean isOnStartPage() {
+        String currentLocation = currentLocation(activeTab());
+        if (currentLocation == null) {
+            return false;
+        }
+        try {
+            Uri uri = Uri.parse(currentLocation);
+            currentLocation = uri.getPath();
+        }catch (Exception exc) {
+            android.util.Log.e(TAG, "** Current location not parsable! "+currentLocation);
+        }
+        android.util.Log.d(TAG, "** WURL - Start Page? Current URL is "+currentLocation+", start URL is "+currentStartUrl());
+        //return currentLocation.equals(currentStartUrl());
+		return currentStartUrl().contains(currentLocation) || currentLocation.contains(currentStartUrl());
+    }
+	
 	private void processTabHostColors(TabHost tabHost, int SelectedColor, boolean useSelectedColor) {
 		tabHost.getTabWidget().setStripEnabled(false); 
 		
 		for (int i = 0; i < tabHost.getTabWidget().getChildCount(); i++) { 
+		
+			// Hack to modify the color of tab labels
+		    TextView tv = (TextView) tabHost.getTabWidget().getChildAt(i).findViewById(android.R.id.title); //Unselected Tabs
+            if (tv != null) {
+                tv.setTextColor(Color.parseColor("#ffffff"));
+            }
+            TextView tv2 = (TextView) tabHost.getCurrentTabView().findViewById(android.R.id.title); // Selected Tab
+            if (tv2 != null) {
+                tv2.setTextColor(Color.parseColor("#ffffff"));
+            }
+			// hack end
+
 			if ((i == tabHost.getCurrentTab()) && useSelectedColor) {
 				tabHost.getTabWidget().getChildAt(i).setBackgroundColor(SelectedColor);
 				
@@ -553,6 +643,10 @@ public class TabbedMainView implements MainView {
 			Object iconObj = hash.get("icon");
 			if (iconObj != null && (iconObj instanceof String))
 				icon = "apps/" + (String)iconObj;
+				
+			// use the double sized one for high density displays
+			if (metrics.densityDpi >= DisplayMetrics.DENSITY_HIGH)
+				icon = icon.substring(0, icon.length() - 4) + "@2x.png";
 			
 			Object reloadObj = hash.get("reload");
 			if (reloadObj != null && (reloadObj instanceof String))
@@ -600,9 +694,11 @@ public class TabbedMainView implements MainView {
 				}
 				
 				if (bitmap != null)
-					bitmap.setDensity(DisplayMetrics.DENSITY_MEDIUM);//Bitmap.DENSITY_NONE);
+					//bitmap.setDensity(DisplayMetrics.DENSITY_MEDIUM);//Bitmap.DENSITY_NONE);
+					bitmap.setDensity(metrics.densityDpi >= DisplayMetrics.DENSITY_HIGH ? DisplayMetrics.DENSITY_HIGH : DisplayMetrics.DENSITY_MEDIUM);
 					drawable = new BitmapDrawable(bitmap);
-					drawable.setTargetDensity(metrics);
+					//drawable.setTargetDensity(metrics);
+					drawable.setTargetDensity(metrics.densityDpi >= DisplayMetrics.DENSITY_HIGH ? DisplayMetrics.DENSITY_HIGH : DisplayMetrics.DENSITY_MEDIUM);
 			}
 			if (drawable == null)
 				spec.setIndicator(label);
@@ -611,15 +707,16 @@ public class TabbedMainView implements MainView {
 			
 			SimpleMainView view = null;
 			if (use_current_view_for_tab) {
-				RhodesService r = RhodesService.getInstance();
-				MainView mainView = r.getMainView();
+                MainView mainView = RhodesActivity.safeGetInstance().getMainView();
                 action = mainView.currentLocation(-1);
                 IRhoWebView webView = mainView.detachWebView();
                 view = new SimpleMainView(webView);
 			}
 			if (view == null) {
 				view = new SimpleMainView();
+				view.getWebView(-1).setWebClient(RhodesActivity.safeGetInstance());
 			}
+			
 			// Set view factory
 			
 			if (web_bkg_color_Obj != null) {
@@ -923,5 +1020,4 @@ public class TabbedMainView implements MainView {
     public void stopNavigate(int index) {
         getTabMainView(index).stopNavigate(0);
     }
-
 }

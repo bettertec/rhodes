@@ -721,14 +721,16 @@ def common_bundle_start(startdir, dest)
   cp app + '/rhoconfig.txt', File.join($srcdir,'apps'), :preserve => true
 
   if $app_config["app_type"] == 'rhoelements'
-    config_xml = nil
+    $config_xml = nil
     if $app_config[$config["platform"]] && $app_config[$config["platform"]]["rhoelements"] && $app_config[$config["platform"]]["rhoelements"]["config"] && (File.exists? File.join(app, $app_config[$config["platform"]]["rhoelements"]["config"]))
-      config_xml = File.join(app, $app_config[$config["platform"]]["rhoelements"]["config"])
+      $config_xml = File.join(app, $app_config[$config["platform"]]["rhoelements"]["config"])
     elsif $app_config["rhoelements"] && $app_config["rhoelements"]["config"] && (File.exists? File.join(app, $app_config["rhoelements"]["config"]))
-      config_xml = File.join(app, $app_config["rhoelements"]["config"])
+      $config_xml = File.join(app, $app_config["rhoelements"]["config"])
     end
-    if !(config_xml.nil?)
-      cp config_xml, File.join($srcdir,'apps/Config.xml'), :preserve => true
+    if $current_platform == "wm"
+      if !($config_xml.nil?)
+        cp $config_xml, File.join($srcdir,'apps/Config.xml'), :preserve => true
+      end
     end
   end
 
@@ -788,13 +790,13 @@ def process_exclude_folders
   exclude_platform = "wm" if exclude_platform == 'win32'
 
   if $app_config["excludedirs"]
-      excl << $app_config["excludedirs"]['all'] if $app_config["excludedirs"]['all']
-      excl << $app_config["excludedirs"][exclude_platform] if $app_config["excludedirs"][exclude_platform]
+      excl += $app_config["excludedirs"]['all'] if $app_config["excludedirs"]['all']
+      excl += $app_config["excludedirs"][exclude_platform] if $app_config["excludedirs"][exclude_platform]
   end
       
   if  $config["excludedirs"]    
-      excl << $config["excludedirs"]['all'] if $config["excludedirs"]['all']
-      excl << $config["excludedirs"][exclude_platform] if $config["excludedirs"][exclude_platform]
+      excl += $config["excludedirs"]['all'] if $config["excludedirs"]['all']
+      excl += $config["excludedirs"][exclude_platform] if $config["excludedirs"][exclude_platform]
   end  
   
   if excl.size() > 0
@@ -803,6 +805,13 @@ def process_exclude_folders
       excl.each do |mask|
         Dir.glob(mask).each {|f| puts "f: #{f}"; rm_rf f}
       end
+      
+      chdir File.join($srcdir, 'apps')
+  
+      excl.each do |mask|
+        Dir.glob(mask).each {|f| puts "f: #{f}"; rm_rf f}
+      end
+      
   end
 
 end
@@ -822,7 +831,6 @@ namespace "build" do
       common_bundle_start(startdir,dest)
 
       process_exclude_folders()
-      
       cp_r File.join(startdir, "platform/shared/db/res/db"), File.join($srcdir, 'apps')
       
       chdir startdir

@@ -1,14 +1,14 @@
 package com.rhomobile.rhodes.extmanager;
 
-import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.Map;
 
 import android.app.Dialog;
 import android.content.Intent;
+import android.graphics.Rect;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +30,11 @@ public class RhoExtManagerImpl implements IRhoExtManager {
     private ArrayList<IRhoListener> mListeners = new ArrayList<IRhoListener>();
     private Object mLicense;
     private boolean mFirstNavigate = true;
+    private boolean mLogError = true;
+    private boolean mLogWarning = true;
+    private boolean mLogInfo = true;
+    private boolean mLogUser = true;
+    private boolean mLogDebug = true;
 
     private IRhoExtData makeDefExtData(View view) {
         return new RhoExtDataImpl(view, RhodesActivity.safeGetInstance().getMainView().activeTab());
@@ -192,17 +197,59 @@ public class RhoExtManagerImpl implements IRhoExtManager {
     }
 
     /**
-     * @param config - config parameters map 
-     * @return is extension allowed to navigate to its start page
+     * @param name - parameter name
+     * @param value - parameter value
+     * @return is parameter accepted by rhodes platform
      */
     @Override
     public boolean onNewConfigValue(String name, String value) {
-        // TODO Auto-generated method stub
-        return Capabilities.SHARED_RUNTIME_ENABLED;
+        return false;
     }
     //-----------------------------------------------------------------------------------------------------------------
     // Rhodes implementation related methods are below
 
+    public void enableLogLevelError(boolean enabled) {
+        Log.i(TAG, "RE Error log: " + enabled);
+        mLogError = enabled;
+    }
+    public void enableLogLevelWarning(boolean enabled) { 
+        Log.i(TAG, "RE Warning log: " + enabled);
+        mLogWarning = enabled; 
+    }
+    public void enableLogLevelInfo(boolean enabled) { 
+        Log.i(TAG, "RE Info log: " + enabled);
+        mLogInfo = enabled;
+    }
+    public void enableLogLevelUser(boolean enabled) { 
+        Log.i(TAG, "RE User log: " + enabled);
+        mLogUser = enabled;
+    }
+    public void enableLogLevelDebug(boolean enabled) { 
+        Log.i(TAG, "RE Debug log: " + enabled);
+        mLogDebug = enabled;
+    }
+
+    void logT(String tag, String msg) {
+        if (mLogDebug)
+            Logger.I(tag, msg);
+    }
+
+    void logI(String tag, String msg) {
+        if (mLogInfo || mLogUser)
+            Logger.I(tag, msg);
+    }
+
+    void logW(String tag, String msg) {
+        if (mLogWarning)
+            Logger.W(tag, msg);
+    }
+
+    void logE(String tag, String msg) {
+        if (mLogError)
+            Logger.E(tag, msg);
+    }
+
+    
     public void onSetPropertiesData(View view,String propId, String data, int position, int total) {
         synchronized (mExtensions) {
             for (IRhoExtension ext : mExtensions.values()) {
@@ -283,10 +330,10 @@ public class RhoExtManagerImpl implements IRhoExtManager {
         }
     }
 
-    public void onInputMethod(View view, boolean enabled) {
+    public void onInputMethod(View view, boolean enabled, String type, Rect area) {
         synchronized (mExtensions) {
             for (IRhoExtension ext : mExtensions.values()) {
-                ext.onInputMethod(this, enabled, makeDefExtData(view));
+                ext.onInputMethod(this, enabled, type, area, makeDefExtData(view));
             }
         }
     }
@@ -351,6 +398,14 @@ public class RhoExtManagerImpl implements IRhoExtManager {
         synchronized (mExtensions) {
             for (IRhoExtension ext : mExtensions.values()) {
                 ext.onStatus(this, title, makeDefExtData(view));
+            }
+        }
+    }
+    
+    public void onAuthRequired(View view, String type, String url, String realm) {
+        synchronized (mExtensions) {
+            for (IRhoExtension ext : mExtensions.values()) {
+                ext.onAuthRequired(this, type, url, realm, makeDefExtData(view));
             }
         }
     }

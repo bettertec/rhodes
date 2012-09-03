@@ -27,9 +27,9 @@
 #include "stdafx.h"
 #include "MainWindow.h"
 #include "IEBrowserEngine.h"
-#if !defined(RHODES_EMULATOR) && !defined(OS_WINDOWS_DESKTOP)
+//#if !defined(RHODES_EMULATOR) && !defined(OS_WINDOWS_DESKTOP)
 #include "LogMemory.h"
-#endif
+//#endif
 
 #include "common/RhodesApp.h"
 #include "common/StringConverter.h"
@@ -41,8 +41,6 @@
 #include "common/RhoFilePath.h"
 #include "common/app_build_capabilities.h"
 #include "common/app_build_configs.h"
-
-#include <algorithm>
 
 using namespace rho;
 using namespace rho::common;
@@ -91,15 +89,16 @@ extern "C" {
     bool rho_wmimpl_get_fullscreen(){ return 0; }
     const char* rho_wmimpl_get_logpath(){ return ""; }
     int rho_wmimpl_is_loglevel_enabled(int nLogLevel){ return true; }
+	const int* rho_wmimpl_get_loglevel(){ return NULL; }
 #endif
 
 	const unsigned int* rho_wmimpl_get_logmaxsize();
-	//const int* rho_wmimpl_get_loglevel();
+	const int* rho_wmimpl_get_loglevel();
 	const unsigned int* rho_wmimpl_get_logmemperiod();
 };
 #endif // APP_BUILD_CAPABILITY_SHARED_RUNTIME
 
-#ifndef APP_BUILD_CAPABILITY_MOTOROLA
+#if !defined( APP_BUILD_CAPABILITY_MOTOROLA ) && !defined( APP_BUILD_CAPABILITY_WEBKIT_BROWSER)
 extern "C" bool rho_wmimpl_get_resize_on_sip()
 {
     return true;
@@ -295,7 +294,7 @@ bool CRhodesModule::ParseCommandLine(LPCTSTR lpCmdLine, HRESULT* pnRetCode ) thr
 				}
 				m_strRootPath = path;
 				free(path);
-				std::replace( m_strRootPath.begin(), m_strRootPath.end(), '\\', '/');
+				String_replace(m_strRootPath, '\\', '/');
 			}
 		} else if (wcsncmp(lpszToken, _T("rhodespath"),10)==0) 
         {
@@ -305,7 +304,7 @@ bool CRhodesModule::ParseCommandLine(LPCTSTR lpCmdLine, HRESULT* pnRetCode ) thr
 			if (path) {
 				m_strRhodesPath = path;
 				free(path);
-				std::replace( m_strRhodesPath.begin(), m_strRhodesPath.end(), '\\', '/');
+				String_replace(m_strRhodesPath, '\\', '/');
 			}
 		} /* else if (wcsncmp(lpszToken, _T("appname"),7)==0) 
         {
@@ -345,7 +344,7 @@ bool CRhodesModule::ParseCommandLine(LPCTSTR lpCmdLine, HRESULT* pnRetCode ) thr
 				m_strRootPath = path;
                 if (m_strRootPath.substr(0,7).compare("file://")==0)
                     m_strRootPath.erase(0,7);
-                ::std::replace(m_strRootPath.begin(), m_strRootPath.end(), '\\', '/');
+                String_replace(m_strRootPath, '\\', '/');
                 if (m_strRootPath.at(m_strRootPath.length()-1)!='/')
                     m_strRootPath.append("/");
                 m_strRootPath.append("rho/");
@@ -433,8 +432,8 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
 		LOGCONF().setLogURL(rho_wmimpl_get_logurl());
 	if (rho_wmimpl_get_logmaxsize())
 		LOGCONF().setMaxLogFileSize(*rho_wmimpl_get_logmaxsize());
-    //if (rho_wmimpl_get_loglevel())
-	//	LOGCONF().setMinSeverity(*rho_wmimpl_get_loglevel());
+    if (rho_wmimpl_get_loglevel())
+		LOGCONF().setMinSeverity(*rho_wmimpl_get_loglevel());
     if (rho_wmimpl_get_fullscreen())
         RHOCONF().setBool("full_screen", true, false);
 	if (rho_wmimpl_get_logmemperiod())
@@ -443,9 +442,9 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
     rho_logconf_Init(m_strRootPath.c_str(), m_strRootPath.c_str(), m_logPort.c_str());
 #endif // APP_BUILD_CAPABILITY_SHARED_RUNTIME
 
-#if !defined(RHODES_EMULATOR) && !defined(OS_WINDOWS_DESKTOP)
+//#if !defined(RHODES_EMULATOR) && !defined(OS_WINDOWS_DESKTOP)
 	LOGCONF().setMemoryInfoCollector(CLogMemory::getInstance());
-#endif // RHODES_EMULATOR
+//#endif // RHODES_EMULATOR
 
 #ifdef RHODES_EMULATOR
     RHOSIMCONF().setAppConfFilePath(CFilePath::join( m_strRootPath, RHO_EMULATOR_DIR"/rhosimconfig.txt").c_str());
@@ -804,11 +803,18 @@ extern "C" void rho_wm_impl_CheckLicense()
 extern "C" int rho_wm_impl_CheckSymbolDevice()
 {
 #ifdef OS_WINDOWS_DESKTOP
-    return true;
-#else
+    //return false;
+	return true;
+#else 
     int res = -1;
     HINSTANCE hLicenseInstance = LoadLibrary(L"license_rc.dll");
-	if(hLicenseInstance)
+	if(!hLicenseInstance)
+	{
+		MessageBox(NULL, L"license_rc.dll is absent. Application will be closed"
+						   , L"Rhodes", MB_SETFOREGROUND | MB_TOPMOST | MB_ICONSTOP | MB_OK);
+		return 0;
+	}
+	/*if(hLicenseInstance)
 	{
 		PCSD pCheckSymbolDevice = (PCSD) GetProcAddress(hLicenseInstance, L"CheckSymbolDevice");
 		if(pCheckSymbolDevice) 
@@ -820,7 +826,7 @@ extern "C" int rho_wm_impl_CheckSymbolDevice()
 		MessageBox(NULL, L"license_rc.dll is absent. Application will be closed"
 						   , L"Rhodes", MB_SETFOREGROUND | MB_TOPMOST | MB_ICONSTOP | MB_OK);
 		return 0;
-	}
+	}*/
 
     return 1;
 #endif

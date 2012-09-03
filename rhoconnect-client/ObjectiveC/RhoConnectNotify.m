@@ -23,6 +23,17 @@
 @synthesize  error_message;
 @synthesize  callback_params;
 @synthesize  notify_data;
+@synthesize  create_errors;
+@synthesize  update_errors;
+@synthesize  delete_errors;
+
+
+int enum_errors_messages_func(const char* szKey, const char* szValue, void* pThis)
+{
+	NSMutableDictionary* data = (NSMutableDictionary*)pThis;
+	[data setValue : [NSString stringWithUTF8String:szValue] forKey : [NSString stringWithUTF8String:szKey]];							 
+	return 1;
+}
 
 - (id) init: (RHO_CONNECT_NOTIFY*) data
 {
@@ -50,6 +61,21 @@
 		error_message = [[NSString alloc] initWithUTF8String: data->error_message];
 	if ( data->callback_params )	
 		callback_params = [[NSString alloc] initWithUTF8String: data->callback_params];
+    if ( data->create_errors_messages )
+    {
+        create_errors = [[NSMutableDictionary alloc] init];
+        rho_connectclient_hash_enumerate(data->create_errors_messages, &enum_errors_messages_func, create_errors);
+    }
+    if ( data->update_errors_messages )
+    {
+        update_errors = [[NSMutableDictionary alloc] init];
+        rho_connectclient_hash_enumerate(data->update_errors_messages, &enum_errors_messages_func, update_errors);
+    }
+    if ( data->delete_errors_messages )
+    {
+        delete_errors = [[NSMutableDictionary alloc] init];
+        rho_connectclient_hash_enumerate(data->delete_errors_messages, &enum_errors_messages_func, delete_errors);
+    }
 	
 	return self;
 }
@@ -78,6 +104,15 @@
 	
 	if (callback_params)
 		[callback_params release];
+    
+    if (create_errors)
+        [create_errors release];
+    
+    if (update_errors)
+        [update_errors release];
+    
+    if (delete_errors)
+        [delete_errors release];
 	
     [super dealloc];
 }
@@ -89,18 +124,18 @@
 
 - (Boolean) hasCreateErrors
 {
-    return notify_data.create_errors != 0;
+    return notify_data.create_errors_messages != 0;
 }
 
 - (Boolean) hasUpdateErrors
 {
-    return notify_data.update_errors_obj != 0;
+    return (notify_data.update_errors_obj != 0) || (notify_data.update_errors_messages != 0);
     
 }
 
 - (Boolean) hasDeleteErrors
 {
-    return notify_data.delete_errors_obj != 0;
+    return (notify_data.delete_errors_obj != 0) || (notify_data.delete_errors_obj != 0);
 }
 
 - (Boolean) isUnknownClientError

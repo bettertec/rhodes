@@ -657,7 +657,7 @@ void rho_connectclient_itemdestroy( const char* szModel, unsigned long hash )
 
 void rho_connectclient_on_sync_create_error(const char* szModel, RHO_CONNECT_NOTIFY* pNotify, const char* szAction )
 {
-    unsigned long hash_create_errors = pNotify->create_errors;
+    unsigned long hash_create_errors = pNotify->create_errors_messages;
     if (!hash_create_errors)
         return;
 
@@ -706,6 +706,29 @@ void rho_connectclient_on_sync_create_error(const char* szModel, RHO_CONNECT_NOT
     }
 
     db.endTransaction();
+}
+
+void rho_connectclient_push_changes(const char* szModel )
+{
+    IDBResult  res = rhom_executeSQL("SELECT source_id, partition, schema, sync_type from sources WHERE name=?", szModel);
+    if ( res.isEnd())
+    {
+        //TODO: report error - unknown source
+        return;
+    }
+
+    int nSrcID = res.getIntByIdx(0);
+    String db_partition = res.getStringByIdx(1);
+    bool isSyncSrc = res.getStringByIdx(3).compare("none") != 0;
+    db::CDBAdapter& db = db::CDBAdapter::getDB(db_partition.c_str());
+
+    if (!isSyncSrc)
+        return;
+
+    Hashtable<String,String> fields;
+    fields.put("update_type", "push_changes");
+    fields.put("source_id", convertToStringA(nSrcID));
+    db_insert_into_table(db, "changed_values", fields);
 }
 
 void _insert_or_update_attr(db::CDBAdapter& db, bool isSchemaSrc, const String& tableName, int nSrcID, const String& obj, const String& attrib, const String& new_val)
@@ -1113,6 +1136,24 @@ void parseServerErrors( const char* szPrefix, const String& name, const String& 
 
     }
 }
+    
+void parseServerErrorMessage( const char* szPrefix, const String& name, const String& value, unsigned long& errors_obj )
+{
+    int nPrefixLen = strlen(szPrefix)+1;
+    if (!errors_obj)
+        errors_obj = rho_connectclient_hash_create();
+    
+    String strObject = name.substr(nPrefixLen, name.find(']', nPrefixLen)-nPrefixLen );
+    
+    static const char* messageTag = "[message]";
+        
+    int nMsg = name.find(messageTag);
+    if ( nMsg >= 0 )
+    {
+        rho_connectclient_hash_put(errors_obj, strObject.c_str(), value.c_str());
+    }
+}
+
 
 void rho_connectclient_parsenotify(const char* msg, RHO_CONNECT_NOTIFY* pNotify)
 {
@@ -1159,20 +1200,24 @@ void rho_connectclient_parsenotify(const char* msg, RHO_CONNECT_NOTIFY* pNotify)
             pNotify->error_message = strdup(value.c_str());
         else if ( String_startsWith(name, "server_errors[create-error]") )
         {
-            if (!pNotify->create_errors)
-                pNotify->create_errors = rho_connectclient_hash_create();
-
-            String strObject = name.substr(28, name.find(']', 28)-28 );
-            rho_connectclient_hash_put(pNotify->create_errors, strObject.c_str(), value.c_str());
+            parseServerErrorMessage("server_errors[create-error]", name, value, pNotify->create_errors_messages);
         }
         else if ( String_startsWith(name, "server_errors[update-error]") || String_startsWith(name, "server_errors[update-rollback]") || String_startsWith(name, "server_errors[delete-error]") )
         {
             if ( String_startsWith(name, "server_errors[update-error]") )
+            {
                 parseServerErrors( "server_errors[update-error]", name, value, pNotify->update_errors_obj, pNotify->update_errors_attrs );
+                parseServerErrorMessage("server_errors[update-error]", name, value, pNotify->update_errors_messages);
+            }
             else if ( String_startsWith(name, "server_errors[update-rollback]") )
+            {
                 parseServerErrors( "server_errors[update-rollback]", name, value, pNotify->update_rollback_obj, pNotify->update_rollback_attrs );
+            }
             else if ( String_startsWith(name, "server_errors[delete-error]") )
+            {
                 parseServerErrors( "server_errors[delete-error]", name, value, pNotify->delete_errors_obj, pNotify->delete_errors_attrs );
+                parseServerErrorMessage("server_errors[delete-error]", name, value, pNotify->delete_errors_messages);
+            }
 
         }else if ( name.compare("rho_callback") == 0)
             break;
@@ -1210,14 +1255,17 @@ void rho_connectclient_free_syncnotify(RHO_CONNECT_NOTIFY* pNotify)
     if ( pNotify->callback_params != null )
         free(pNotify->callback_params);
 
-    if ( pNotify->create_errors != null )
-        rho_connectclient_hash_delete(pNotify->create_errors);
+    if ( pNotify->create_errors_messages != null )
+        rho_connectclient_hash_delete(pNotify->create_errors_messages);
 
     if ( pNotify->update_errors_obj != null )
         rho_connectclient_strarray_delete(pNotify->update_errors_obj);
 
     if ( pNotify->update_errors_attrs != null )
         rho_connectclient_strhasharray_delete(pNotify->update_errors_attrs);
+    
+    if ( pNotify->update_errors_messages != null )
+        rho_connectclient_hash_delete(pNotify->update_errors_messages);
 
     if ( pNotify->update_rollback_obj != null )
         rho_connectclient_strarray_delete(pNotify->update_rollback_obj);
@@ -1230,6 +1278,9 @@ void rho_connectclient_free_syncnotify(RHO_CONNECT_NOTIFY* pNotify)
 
     if ( pNotify->delete_errors_attrs != null )
         rho_connectclient_strhasharray_delete(pNotify->delete_errors_attrs);
+    
+    if ( pNotify->delete_errors_messages != null )
+        rho_connectclient_hash_delete(pNotify->delete_errors_messages);
 
     memset( pNotify, 0, sizeof(RHO_CONNECT_NOTIFY) );
 }

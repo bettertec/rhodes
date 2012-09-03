@@ -53,8 +53,10 @@ import android.os.IBinder;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.AbsoluteLayout;
 
 public class RhodesActivity extends BaseActivity implements SplashScreen.SplashScreenListener {
 	
@@ -121,6 +123,7 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
 
         mHandler = new Handler();
 
+        Logger.T(TAG, "Creating splash screen");
         mSplashScreen = new SplashScreen(this, createWebView(), this);
         setMainView(mSplashScreen);
 
@@ -128,12 +131,38 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
 
         notifyUiCreated();
         RhodesApplication.stateChanged(RhodesApplication.UiState.MainActivityCreated);
+        
+        
+        if (!isPassMotoLicence()) {
+        	Logger.E(TAG, "############################");
+        	Logger.E(TAG, " ");
+        	Logger.E(TAG, "ERROR: motorola_license is INVALID !");
+        	Logger.E(TAG, " ");
+        	Logger.E(TAG, "############################");
+            AlertDialog.Builder b = new AlertDialog.Builder(this);
+            b.setCancelable(true);
+            b.setOnCancelListener( new DialogInterface.OnCancelListener() {
+				public void onCancel(DialogInterface dialog) {
+					//RhodesService.exit();
+				}
+			});
+            AlertDialog securityAlert = b.create();
+            securityAlert.setMessage("Please provide RhoElements license key.");
+            securityAlert.setButton("OK", new DialogInterface.OnClickListener(){
+				public void onClick(DialogInterface arg0, int arg1) {
+					//RhodesService.exit();
+				}
+            	
+            });
+            securityAlert.show();
+            return;
+        }        
     }
 
     public IRhoWebView createWebView() {
-        IRhoWebView view = null;//new GoogleWebView(context);
+        IRhoWebView view = null;
         if (Capabilities.WEBKIT_BROWSER_ENABLED) {
-            Logger.D(TAG, "Creating Motorola WebKIT view");
+            Logger.T(TAG, "Creating Motorola WebKIT view");
             try {
                 Class<? extends IRhoWebView> viewClass = Class.forName("com.rhomobile.rhodes.webview.EkiohWebView").asSubclass(IRhoWebView.class);
                 if (Capabilities.MOTOROLA_BROWSER_ENABLED) {
@@ -148,7 +177,7 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
                 RhodesApplication.stop();
             }
         } else {
-            Logger.D(TAG, "Creating Google web view");
+            Logger.T(TAG, "Creating Google web view");
             final GoogleWebView googleWebView = new GoogleWebView(this);
             view = googleWebView;
             RhodesApplication.runWhen(RhodesApplication.AppState.AppStarted, new RhodesApplication.StateHandler(true) {
@@ -159,11 +188,17 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
                 }
             });
         }
+        AbsoluteLayout containerView = new AbsoluteLayout(this);
+        containerView.addView(view.getView(), new AbsoluteLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 0, 0));
+        view.setContainerView(containerView);
+
         return view;
     }
 
     public MainView switchToSimpleMainView(MainView currentView) {
-        MainView view = new SimpleMainView(currentView.detachWebView()); 
+        IRhoWebView rhoWebView = currentView.detachWebView();
+        SimpleMainView view = new SimpleMainView(rhoWebView);
+        rhoWebView.setWebClient(this);
         setMainView(view);
         return view;
     }
@@ -366,7 +401,7 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
 
         handleStartParams(getIntent());
 
-		ENABLE_LOADING_INDICATION = !RhoConf.getBool("disable_loading_indication");
+		//ENABLE_LOADING_INDICATION = !RhoConf.getBool("disable_loading_indication");
 	}
 
     private void handleStartParams(Intent intent)
@@ -438,30 +473,7 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
             */
             return;
         }
-        if (!isPassMotoLicence()) {
-        	Logger.E(TAG, "############################");
-        	Logger.E(TAG, " ");
-        	Logger.E(TAG, "ERROR: motorola_license is INVALID !");
-        	Logger.E(TAG, " ");
-        	Logger.E(TAG, "############################");
-            AlertDialog.Builder b = new AlertDialog.Builder(this);
-            b.setCancelable(true);
-            b.setOnCancelListener( new DialogInterface.OnCancelListener() {
-				public void onCancel(DialogInterface dialog) {
-					//RhodesService.exit();
-				}
-			});
-            AlertDialog securityAlert = b.create();
-            securityAlert.setMessage("Please provide RhoElements license key.");
-            securityAlert.setButton("OK", new DialogInterface.OnClickListener(){
-				public void onClick(DialogInterface arg0, int arg1) {
-					//RhodesService.exit();
-				}
-            	
-            });
-            securityAlert.show();
-            return;
-        }
+
 
 //        String urlStart = uri.getPath();
 //        if (urlStart != null) { 

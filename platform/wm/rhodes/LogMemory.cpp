@@ -61,7 +61,7 @@ rho::String CLogMemory::collect()
 		"KB  FreePhy=" << sMemStat.dwAvailPhys <<
 		"KB  TotalVM=" << sMemStat.dwTotalVirtual <<
 		"KB  FreeVM=" << sMemStat.dwAvailVirtual <<
-		"KB\n";
+		"KB";
 
 	return rho::String(oss.str());
 }

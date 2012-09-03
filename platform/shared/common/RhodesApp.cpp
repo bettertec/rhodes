@@ -574,6 +574,9 @@ void CRhodesApp::callUiDestroyedCallback()
 
 void CRhodesApp::callAppActiveCallback(boolean bActive)
 {
+    if ( m_bExit )
+        return;
+
     LOG(INFO) + "callAppActiveCallback";
     if (bActive)
     {
@@ -2119,17 +2122,14 @@ int rho_is_motorola_licence_checked() {
 int rho_is_rho_elements_extension_can_be_used() {
     int res_check = 1;
 
-#ifdef OS_ANDROID
-#ifdef APP_BUILD_CAPABILITY_MOTOROLA
-    // ET1
-    res_check = 1;
-#else
-    res_check = rho_is_motorola_licence_checked();
-#endif    
-#endif    
-#ifdef OS_MACOSX
-    res_check = rho_is_motorola_licence_checked();
-#endif    
+#if defined( OS_ANDROID ) || defined( OS_MACOS )
+	const char* szMotorolaLicence = get_app_build_config_item("motorola_license");
+	const char* szMotorolaLicenceCompany = get_app_build_config_item("motorola_license_company");
+    
+    if ((szMotorolaLicence == NULL) || (szMotorolaLicenceCompany == NULL))
+        res_check = 0;
+#endif
+
     return res_check;
 }
     
