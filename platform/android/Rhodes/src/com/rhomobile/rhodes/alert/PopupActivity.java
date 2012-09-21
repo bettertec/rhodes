@@ -31,7 +31,6 @@ import java.util.Map;
 import java.util.Vector;
 
 import android.app.Dialog;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -52,6 +51,7 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.rhomobile.rhodes.AndroidR;
@@ -70,7 +70,7 @@ public class PopupActivity extends BaseActivity {
     private static Dialog currentAlert = null;
     private static TextView s_textView = null;
     private static EditText editText = null;
-    private static ProgressDialog progressDialog = null;
+    private static ProgressBar progressBar = null;
 
     private static native void doCallback(String url, String id, String title);
 
@@ -244,7 +244,10 @@ public class PopupActivity extends BaseActivity {
                 LayoutParams.WRAP_CONTENT));
         main.addView(top);
 
-        if (message != null) {
+        if (loadingIndicator == true) {
+            progressBar = new ProgressBar(ctx);
+            top.addView(progressBar);
+        } else if (message != null) {
             TextView textView = new TextView(ctx);
             s_textView = textView;
             textView.setText(message);
@@ -273,10 +276,6 @@ public class PopupActivity extends BaseActivity {
                 editText.setHint(inputPlaceholder);
             }
             middle.addView(editText);
-        }
-
-        if (loadingIndicator == true) {
-            progressDialog = new ProgressDialog(ctx);
         }
 
         LinearLayout bottom = new LinearLayout(ctx);
