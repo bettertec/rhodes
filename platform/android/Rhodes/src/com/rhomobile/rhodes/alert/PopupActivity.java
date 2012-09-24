@@ -41,6 +41,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.InputType;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -57,6 +58,7 @@ import android.widget.TextView;
 import com.rhomobile.rhodes.AndroidR;
 import com.rhomobile.rhodes.BaseActivity;
 import com.rhomobile.rhodes.Logger;
+import com.rhomobile.rhodes.R;
 import com.rhomobile.rhodes.RhodesService;
 import com.rhomobile.rhodes.file.RhoFileApi;
 
@@ -214,7 +216,7 @@ public class PopupActivity extends BaseActivity {
 
         int nTopPadding = 10;
 
-        Dialog dialog = new Dialog(ctx);
+        Dialog dialog = new Dialog(ctx, R.style.AlertDialog);
         if (title == null || title.length() == 0) {
             dialog.getWindow();
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -270,6 +272,7 @@ public class PopupActivity extends BaseActivity {
             editText.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
                     LayoutParams.FILL_PARENT));
             editText.requestFocus();
+            editText.setRawInputType(InputType.TYPE_CLASS_NUMBER);
             dialog.getWindow().setSoftInputMode(
                     WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
             if (inputPlaceholder != null) {
