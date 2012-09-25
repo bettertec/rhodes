@@ -53,6 +53,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import com.rhomobile.rhodes.AndroidR;
@@ -232,11 +233,16 @@ public class PopupActivity extends BaseActivity {
         dialog.setCancelable(false);
         dialog.setCanceledOnTouchOutside(false);
 
-        LinearLayout main = new LinearLayout(ctx);
-        main.setOrientation(LinearLayout.VERTICAL);
-        main.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
+        LinearLayout linearMain = new LinearLayout(ctx);
+        linearMain.setOrientation(LinearLayout.VERTICAL);
+        linearMain.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.FILL_PARENT));
-        main.setPadding(10, nTopPadding, 10, 10);
+        linearMain.setPadding(10, nTopPadding, 10, 10);
+
+        ScrollView mainScroll = new ScrollView(ctx);
+        mainScroll.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
+                LayoutParams.MATCH_PARENT));
+        mainScroll.addView(linearMain);
 
         LinearLayout top = new LinearLayout(ctx);
         top.setOrientation(LinearLayout.HORIZONTAL);
@@ -244,7 +250,7 @@ public class PopupActivity extends BaseActivity {
         top.setPadding(10, nTopPadding, 10, 10);
         top.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT));
-        main.addView(top);
+        linearMain.addView(top);
 
         if (loadingIndicator == true) {
             progressBar = new ProgressBar(ctx);
@@ -265,7 +271,7 @@ public class PopupActivity extends BaseActivity {
         middle.setPadding(10, nTopPadding, 10, 10);
         middle.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT));
-        main.addView(middle);
+        linearMain.addView(middle);
 
         if (addInput == true) {
             editText = new EditText(ctx);
@@ -282,14 +288,14 @@ public class PopupActivity extends BaseActivity {
         }
 
         LinearLayout bottom = new LinearLayout(ctx);
-        bottom.setOrientation(buttons.size() > 3 ? LinearLayout.VERTICAL
+        bottom.setOrientation(buttons.size() > 2 ? LinearLayout.VERTICAL
                 : LinearLayout.HORIZONTAL);
         bottom.setGravity(Gravity.CENTER);
         bottom.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
                 LayoutParams.WRAP_CONTENT));
-        main.addView(bottom);
+        linearMain.addView(bottom);
 
-        dialog.setContentView(main);
+        dialog.setContentView(mainScroll);
 
         // add icon in title bar
         if (icon != null) {
@@ -303,7 +309,7 @@ public class PopupActivity extends BaseActivity {
             button.setOnClickListener(new ShowDialogListener(callback, btn.id,
                     btn.title, dialog));
             button.setLayoutParams(new LinearLayout.LayoutParams(
-                    lim > 3 ? LayoutParams.MATCH_PARENT
+                    lim > 2 ? LayoutParams.MATCH_PARENT
                             : LayoutParams.WRAP_CONTENT,
                     LayoutParams.WRAP_CONTENT, 1));
             bottom.addView(button);
