@@ -217,7 +217,7 @@ public class PopupActivity extends BaseActivity {
 
         int nTopPadding = 10;
 
-        Dialog dialog = new Dialog(ctx, R.style.AlertDialog);
+        Dialog dialog = new Dialog(ctx);
         if (title == null || title.length() == 0) {
             dialog.getWindow();
             dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
