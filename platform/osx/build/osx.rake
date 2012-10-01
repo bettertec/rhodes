@@ -37,9 +37,17 @@ namespace "config" do
     $remove = "rm"
     $qt_project_dir = File.join( $startdir, 'platform/shared/qt/' )
     $build_dir = File.join( $startdir, 'platform/osx/bin/' )
-    $devroot = '/Developer' if $devroot.nil?
-    $xcodebuild = $devroot + "/usr/bin/xcodebuild"
-    $sdkroot = "/"
+
+    $devroot = '/Applications/Xcode.app/Contents/Developer'
+    $devbin = $devroot + '/usr/bin'
+    $sdkroot = $devroot + '/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.6.sdk'
+    $xcodebuild = $devbin + '/xcodebuild'
+    if !File.exists? $xcodebuild
+      $devroot = '/Developer'
+      $devbin = '/usr/bin'
+      $sdkroot = $devroot + '/MacOSX10.6.sdk'
+      $xcodebuild = $devbin + '/xcodebuild'
+    end
   end
 end
 
@@ -48,7 +56,7 @@ namespace "build" do
 
     task :extensions do
         ENV['RHO_PLATFORM'] = 'osx'
-        ENV["PLATFORM_DEVELOPER_BIN_DIR"] = "/usr/bin"
+        ENV["PLATFORM_DEVELOPER_BIN_DIR"] = $devbin
         ENV["SDKROOT"] = $sdkroot
         ENV['PWD'] = $startdir
         ENV['RHO_ROOT'] = ENV['PWD']
@@ -66,16 +74,17 @@ namespace "build" do
                 extpath = File.join(p, ext, 'ext')
                 next unless File.exists? File.join(extpath, "build")
                 ENV['TEMP_FILES_DIR'] = File.join(ENV['PWD'], "platform", "osx", "bin", "extensions", ext)
-                $extensions_lib << " -l#{ext}"
-                $pre_targetdeps << " ../../../osx/bin/extensions/lib#{ext}.a"
+                if ext != 'openssl.so'
+                    $extensions_lib << " -l#{ext}"
+                    $pre_targetdeps << " ../../../osx/bin/extensions/lib#{ext}.a"
+                end
                 puts Jake.run('./build', [], extpath)
                 exit 1 unless $? == 0
             end
         end
     end
 
-    task :rhosimulator => ["config:set_osx_platform", "config:osx", "config:qt", "build:rhosimulator_version"] do
-        $rhosimulator_build = true
+    task :rhosimulator => ["config:rhosimulator", "config:set_osx_platform", "config:osx", "config:qt", "build:rhosimulator_version"] do
         $config["platform"] = $current_platform
         chdir $startdir
         $extensions_lib = ''
@@ -118,7 +127,7 @@ PRE_TARGETDEPS += #{$pre_targetdeps}
         end
 
         chdir $qt_project_dir
-        args = ['-o', 'Makefile', '-r', '-spec', 'macx-g++', 'RhoSimulator.pro']
+        args = ['-o', 'Makefile', '-r', '-spec', 'macx-g++', 'RhoSimulator.pro', "QMAKE_MAC_SDK='#{$sdkroot}'"]
         puts Jake.run($qmake,args)
         puts Jake.run($make, ['clean'])
         puts Jake.run($make, ['all'])

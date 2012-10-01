@@ -138,9 +138,14 @@ Set this option to 1 in order to open Rhodes app in full screen mode. Default is
 	
 	full_screen = 1
 
-Set this option to 1 in order to enable WebView zoom (Android only). Defauld is 0
+Set this option to 1 in order to enable WebView zoom (Android only). Default is 0
 
 	enable_screen_zoom = 1
+
+Set application window width and hieght (Win32 only). Default is 400 x 600.
+
+	screen_width = 800
+	screen_height = 600
 
 Port of the local (embedded) HTTP server. This parameter is mainly for debug purposes. If not specified, application will use dynamically selected one.
 **NOTE WARNING!!! Remove this parameter before put application to production. **
@@ -150,6 +155,8 @@ Port of the local (embedded) HTTP server. This parameter is mainly for debug pur
 Show status bar on windows mobile. Default is 1 (show)
 	
 	wm_show_statusbar = 1
+
+**NOTE: This parameter works only with Internet Explorer Browser. When you use Motorola WebKit browser, statusbar is not available **
 
 Disable screen rotation. By default set to 0 (enabled). This option available on ANDROID and iPhone ONLY
 	
@@ -187,12 +194,16 @@ To use only models from bulk database. If true, application will not create mode
 
 	use_bulk_model = true
 
-Disable WebView to check SSL sertificate (Android). Used to allow proced with self signed sertificates. Use at your own risk. This configuration option works well for any Android version except 2.3.3/2.3.4 (due to Android WebView behavior).
+Disable WebView to check SSL certificate (Android). Used to allow proceed with self signed certificates. Use at your own risk. This configuration option works well for any Android version except 2.3.3/2.3.4 (due to Android WebView behavior).
 
 	no_ssl_verify_peer = 1
 
+Allows finish sync if sync is active at the time when application is put to background. This parameter will take effect only on iOS devices.
+
+	finish_sync_in_background = 1
+
 ### Last Visited Page
-To save/restore last visited page use WebView.current_location in on_ui_created/on_ui_destroyed of [AppAplication class](application#appapplication-class).
+To save/restore last visited page use WebView.current_location in on_ui_created/on_ui_destroyed of [AppApplication class](application#appapplication-class).
 
 ### Application Database Version
 If you want the next version of your application to start from a clean database, set app_db_version in rhoconfig.txt.

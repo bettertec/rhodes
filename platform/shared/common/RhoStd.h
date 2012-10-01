@@ -89,6 +89,18 @@ inline boolean String_endsWith(const String& str, const char* szSuffix)
     return strcmp(str.c_str()+nOff, szSuffix) == 0;
 }
 
+inline boolean String_endsWith(const String& str, const String& strSuffix)
+{
+    if ( strSuffix.length() == 0 )
+        return false;
+
+    int nOff = str.length() - strSuffix.length();
+    if ( nOff < 0 )
+        return false;
+
+    return strcmp(str.c_str()+nOff, strSuffix.c_str()) == 0;
+}
+
 inline boolean String_startsWith(const String& str, const String& strPrefix)
 {
     if ( strPrefix.length() == 0 )
@@ -103,11 +115,24 @@ inline boolean String_startsWith(const String& str, const String& strPrefix)
 template<typename StrType>
 inline void String_replace(StrType& str, int from, int to)
 {
-    for( int i = 0; i < str.length(); i++)
+    for( int i = 0; i < (int)str.length(); i++)
     {
         if ( str[i] == from )
             str[i] = to;
     }
+}
+
+template<typename StrType, typename CharType>
+inline bool String_getline(const StrType& str, StrType& line, size_t& pos, CharType delim = ' ')
+{
+    bool res = pos != StrType::npos;
+    if(res)
+    {
+        size_t end = str.find(delim, pos);
+        line = str.substr(pos, end);
+        pos = (end == StrType::npos) ? end : end +1;
+    }
+    return res;
 }
 
 template<class Type>

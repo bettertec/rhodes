@@ -1,6 +1,7 @@
 /* system.i */
 %module System
 %{
+#include "ext/rho/rhoruby.h"
 extern VALUE rho_sys_makephonecall(const char* callname, int nparams, char** param_names, char** param_values);
 #define syscall rho_sys_makephonecall
 
@@ -18,8 +19,17 @@ extern int rho_sys_get_screen_width();
 extern int rho_sys_get_screen_height();
 #define get_screen_height rho_sys_get_screen_height
 
+#define set_window_frame rho_sys_set_window_frame
+extern void rho_sys_set_window_frame(int x0, int y0, int width, int height);
+#define set_window_position rho_sys_set_window_position
+extern void rho_sys_set_window_position(int x0, int y0);
+#define set_window_size rho_sys_set_window_size
+extern void rho_sys_set_window_size(int width, int height);
+#define lock_window_size rho_sys_lock_window_size
+extern void rho_sys_lock_window_size(int locked);
+
 #define set_push_notification rho_sys_set_push_notification
-extern void rho_sys_set_push_notification( const char *url, const char* params);
+extern void rho_sys_set_push_notification( const char *url, const char* params, const char* push_types);
 
 #define set_screen_rotation_notification rho_sys_set_screen_rotation_notification
 extern void rho_sys_set_screen_rotation_notification(const char *url, const char* params);
@@ -29,6 +39,12 @@ extern void rho_sys_app_exit();
 
 #define unzip_file rho_sys_unzip_file
 extern int rho_sys_unzip_file(const char *path, const char* pwd);
+
+#define zip_file rho_sys_zip_file
+extern int rho_sys_zip_file( const char *zip_file_path, const char * tozip_path, const char* zip_pwd );
+
+#define zip_files rho_sys_zip_files
+extern int rho_sys_zip_files( const char *zip_file_path, const char *base_path, VALUE tozip_array, const char* zip_pwd );
 
 #define set_sleeping rho_sys_set_sleeping
 extern int rho_sys_set_sleeping(int sleeping);
@@ -64,13 +80,20 @@ extern void rho_sys_stop_timer( const char *url );
 extern void rho_sys_set_application_icon_badge(int badge_number);
 
 #define replace_current_bundle rho_sys_replace_current_bundle
-extern void rho_sys_replace_current_bundle(const char* path);
+extern void rho_sys_replace_current_bundle(const char* path, rho_param *p);
 
 #define delete_folder rho_sys_delete_folder
 extern int rho_sys_delete_folder(const char* path);
 
 #define set_do_not_bakup_attribute rho_sys_set_do_not_bakup_attribute 
 extern int rho_sys_set_do_not_bakup_attribute(const char* path, int value);
+
+#define set_network_status_notify rho_sys_set_network_status_notify
+extern void rho_sys_set_network_status_notify(const char* url, int poll_interval);
+
+#define clear_network_status_notify rho_sys_clear_network_status_notify
+extern void rho_sys_clear_network_status_notify();
+
 
 	#if !defined(bool)
 	#define bool int
@@ -109,16 +132,41 @@ extern int rho_sys_set_do_not_bakup_attribute(const char* path, int value);
   $1 = 0;
 }
 
+%typemap(default) (rho_param *p) {
+  $1 = 0;
+}
+%typemap(in) (rho_param *p) {
+  $1 = rho_param_fromvalue($input);
+}
+
+%typemap(freearg) (rho_param *p) {
+  rho_param_free($1);
+}
+
+%typemap(default) const char* push_types {
+  $1 = 0;
+}
+
+%typemap(default) int poll_interval {
+  $1 = 0;
+}
+
 extern VALUE syscall(const char* callname, int nparams, char** param_names, char** param_values);
 extern VALUE get_property(char* property);
 extern VALUE has_network();
 extern VALUE get_locale();
 extern int get_screen_width();
 extern int get_screen_height();
-extern void set_push_notification( const char *url, const char* params);
+extern void set_window_frame(int x0, int y0, int width, int height);
+extern void set_window_position(int x0, int y0);
+extern void set_window_size(int width, int height);
+extern void lock_window_size(int locked);
+extern void set_push_notification(const char *url, const char* params, const char* push_types);
 extern void set_screen_rotation_notification(const char *url, const char* params);
 extern void exit();
 extern int unzip_file( const char *path, const char* zip_pwd );
+extern int zip_file( const char *zip_file_path, const char * tozip_path, const char* zip_pwd );
+extern int zip_files( const char *zip_file_path, const char *base_path, VALUE tozip_ar, const char* zip_pwd );
 extern int set_sleeping( bool sleeping );
 extern void run_app(const char *appname, VALUE params);
 extern void bring_to_front();
@@ -131,6 +179,9 @@ extern void app_uninstall(const char *appname);
 extern void start_timer( int interval, const char *url, const char* params);
 extern void stop_timer( const char *url);
 extern void set_application_icon_badge(int badge_number);
-extern void replace_current_bundle(const char* path);
+extern void replace_current_bundle(const char* path, rho_param *p);
 extern int  delete_folder(const char* path);
 extern int set_do_not_bakup_attribute(const char* path, int value);
+extern void set_network_status_notify(const char* url, int poll_interval);
+extern void clear_network_status_notify();
+

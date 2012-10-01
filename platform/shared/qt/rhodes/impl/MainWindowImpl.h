@@ -138,6 +138,10 @@ public:
     void fullscreenCommand(int);
     void setCookie(const char*, const char*);
     void bringToFront();
+    void setFrame(int x, int y, int width, int height);
+    void setPosition(int x, int y);
+    void setSize(int width, int height);
+    void lockSize(int locked);
 
 signals:
     void doExitCommand(void);
@@ -157,4 +161,8 @@ signals:
     void doFullscreenCommand(int);
     void doSetCookie(const char*, const char*);
     void doBringToFront(void);
+    void doSetFrame(int x, int y, int width, int height);
+    void doSetPosition(int x, int y);
+    void doSetSize(int width, int height);
+    void doLockSize(int locked);
 };

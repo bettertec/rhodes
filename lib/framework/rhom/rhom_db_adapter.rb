@@ -100,6 +100,24 @@ class RhomDbAdapter
         raise        
       end
   end
+	
+  def export
+	  begin
+		@database.export
+	  rescue Exception => e
+		puts "exception when export database: #{e}"
+		raise        
+      end
+  end
+	
+  def import(zipName)
+	  begin
+		@database.import(zipName)
+	  rescue Exception => e
+		puts "exception when import database: #{e}"
+		raise        
+	  end
+  end
 
   # execute a sql statement
   # optionally, disable the factory processing 

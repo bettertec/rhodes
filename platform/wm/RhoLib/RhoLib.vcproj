@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="windows-1251"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9,00"
+	Version="9.00"
 	Name="RhoLib"
 	ProjectGUID="{F196A418-11F1-4067-9F4F-BCC7D70E6EC5}"
 	RootNamespace="RhoLib"
@@ -145,9 +145,10 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="../../shared/ruby;../../shared"
-				PreprocessorDefinitions="_DEBUG;DEBUG;WIN32;_WINDOWS"
+				PreprocessorDefinitions="_DEBUG;DEBUG;WIN32;_WINDOWS;RHODES_WIN32"
 				MinimalRebuild="true"
 				RuntimeLibrary="1"
+				TreatWChar_tAsBuiltInType="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -688,8 +689,9 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				AdditionalIncludeDirectories="../../shared/ruby;../../shared"
-				PreprocessorDefinitions="_NDEBUG;NDEBUG;WIN32;_WINDOWS"
+				PreprocessorDefinitions="_NDEBUG;NDEBUG;WIN32;_WINDOWS;RHODES_WIN32"
 				RuntimeLibrary="0"
+				TreatWChar_tAsBuiltInType="false"
 				UsePrecompiledHeader="0"
 				WarningLevel="3"
 				DebugInformationFormat="3"
@@ -2840,6 +2842,22 @@
 					>
 				</File>
 			</Filter>
+			<Filter
+				Name="push"
+				>
+				<File
+					RelativePath="..\..\shared\common\push\IRhoPushClient.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\shared\common\push\RhoPushManager.h"
+					>
+				</File>
+				<File
+					RelativePath="..\..\shared\common\push\RhoPushManager.cpp"
+					>
+				</File>
+			</Filter>
 		</Filter>
 		<Filter
 			Name="logging"
@@ -2965,6 +2983,10 @@
 				>
 			</File>
 			<File
+				RelativePath="..\..\shared\rubyext\ZipFiles.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\..\shared\rubyext\WebView.h"
 				>
 			</File>
@@ -2978,6 +3000,14 @@
 			</File>
 			<File
 				RelativePath="..\..\shared\unzip\unzip.h"
+				>
+			</File>
+			<File
+				RelativePath="..\..\shared\unzip\zip.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\shared\unzip\zip.h"
 				>
 			</File>
 		</Filter>

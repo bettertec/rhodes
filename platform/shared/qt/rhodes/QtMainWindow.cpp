@@ -41,13 +41,18 @@
 #include <QtNetwork/QNetworkCookie>
 #include <QFileDialog>
 #include <QDesktopServices>
+#include <QDesktopWidget>
 #include "ext/rho/rhoruby.h"
 #include "common/RhoStd.h"
 #include "common/RhodesApp.h"
+#include "common/RhoConf.h"
+#include "common/RhoSimConf.h"
 #include "rubyext/WebView.h"
 #include "rubyext/NativeToolbarExt.h"
 #undef null
 #include "DateTimeDialog.h"
+#include "statistic/RhoProfiler.h"
+#include <QStylePainter>
 
 #if defined(OS_MACOSX) || defined(OS_LINUX)
 #define stricmp strcasecmp
@@ -59,22 +64,24 @@
 #include "qwebviewkineticscroller.h"
 #endif
 
-IMPLEMENT_LOGCLASS(QtMainWindow,"MainWindow");
+IMPLEMENT_LOGCLASS(QtMainWindow,"QtMainWindow");
 
 extern "C" {
     extern VALUE rb_thread_main(void);
     extern VALUE rb_thread_wakeup(VALUE thread);
 }
+using namespace rho::common;
 
 QtMainWindow::QtMainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::QtMainWindow),
     webInspectorWindow(new QtWebInspector()),
-    cb(NULL),
+    mainWindowCallback(NULL),
     cur_tbrp(0),
     m_alertDialog(0),
     m_LogicalDpiX(0),
-    m_LogicalDpiY(0)
+    m_LogicalDpiY(0),
+	firstShow(true), m_bFirstLoad(true)
     //TODO: m_SyncStatusDlg
 {
 #ifdef OS_WINDOWS_DESKTOP
@@ -84,18 +91,20 @@ QtMainWindow::QtMainWindow(QWidget *parent) :
 
     ui->setupUi(this);
 
-    QWebSettings* qs = QWebSettings::globalSettings(); //this->ui->webView->settings();
+#ifdef OS_WINDOWS_DESKTOP
+	ui->menuSimulate->clear();
+	ui->menuSimulate->setTitle("Navigate");
+	ui->menuSimulate->insertAction(0, ui->actionBack);
+#endif
+
+    QWebSettings* qs = QWebSettings::globalSettings();
     qs->setAttribute(QWebSettings::DeveloperExtrasEnabled, true);
-    qs->setAttribute(QWebSettings::LocalStorageEnabled, true);
-    qs->setAttribute(QWebSettings::OfflineStorageDatabaseEnabled, true);
-    qs->setAttribute(QWebSettings::OfflineWebApplicationCacheEnabled, true);
     qs->setOfflineStorageDefaultQuota(1024*1024*1024);
 
     rho::String rs_dir = RHODESAPP().getRhoRootPath()+RHO_EMULATOR_DIR;
-    qs->setOfflineWebApplicationCachePath(rs_dir.c_str());
-    qs->setLocalStoragePath(rs_dir.c_str());
-    qs->setOfflineStoragePath(rs_dir.c_str());
+    qs->enablePersistentStorage(rs_dir.c_str());
 
+	this->ui->webView->setContextMenuPolicy(Qt::NoContextMenu);
     this->ui->webView->page()->setLinkDelegationPolicy(QWebPage::DelegateAllLinks);
     this->ui->webView->page()->mainFrame()->securityOrigin().setDatabaseQuota(1024*1024*1024);
     this->main_webView = this->ui->webView;
@@ -106,8 +115,30 @@ QtMainWindow::QtMainWindow(QWidget *parent) :
     this->ui->toolBar->hide();
     this->ui->toolBarRight->hide();
 
+    this->main_webView->hide();
+    //this->ui->centralWidget->hide();
+
+    //this->ui->centralWidget->setStyleSheet("background-color: yellow");
+    //this->ui->centralWidget->setStyleSheet("QWidget {background-image: url(test.jpg)}" );
+
+#ifdef RHODES_EMULATOR
+	int width = RHOSIMCONF().getInt("screen_width");
+	int height = RHOSIMCONF().getInt("screen_height");
+#else
+	int width = RHOCONF().getInt("screen_width");
+	int height = RHOCONF().getInt("screen_height");
+#endif
+	if ((width>0) && (height>0))
+		this->setSize(width, height);
+	else if (width>0)
+		this->setSize(width, this->height());
+	else if (height>0)
+		this->setSize(this->width(), height);
+
+#if defined(RHODES_EMULATOR)
     // connecting WebInspector
     main_webInspector->setPage(ui->webView->page());
+#endif
 
 #ifdef OS_SYMBIAN
     QWebViewKineticScroller *newScroller = new QWebViewKineticScroller();
@@ -115,7 +146,9 @@ QtMainWindow::QtMainWindow(QWidget *parent) :
     QWebViewSelectionSuppressor* suppressor = new QWebViewSelectionSuppressor(this->ui->webView);
 #endif
 
+#if defined(RHODES_EMULATOR)
     webInspectorWindow->show();
+#endif
 }
 
 QtMainWindow::~QtMainWindow()
@@ -127,25 +160,60 @@ QtMainWindow::~QtMainWindow()
     delete ui;
 }
 
+void QtMainWindow::paintEvent(QPaintEvent *p2)
+{
+    if ( m_bFirstLoad )
+    {
+        QPainter paint(this);
+
+        QImage image;
+        image.load(RHODESAPP().getLoadingPngPath().c_str());
+        QSize imSize = image.size();
+
+        QRect rcClient = this->rect();
+        rcClient.setBottom( rcClient.bottom() - this->ui->toolBar->rect().height() ) ;
+        RHODESAPP().getSplashScreen().start();
+/*
+        CSplashScreen& splash = RHODESAPP().getSplashScreen();
+
+        int nLeft = rcClient.left(), nTop = rcClient.top(), nWidth = imSize.width(), nHeight = imSize.height(), Width = rcClient.right() - rcClient.left(), Height = rcClient.bottom() - rcClient.top();
+        if (splash.isFlag(CSplashScreen::HCENTER) )
+		    nLeft = (Width-nWidth)/2;
+	    if (splash.isFlag(CSplashScreen::VCENTER) )
+		    nTop = (Height-nHeight)/2;
+	    if (splash.isFlag(CSplashScreen::VZOOM) )
+		    nHeight = Height;
+	    if (splash.isFlag(CSplashScreen::HZOOM) )
+		    nWidth = Width;
+
+        QRect rc( nLeft, nTop, nWidth, nHeight );*/
+
+        paint.drawImage( rcClient, image );
+    }
+
+    QMainWindow::paintEvent(p2);
+
+}
+
 void QtMainWindow::setCallback(IMainWindowCallback* callback)
 {
-    cb = callback;
+    mainWindowCallback = callback;
 }
 
 void QtMainWindow::hideEvent(QHideEvent *)
 {
-    if (cb) cb->onActivate(0);
+    if (mainWindowCallback) mainWindowCallback->onActivate(0);
 }
 
 void QtMainWindow::showEvent(QShowEvent *)
 {
-    if (cb) cb->onActivate(1);
+    if (mainWindowCallback) mainWindowCallback->onActivate(1);
 }
 
 void QtMainWindow::closeEvent(QCloseEvent *ce)
 {
     rb_thread_wakeup(rb_thread_main());
-    if (cb) cb->onWindowClose();
+    if (mainWindowCallback) mainWindowCallback->onWindowClose();
     tabbarRemoveAllTabs(false);
     webInspectorWindow->close();
     QMainWindow::closeEvent(ce);
@@ -155,8 +223,17 @@ void QtMainWindow::resizeEvent(QResizeEvent *event)
 {
     m_LogicalDpiX = this->logicalDpiY();
     m_LogicalDpiY = this->logicalDpiY();
-    if (cb)
-        cb->updateSizeProperties(event->size().width(), event->size().height());
+    if (mainWindowCallback)
+        mainWindowCallback->updateSizeProperties(event->size().width(), event->size().height());
+}
+
+void QtMainWindow::adjustWebInspector()
+{
+	int screen_width = QApplication::desktop()->screenGeometry().width();
+	int wi_x = this->x() + this->width() + 16;
+	if ((wi_x + webInspectorWindow->width() + 16) > screen_width)
+		wi_x = screen_width - webInspectorWindow->width() - 16;
+	webInspectorWindow->move(wi_x, webInspectorWindow->y());
 }
 
 bool QtMainWindow::isStarted(void)
@@ -171,6 +248,25 @@ void QtMainWindow::on_actionBack_triggered()
 {
     if (ui->webView)
         ui->webView->back();
+}
+
+void QtMainWindow::on_actionRotateRight_triggered()
+{
+	this->resize(this->height(), this->width());
+	this->adjustWebInspector();
+	RHODESAPP().callScreenRotationCallback(this->width(), this->height(), 90);
+}
+
+void QtMainWindow::on_actionRotateLeft_triggered()
+{
+	this->resize(this->height(), this->width());
+	this->adjustWebInspector();
+	RHODESAPP().callScreenRotationCallback(this->width(), this->height(), -90);
+}
+
+void QtMainWindow::on_actionRotate180_triggered()
+{
+	RHODESAPP().callScreenRotationCallback(this->width(), this->height(), 180);
 }
 
 bool QtMainWindow::internalUrlProcessing(const QUrl& url)
@@ -200,7 +296,7 @@ void QtMainWindow::on_webView_linkClicked(const QUrl& url)
 {
     QString sUrl = url.toString();
     if (sUrl.contains("rho_open_target=_blank")) {
-        if (cb) cb->logEvent("WebView: open external browser");
+        LOG(INFO) + "WebView: open external browser";
         ExternalWebView* externalWebView = new ExternalWebView();
         externalWebView->navigate(QUrl(sUrl.remove("rho_open_target=_blank")));
         externalWebView->show();
@@ -210,8 +306,8 @@ void QtMainWindow::on_webView_linkClicked(const QUrl& url)
             sUrl.remove(QRegExp("#+$"));
             if (sUrl.compare(ui->webView->url().toString())!=0) {
 #ifdef OS_MACOSX
-                if (cb && !sUrl.startsWith("javascript:", Qt::CaseInsensitive))
-                    cb->onWebViewUrlChanged(sUrl.toStdString());
+                if (mainWindowCallback && !sUrl.startsWith("javascript:", Qt::CaseInsensitive))
+                    mainWindowCallback->onWebViewUrlChanged(sUrl.toStdString());
 #endif
                 ui->webView->load(QUrl(sUrl));
             }
@@ -221,35 +317,71 @@ void QtMainWindow::on_webView_linkClicked(const QUrl& url)
 
 void QtMainWindow::on_webView_loadStarted()
 {
-    if (cb) cb->logEvent("WebView: loading...");
+	if (firstShow && RHOCONF().getBool("full_screen")) {
+		firstShow = false;
+		fullscreenCommand(1);
+	}
+    LOG(INFO) + "WebView: loading...";
+    PROF_START("BROWSER_PAGE");
 }
 
 void QtMainWindow::on_webView_loadFinished(bool ok)
 {
-    if (cb) {
-        cb->logEvent((ok?"WebView: loaded ":"WebView: failed "));
+    if (ok)
+        LOG(INFO) + "Page load complete.";
+    else
+        LOG(ERROR) + "Page load failed.";
+
+    PROF_STOP("BROWSER_PAGE");
+
 #ifdef OS_MACOSX
-        if (ok) cb->onWebViewUrlChanged(ui->webView->url().toString().toStdString());
+    if (mainWindowCallback && ok) mainWindowCallback->onWebViewUrlChanged(ui->webView->url().toString().toStdString());
 #endif
+
+    if ( m_bFirstLoad )
+    {
+        if ( ui->webView->url().toString() != "about:blank" )
+        {
+            long lMS = RHODESAPP().getSplashScreen().howLongWaitMs();
+            if ( lMS > 0 )
+                m_SplashTimer.start(lMS, this);
+            else
+            {
+                m_bFirstLoad = false;
+                main_webView->show();
+            }
+        }
     }
+
+}
+
+void QtMainWindow::timerEvent(QTimerEvent *event)
+{
+    if (event->timerId() == m_SplashTimer.timerId()) 
+    {
+        m_bFirstLoad = false;
+        main_webView->show();
+     } else {
+         QWidget::timerEvent(event);
+     }
 }
 
 void QtMainWindow::on_webView_urlChanged(QUrl url)
 {
-    if (cb) {
+    if (mainWindowCallback) {
 #ifdef OS_MACOSX
         ::std::string sUrl = url.toString().toStdString();
-        cb->logEvent("WebView: URL changed to " + sUrl);
-        cb->onWebViewUrlChanged(sUrl);
+        LOG(INFO) + "WebView: URL changed to " + sUrl;
+        mainWindowCallback->onWebViewUrlChanged(sUrl);
 #else
-        cb->logEvent("WebView: URL changed");
+        LOG(INFO) + "WebView: URL changed";
 #endif
     }
 }
 
 void QtMainWindow::on_menuMain_aboutToShow()
 {
-    if (cb) cb->createCustomMenu();
+    if (mainWindowCallback) mainWindowCallback->createCustomMenu();
 }
 
 void QtMainWindow::navigate(QString url, int index)
@@ -258,11 +390,11 @@ void QtMainWindow::navigate(QString url, int index)
     if (wv) {
         if (url.startsWith("javascript:", Qt::CaseInsensitive)) {
             url.remove(0,11);
-            wv->stop();
+            //wv->stop();
             wv->page()->mainFrame()->evaluateJavaScript(url);
         } else if (!internalUrlProcessing(url)) {
 #ifdef OS_MACOSX
-            if (cb) cb->onWebViewUrlChanged(url.toStdString());
+            if (mainWindowCallback) mainWindowCallback->onWebViewUrlChanged(url.toStdString());
 #endif
             wv->load(QUrl(url));
         }
@@ -286,7 +418,7 @@ void QtMainWindow::Refresh(int index)
     QWebView* wv = (index < tabViews.size()) && (index >= 0) ? tabViews[index] : ui->webView;
     if (wv) {
 #ifdef OS_MACOSX
-        if (cb) cb->onWebViewUrlChanged(wv->url().toString().toStdString());
+        if (mainWindowCallback) mainWindowCallback->onWebViewUrlChanged(wv->url().toString().toStdString());
 #endif
         wv->reload();
     }
@@ -595,15 +727,21 @@ void QtMainWindow::menuActionEvent(bool checked)
 {
     QObject* sender = QObject::sender();
     QAction* action;
-    if (sender && (action = dynamic_cast<QAction*>(sender)) && cb)
-        cb->onCustomMenuItemCommand(action->data().toInt());
+    if (sender && (action = dynamic_cast<QAction*>(sender)) && mainWindowCallback)
+        mainWindowCallback->onCustomMenuItemCommand(action->data().toInt());
 }
 
 void QtMainWindow::on_actionAbout_triggered()
 {
-    #ifndef RHO_SYMBIAN
+#ifndef RHO_SYMBIAN
+#ifdef RHODES_EMULATOR
     QMessageBox::about(this, RHOSIMULATOR_NAME, RHOSIMULATOR_NAME " v" RHOSIMULATOR_VERSION);
-    #endif
+#else
+    QMessageBox::about(this, APPLICATION_NAME, APPLICATION_NAME " v" APPLICATION_VERSION);
+
+#endif
+
+#endif
 }
 
 // slots:
@@ -824,7 +962,8 @@ void QtMainWindow::takeSignature(void*) //TODO: Signature::Params*
 
 void QtMainWindow::fullscreenCommand(int enable)
 {
-    //TODO: fullscreenCommand
+    if ((enable && !isMaximized()) || (!enable && isMaximized()))
+        setWindowState(windowState() ^ Qt::WindowMaximized);
     LOG(INFO) + (enable ? "Switched to Fullscreen mode" : "Switched to Normal mode" );
 }
 
@@ -841,4 +980,31 @@ void QtMainWindow::bringToFront()
     this->show();
     this->raise();
     this->activateWindow();
+}
+
+// Window frame
+void QtMainWindow::setFrame(int x, int y, int width, int height)
+{
+    this->move(x, y);
+    this->resize(width, height);
+    this->adjustWebInspector();
+}
+
+void QtMainWindow::setPosition(int x, int y)
+{
+    this->move(x, y);
+}
+
+void QtMainWindow::setSize(int width, int height)
+{
+    this->resize(width, height);
+    this->adjustWebInspector();
+}
+
+void QtMainWindow::lockSize(int locked)
+{
+	if (locked)
+		this->setFixedSize(this->width(), this->height());
+	else
+		this->setFixedSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX);
 }

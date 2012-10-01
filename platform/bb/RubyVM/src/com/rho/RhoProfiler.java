@@ -116,6 +116,17 @@ public class RhoProfiler {
 	    else
 	        pCounter.start();
 	}
+
+	public void START_CREATED(String szCounterName){
+	    CCounter pCounter = (CCounter)m_mapCounters.get(szCounterName);
+	    if ( pCounter == null )
+	    	return;
+	    
+	    if ( !pCounter.isWasStarted() )
+	        LOG.INFO( szCounterName + " : START" );
+
+        pCounter.start();
+	}
 	
 	private String intervalToString(long nInterval){
         long nMin = nInterval/(60*1000);

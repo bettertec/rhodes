@@ -44,6 +44,8 @@
 #undef DEFAULT_LOGCATEGORY
 #define DEFAULT_LOGCATEGORY "RhodesAppJNI"
 
+static rho::common::CAutoPtr<rho::common::AndroidNetworkStatusMonitor> s_network_status_monitor(new rho::common::AndroidNetworkStatusMonitor());
+
 
 RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_RhodesService_makeLink
   (JNIEnv *env, jclass, jstring src, jstring dst)
@@ -107,6 +109,7 @@ RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_RhodesApplication_createRhodes
 {
     // Start Rhodes application
     rho_rhodesapp_create(rho_native_rhopath());
+	RHODESAPP().setNetworkStatusMonitor(s_network_status_monitor);
 }
 
 RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_RhodesApplication_startRhodesApp
@@ -124,7 +127,7 @@ RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_RhodesApplication_stopRhodesAp
 RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_RhodesService_doSyncAllSources
   (JNIEnv *, jobject, jboolean show_status_popup)
 {
-    rho_sync_doSyncAllSources(show_status_popup, "");
+    rho_sync_doSyncAllSources(show_status_popup, "", 0);
 }
 
 RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_RhodesService_doSyncSource
@@ -303,29 +306,24 @@ RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_RhodesService_callActivationCa
 RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_RhodesService_setPushRegistrationId
   (JNIEnv *env, jobject, jstring jId)
 {
-    std::string id = rho_cast<std::string>(env, jId);
-    rho::sync::CClientRegister* pClientRegister = rho::sync::CClientRegister::getInstance();
-    if(pClientRegister && (pClientRegister->getDevicePin().compare(id) != 0))
-    {
-        rho::sync::CClientRegister::Destroy();
-    }
-    rho::sync::CClientRegister::Create(id.c_str());
-    RHOCONF().setString("push_pin", id.c_str(), true);
+    std::string deviceId = rho_cast<std::string>(env, jId);
+    rho::sync::CClientRegister::Create(deviceId);
 }
 
 RHO_GLOBAL jstring JNICALL Java_com_rhomobile_rhodes_RhodesService_getPushRegistrationId
   (JNIEnv * env, jobject)
 {
-    return rho_cast<jhstring>(RHOCONF().getString("push_pin").c_str()).release();
+    return rho_cast<jhstring>(env, rho::sync::CClientRegister::Get()->getDevicePin()).release();
 }
 
 RHO_GLOBAL jboolean JNICALL Java_com_rhomobile_rhodes_RhodesService_callPushCallback
-  (JNIEnv *env, jobject, jstring jData)
+  (JNIEnv *env, jobject, jstring jType, jstring jJson, jstring jData)
 {
-    std::string data = rho_cast<std::string>(env, jData);
-    return (jboolean)rho_rhodesapp_callPushCallback(data.c_str());
+    std::string strType = jType ? rho_cast<std::string>(env, jType) : "";
+    std::string strJson = jJson ? rho_cast<std::string>(env, jJson) : "";
+    std::string strData = jData ? rho_cast<std::string>(env, jData) : "";
+    return (jboolean)RHODESAPP().callPushCallback(strType, strJson, strData);
 }
-
 
 RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_RhodesService_resetHttpLogging
   (JNIEnv *env, jobject, jstring jId)
@@ -335,8 +333,6 @@ RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_RhodesService_resetHttpLogging
     rho_log_resetup_http_url(url.c_str());	
     //RAWLOG_ERROR("$$$$$$$$$$$ RESET HTTP LOGGING 2 $$$$$$$$$$$$$");
 }
-
-
 
 RHO_GLOBAL char *rho_timezone()
 {
@@ -366,3 +362,19 @@ RHO_GLOBAL void rho_conf_show_log()
     env->CallStaticVoidMethod(cls, mid);
 }
 
+	RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_RhodesService_notifyNetworkStatusChanged(JNIEnv *env, jobject, int status)
+	{
+		RAWLOG_ERROR("nativeNotify");
+		rho::common::enNetworkStatus s = rho::common::networkStatusUnknown;
+		switch(status)
+		{
+			case 1:
+				s = rho::common::networkStatusConnected;
+				break;
+			case 2:
+				s = rho::common::networkStatusDisconnected;
+				break;
+		}
+		
+		s_network_status_monitor->notifyReceiver(s);
+	}

@@ -40,6 +40,11 @@
 
 #include "common/app_build_capabilities.h"
 
+<<<<<<< HEAD
+=======
+#include "InitMemoryInfoCollector.h"
+#include "Reachability.h"
+>>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 
 
 /*
@@ -119,9 +124,7 @@ static BOOL app_created = NO;
 @implementation Rhodes
 
 @synthesize window, player, cookies, signatureDelegate, nvDelegate, mBlockExit;
-#ifdef __IPHONE_4_0
-@synthesize eventStore;
-#endif
+
 
 static Rhodes *instance = NULL;
 
@@ -142,7 +145,14 @@ static Rhodes *instance = NULL;
 }
 
 
-
+#ifdef __IPHONE_4_0
+- (EKEventStore*) getEventStore {
+    if (eventStore == nil) {
+        eventStore = [[EKEventStore alloc] init];
+    }
+    return eventStore;
+}
+#endif
 
 
 + (void)setStatusBarHidden:(BOOL)v {
@@ -573,6 +583,10 @@ static Rhodes *instance = NULL;
         app_created = YES;
         
         rotationLocked = rho_conf_getBool("disable_screen_rotation");
+		
+		NSLog(@"Init network monitor");
+		initNetworkMonitoring();
+		[self performSelectorInBackground:@selector(monitorNetworkStatus) withObject:nil];
         
         NSLog(@"Show loading page");
         [self performSelectorOnMainThread:@selector(showLoadingPagePost) withObject:nil waitUntilDone:NO];
@@ -580,7 +594,7 @@ static Rhodes *instance = NULL;
         NSLog(@"Start rhodes app");
         rho_rhodesapp_start();
 		rho_rhodesapp_callUiCreatedCallback();
-    }
+	}
     @finally {
         [pool release];
     }
@@ -644,13 +658,20 @@ static Rhodes *instance = NULL;
     [[UIApplication sharedApplication] registerForRemoteNotificationTypes:
      (UIRemoteNotificationTypeBadge | UIRemoteNotificationTypeAlert | UIRemoteNotificationTypeSound)];
 #endif //__IPHONE_3_0
-#endif //APP_BUILD_CAPABILITY_PUSH    
-    
-#ifdef __IPHONE_4_0
-    eventStore = [[EKEventStore alloc] init];
-#endif
-
+#endif //APP_BUILD_CAPABILITY_PUSH
+        
     NSLog(@"Initialization finished");
+}
+
+- (void) monitorNetworkStatus
+{
+	while(true)
+	{
+		[NSThread sleepForTimeInterval:getNetworkStatusPollInterval()];
+		Reachability* r = [Reachability reachabilityForInternetConnection];
+		networkStatusNotify([r currentReachabilityStatus]==NotReachable?0:1);
+		[r release];
+	}
 }
 
 #ifdef __IPHONE_3_0
@@ -675,7 +696,7 @@ static Rhodes *instance = NULL;
 		}
 		
 		if (sync_all) {
-			rho_sync_doSyncAllSources(TRUE,"");
+			rho_sync_doSyncAllSources(TRUE,"",false);
 		}
 	}
 }
@@ -869,6 +890,7 @@ static Rhodes *instance = NULL;
     
     
     instance = self;
+    eventStore = nil; 
     self->application = [UIApplication sharedApplication];
     rotationLocked = NO;
     
@@ -997,6 +1019,12 @@ static Rhodes *instance = NULL;
 
 - (void)applicationDidBecomeActive:(UIApplication *)application {
     RAWLOG_INFO("Application did become active");
+	
+	if (syncBackgroundTask != UIBackgroundTaskInvalid) {
+		[application endBackgroundTask: syncBackgroundTask];
+		syncBackgroundTask = UIBackgroundTaskInvalid;
+	}
+	
     if (!app_created) {
         NSLog(@"Application is not created yet so postpone activation callback");
         [NSThread detachNewThreadSelector:@selector(doRhoActivate) toTarget:self withObject:nil];
@@ -1017,6 +1045,38 @@ static Rhodes *instance = NULL;
     RAWLOG_INFO("Application go to background");
     rho_rhodesapp_callUiDestroyedCallback();
     rho_rhodesapp_canstartapp("", ", ");
+	
+	if (rho_conf_getBool("finish_sync_in_background") && (rho_sync_issyncing()==1)) {
+		if ([[UIDevice currentDevice] respondsToSelector:@selector(isMultitaskingSupported)]) { 
+			if ([[UIDevice currentDevice] isMultitaskingSupported]) { //Check if device supports mulitasking 
+
+				syncBackgroundTask = [application beginBackgroundTaskWithExpirationHandler: ^ { 
+					NSLog(@"$$$ Background task is terminated by System !!!");
+					[application endBackgroundTask: syncBackgroundTask]; //Tell the system that we are done with the tasks 
+					syncBackgroundTask = UIBackgroundTaskInvalid; //Set the task to be invalid 
+				}]; 
+				
+				NSLog(@"Will wait sync thread to finish sync");
+				
+				dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{ 
+					
+					NSLog(@"Waiting for sync thread");
+					
+					do 
+					{
+						NSLog(@"Check sync");
+						[NSThread sleepForTimeInterval:1];
+					}while (rho_sync_issyncing()==1);
+
+					NSLog(@"Sync is finished");
+					
+					[application endBackgroundTask: syncBackgroundTask]; //End the task so the system knows that you are done with what you need to perform 
+					syncBackgroundTask = UIBackgroundTaskInvalid; //Invalidate the background_task 
+					
+				}); 
+			}
+		}
+	}
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application {

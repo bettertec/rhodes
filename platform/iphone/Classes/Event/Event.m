@@ -145,10 +145,27 @@ static VALUE eventToRuby(EKEvent *event)
         rb_hash_aset(rEvent, rb_str_new2(RUBY_EV_NOTES), rb_str_new2(notes));
     }
     
-    if (event.recurrenceRule) {
+    EKRecurrenceRule* rule = nil;
+#ifdef __IPHONE_5_0
+    if ([event respondsToSelector:@selector(hasRecurrenceRules)]) {
+        if ([event hasRecurrenceRules]) {
+            if (event.recurrenceRules.count > 0) {
+                // get first rule
+                rule = [event.recurrenceRules objectAtIndex:0];
+            }
+        }
+    }
+    else {
+        rule = [event recurrenceRule];
+    }
+#else
+    rule = [event recurrenceRule];
+#endif
+    if (rule != nil) {
+        
         VALUE rRecurrence = rb_hash_new();
         const char *s;
-        switch (event.recurrenceRule.frequency) {
+        switch (rule.frequency) {
             case EKRecurrenceFrequencyDaily: s = RUBY_EV_RECURRENCE_FREQUENCY_DAILY; break;
             case EKRecurrenceFrequencyWeekly: s = RUBY_EV_RECURRENCE_FREQUENCY_WEEKLY; break;
             case EKRecurrenceFrequencyMonthly: s = RUBY_EV_RECURRENCE_FREQUENCY_MONTHLY; break;
@@ -157,16 +174,16 @@ static VALUE eventToRuby(EKEvent *event)
         }
         rb_hash_aset(rRecurrence, rb_str_new2(RUBY_EV_RECURRENCE_FREQUENCY), rb_str_new2(s));
         
-        int interval = event.recurrenceRule.interval;
+        int interval = rule.interval;
         rb_hash_aset(rRecurrence, rb_str_new2(RUBY_EV_RECURRENCE_INTERVAL), INT2FIX(interval));
         
-        if (event.recurrenceRule.recurrenceEnd != nil) {
-            NSDate* endDate = event.recurrenceRule.recurrenceEnd.endDate;
+        if (rule.recurrenceEnd != nil) {
+            NSDate* endDate = rule.recurrenceEnd.endDate;
             if (endDate != nil) {
                 rb_hash_aset(rRecurrence, rb_str_new2(RUBY_EV_RECURRENCE_END), dateToRuby(endDate));
                 [endDate release];
             } else {
-                int count = event.recurrenceRule.recurrenceEnd.occurrenceCount;
+                int count = rule.recurrenceEnd.occurrenceCount;
                 rb_hash_aset(rRecurrence, rb_str_new2(RUBY_EV_RECURRENCE_COUNT), INT2FIX(count));
             }
         }
@@ -266,9 +283,16 @@ static EKEvent *eventFromRuby(EKEventStore *eventStore, VALUE rEvent)
         
         EKRecurrenceRule *rule = [[EKRecurrenceRule alloc] initRecurrenceWithFrequency:freq interval:interval end:recurrenceEnd];
         
-        
+#ifdef __IPHONE_5_0
+        if ([event respondsToSelector:@selector(addRecurrenceRule:)]) {
+            [event addRecurrenceRule:rule];
+        }
+        else {
+            [event setRecurrenceRule:rule];
+        }
+#else
         [event setRecurrenceRule:rule];
-
+#endif
         
         if (recurrenceEnd != nil)
             [recurrenceEnd release];
@@ -288,7 +312,7 @@ VALUE event_fetch(VALUE rParams)
     VALUE end_date = rb_hash_aref(rParams, rb_str_new2(RUBY_EV_END_DATE));
     int include_repeating = rho_ruby_get_bool(rb_hash_aref(rParams, rb_str_new2(RUBY_FETCH_include_repeating)));
     
-    EKEventStore *eventStore = [[Rhodes sharedInstance] eventStore];
+    EKEventStore *eventStore = [[Rhodes sharedInstance] getEventStore];
     
     
     NSDate *start = dateFromRuby(start_date);
@@ -327,8 +351,23 @@ VALUE event_fetch(VALUE rParams)
     VALUE ret = rho_ruby_create_array();
     
     for (int i = 0, lim = [events count]; i != lim; ++i) {
-        EKEvent *event = [events objectAtIndex:i];
-        if (!include_repeating && event.recurrenceRule)
+        EKEvent *event = [events objectAtIndex:i]; 
+        BOOL hasRecurRules = NO;
+        
+#ifdef __IPHONE_5_0
+        if ([event respondsToSelector:@selector(hasRecurrenceRules)]) {
+            if ([event hasRecurrenceRules]) {
+                hasRecurRules = YES;
+            }
+        }
+        else {
+            hasRecurRules = [event recurrenceRule] != nil;
+        }
+#else
+        hasRecurRules = [event recurrenceRule] != nil;
+#endif        
+        
+        if (!include_repeating && hasRecurRules)
             continue;
         VALUE rEvent = eventToRuby(event);
         rho_ruby_add_to_array(ret, rEvent);
@@ -343,7 +382,7 @@ VALUE event_fetch_by_id(const char *eid)
     calendar_check();
     
 #if defined(__IPHONE_4_0)
-    EKEventStore *eventStore = [[Rhodes sharedInstance] eventStore];
+    EKEventStore *eventStore = [[Rhodes sharedInstance] getEventStore];
     EKEvent *event = [eventStore eventWithIdentifier:[NSString stringWithUTF8String:eid]];
     
     return eventToRuby(event);
@@ -357,7 +396,7 @@ const char* event_save(VALUE rEvent)
     calendar_check();
     
 #if defined(__IPHONE_4_0)
-    EKEventStore *eventStore = [[Rhodes sharedInstance] eventStore];
+    EKEventStore *eventStore = [[Rhodes sharedInstance] getEventStore];
 
     EKEvent *event = eventFromRuby(eventStore, rEvent);
     
@@ -388,7 +427,7 @@ void event_delete(const char *eid)
     calendar_check();
     
 #if defined(__IPHONE_4_0)
-    EKEventStore *eventStore = [[Rhodes sharedInstance] eventStore];
+    EKEventStore *eventStore = [[Rhodes sharedInstance] getEventStore];
     EKEvent *event = [eventStore eventWithIdentifier:[NSString stringWithUTF8String:eid]];
     NSError *err;
     BOOL removed = [eventStore removeEvent:event span:EKSpanFutureEvents error:&err];

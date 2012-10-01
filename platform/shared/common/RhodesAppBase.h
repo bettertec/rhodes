@@ -48,7 +48,8 @@ protected:
     static CRhodesAppBase* m_pInstance;
 
     String m_strRhoRootPath, m_strBlobsDirPath, m_strDBDirPath, m_strAppRootPath, m_strAppUserPath, m_strRuntimePath;//, m_strRhodesPath;
-    String m_strHomeUrl;
+    String m_strHomeUrl, m_strHomeUrlLocalHost;
+    boolean m_bSendingLog;
 
     CRhodesAppBase(const String& strRootPath, const String& strUserPath, const String& strRuntimePath);
 public:
@@ -58,6 +59,7 @@ public:
 
     String resolveDBFilesPath(const String& strFilePath);
     String getRelativeDBFilesPath(const String& strFilePath);
+	String getDBFileRoot();
     const String& getRhoRootPath(){return m_strRhoRootPath;}
     const String& getRhoUserPath(){return m_strAppUserPath;}
     const String& getRhoRuntimePath(){return m_strRuntimePath;}
@@ -68,19 +70,58 @@ public:
     const String& getDBDirPath(){return m_strDBDirPath; }
     const String& getHomeUrl(){ return m_strHomeUrl; }
 
-    String canonicalizeRhoUrl(const String& strUrl) ;
+    String canonicalizeRhoUrl(const String& strUrl) const;
+
     boolean isBaseUrl(const String& strUrl);
+    
+    void setSendingLog(boolean bSending){m_bSendingLog = bSending; }
+    boolean sendLog(const String& strCallbackUrl);
+    boolean sendLogInSameThread();
+
 
 protected:
     virtual void run(){}
 
     void initAppUrls();
 };
+    
+    template <typename T>
+    class CRhoCallInThread : public common::CRhoThread
+    {
+    public:
+        CRhoCallInThread(T* cb)
+        :CRhoThread(), m_cb(cb)
+        {
+            start(epNormal);
+        }
+        
+    private:
+        virtual void run()
+        {
+            m_cb->run(*this);
+        }
+        
+        virtual void runObject()
+        {
+            common::CRhoThread::runObject();
+            delete this;
+        }
+        
+    private:
+        common::CAutoPtr<T> m_cb;
+    };
+    
+    template <typename T>
+    void rho_rhodesapp_call_in_thread(T *cb)
+    {
+        new CRhoCallInThread<T>(cb);
+    }
 
 }
 }
 
 inline rho::common::CRhodesAppBase& RHODESAPPBASE(){ return *rho::common::CRhodesAppBase::getInstance(); }
+
 
 #endif //__cplusplus
 

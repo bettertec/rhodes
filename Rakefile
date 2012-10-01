@@ -37,7 +37,21 @@ module Rake
   end
 end
 
+# Restore process error mode on Windows.
+# Error mode controls wether system error message boxes will be shown to user.
+# Java disables message boxes and we enable them back.
+#if RUBY_PLATFORM =~ /(win|w)32$/
+#  require 'win32/process'
+#  class WindowsError
+#    include Windows::Error
+#  end
+#  WindowsError.new.SetErrorMode(0)
+#end
+
 $app_basedir = pwd
+$startdir = File.dirname(__FILE__)
+$startdir.gsub!('\\', '/')
+
 chdir File.dirname(__FILE__)
 
 require File.join(pwd, 'lib/build/jake.rb')
@@ -80,8 +94,8 @@ namespace "framework" do
 end
 
 
+$application_build_configs_keys = ['security_token', 'encrypt_database', 'android_title', 'iphone_db_in_approot', 'iphone_set_approot', 'iphone_userpath_in_approot', "motorola_license", "motorola_license_company","name"]
 
-$application_build_configs_keys = ['security_token', 'encrypt_database', 'android_title', 'iphone_db_in_approot', 'iphone_set_approot', 'iphone_userpath_in_approot', "motorola_license", "motorola_license_company"]
 
 def make_application_build_config_header_file
   f = StringIO.new("", "w+")      
@@ -91,6 +105,9 @@ def make_application_build_config_header_file
   f.puts "#include <string.h>"
   f.puts ""
   f.puts '#include "app_build_configs.h"'
+  if $rhosimulator_build
+    f.puts '#include "common/RhoSimConf.h"'
+  end
   f.puts ""
       
   f.puts 'static const char* keys[] = { ""'
@@ -104,7 +121,7 @@ def make_application_build_config_header_file
 
   f.puts 'static const char* values[] = { ""'
   $application_build_configs.keys.each do |key|
-    f.puts ',"'+$application_build_configs[key].to_s+'"'
+    f.puts ',"'+$application_build_configs[key].to_s().gsub('\\', "\\\\\\")+'"'
     count = count + 1
   end
   f.puts '};'
@@ -114,6 +131,11 @@ def make_application_build_config_header_file
   f.puts ''
   f.puts 'const char* get_app_build_config_item(const char* key) {'
   f.puts '  int i;'
+  if $rhosimulator_build
+    f.puts '  if (strcmp(key, "security_token") == 0) {'
+    f.puts '    return rho_simconf_getString("security_token");'
+    f.puts '  }'
+  end
   f.puts '  for (i = 1; i < APP_BUILD_CONFIG_COUNT; i++) {'
   f.puts '    if (strcmp(key, keys[i]) == 0) {'
   f.puts '      return values[i];'
@@ -124,6 +146,7 @@ def make_application_build_config_header_file
   f.puts ''
   
   Jake.modify_file_if_content_changed(File.join($startdir, "platform", "shared", "common", "app_build_configs.c"), f)
+  
 end
 
 def make_application_build_capabilities_header_file
@@ -193,10 +216,47 @@ def make_application_build_config_java_file
     Jake.modify_file_if_content_changed( File.join( $startdir, "platform/bb/RubyVM/src/com/rho/AppBuildConfig.java" ), f )
 end
 
+def update_rhoprofiler_java_file
+    use_profiler = $app_config['profiler'] || ($app_config[$current_platform] && $app_config[$current_platform]['profiler'])
+    
+    content = ""
+    File.open( File.join( $startdir, "platform/bb/RubyVM/src/com/rho/RhoProfiler.java" ), 'rb' ){ |f| content = f.read() }
+    is_find = nil
+
+    if use_profiler
+        is_find = content.sub!( 'RHO_STRIP_PROFILER = true;', 'RHO_STRIP_PROFILER = false;' )
+    else
+        is_find = content.sub!( 'RHO_STRIP_PROFILER = false;', 'RHO_STRIP_PROFILER = true;' )
+    end    
+    
+    if is_find
+        puts "RhoProfiler.java has been modified: RhoProfiler is " + (use_profiler ? "enabled!" : "disabled!")
+        File.open( File.join( $startdir, "platform/bb/RubyVM/src/com/rho/RhoProfiler.java" ), 'wb' ){ |f| f.write(content) }
+    end
+
+end
+
+def update_rhodefs_header_file
+    use_profiler = $app_config['profiler'] || ($app_config[$current_platform] && $app_config[$current_platform]['profiler'])
+    
+    content = ""
+    File.open( File.join( $startdir, "platform/shared/common/RhoDefs.h" ), 'rb' ){ |f| content = f.read() }
+    is_find = nil
+
+    if use_profiler
+        is_find = content.sub!( '#define RHO_STRIP_PROFILER 1', '#define RHO_STRIP_PROFILER 0' )
+    else
+        is_find = content.sub!( '#define RHO_STRIP_PROFILER 0', '#define RHO_STRIP_PROFILER 1' )
+    end    
+    
+    if is_find
+        puts "RhoDefs.h has been modified: RhoProfiler is " + (use_profiler ? "enabled!" : "disabled!")
+        File.open( File.join( $startdir, "platform/shared/common/RhoDefs.h" ), 'wb' ){ |f| f.write(content) }
+    end
+end
+
 namespace "config" do
   task :common do
-    $startdir = File.dirname(__FILE__)
-    $startdir.gsub!('\\', '/')
     
     $binextensions = []
     buildyml = 'rhobuild.yml'
@@ -216,7 +276,7 @@ namespace "config" do
         $rubypath = "res/build-tools/rubylinux"
       end
     end
-	
+
     if $app_path.nil? #if we are called from the rakefile directly, this wont be set
       #load the apps path and config
 
@@ -259,7 +319,8 @@ namespace "config" do
        $app_config["extensions"].is_a? Array
     extensions += $app_config[$config["platform"]]["extensions"] if $app_config[$config["platform"]] and
        $app_config[$config["platform"]]["extensions"] and $app_config[$config["platform"]]["extensions"].is_a? Array
-    $app_config["extensions"] = extensions
+    extensions += get_extensions
+    $app_config["extensions"] = extensions.uniq
     
     capabilities = []
     capabilities += $app_config["capabilities"] if $app_config["capabilities"] and
@@ -309,7 +370,7 @@ namespace "config" do
         
         if $app_config["extensions"].index("webkit-browser")
             $app_config["capabilities"] += ["webkit_browser"]
-            $app_config["extensions"].delete("webkit-browser") unless $current_platform == 'android'
+            $app_config["extensions"].delete("webkit-browser")
         end
         
         if  $app_config["capabilities"].index("webkit_browser") || $app_config["capabilities"].index("motorola")
@@ -348,6 +409,10 @@ namespace "config" do
     if $current_platform == "wm"
         $rhoelements_features += "- Windows Mobile/Windows CE platform support\n"
     end
+
+    if $current_platform == "win32" && !$is_rho_simulator
+        $rhoelements_features += "- Windows Desktop platform support\n"
+    end
     
     if $application_build_configs['encrypt_database'] && $application_build_configs['encrypt_database'].to_s == '1'
         #$application_build_configs.delete('encrypt_database')
@@ -361,6 +426,15 @@ namespace "config" do
     if $app_config['extensions'].index('webkit-browser')
         $rhoelements_features += "- Motorola WebKit Browser\n"                
     end
+
+    if File.exist?(File.join($app_path, "license.yml"))
+        license_config = Jake.config(File.open(File.join($app_path, "license.yml")))    
+    
+        if ( license_config )
+            $application_build_configs["motorola_license"] = license_config["motorola_license"] if license_config["motorola_license"]
+            $application_build_configs["motorola_license_company"] = license_config["motorola_license_company"] if license_config["motorola_license_company"]
+        end    
+    end    
     
     $invalid_license = false
 
@@ -398,6 +472,9 @@ namespace "config" do
         
     $app_config['extensions'].uniq!() if $app_config['extensions']
     $app_config['capabilities'].uniq!() if $app_config['capabilities']
+
+    $app_config['extensions'].delete("mspec") if !$debug && $app_config['extensions'].index('mspec')
+    $app_config['extensions'].delete("rhospec") if !$debug && $app_config['extensions'].index('rhospec')
     
     if $invalid_license
         $application_build_configs["motorola_license"] = '123' if !$application_build_configs["motorola_license"]
@@ -409,15 +486,22 @@ namespace "config" do
 
     
     if $current_platform == "bb"  
-      make_application_build_config_java_file
-    else  
+      make_application_build_config_java_file()
+      update_rhoprofiler_java_file()
+    elsif $current_platform == "wp"  
+    else
       make_application_build_config_header_file    
       make_application_build_capabilities_header_file
+      update_rhodefs_header_file
     end
 
     $rhologhostport = $config["log_host_port"] 
     $rhologhostport = 52363 unless $rhologhostport
-	$rhologhostaddr = Jake.localip()
+    begin
+	    $rhologhostaddr = Jake.localip()
+    rescue Exception => e      
+        puts "Jake.localip() error : #{e}"  
+    end
 
     $obfuscate_js = (($app_config["obfuscate"].nil? || $app_config["obfuscate"]["js"].nil?) ? nil : 1 )
     $obfuscate_css = (($app_config["obfuscate"].nil? || $app_config["obfuscate"]["css"].nil?) ? nil : 1 )
@@ -433,6 +517,10 @@ namespace "config" do
     end
     $qmake = File.join($qtdir, 'bin/qmake')
     $macdeployqt = File.join($qtdir, 'bin/macdeployqt')
+  end
+
+  task :rhosimulator do
+    $rhosimulator_build = true
   end
 
   out = `javac -version 2>&1`
@@ -511,8 +599,13 @@ def add_extension(path,dest)
   start = pwd
   chdir path if File.directory?(path)
 
-  Dir.glob("*").each { |f| cp_r f,dest unless f =~ /^ext(\/|(\.yml)?$)/ }
+  Dir.glob("*").each do |f| 
+    cp_r f,dest unless f =~ /^ext(\/|(\.yml)?$)/ || f =~ /^app/  || f =~ /^public/
+  end  
 
+  cp_r 'app', File.join( File.dirname(dest), "apps/app" ) if File.exist? 'app'
+  cp_r 'public', File.join( File.dirname(dest), "apps/public" ) if File.exist? 'public'
+  
   chdir start
 end
 
@@ -577,6 +670,9 @@ def init_extensions(startdir, dest)
           if type.to_s() != "nativelib"
             libs = extconf["libraries"]
             libs = [] unless libs.is_a? Array
+            if (!extconf[$config["platform"]].nil?) && (extconf[$config["platform"]]["libraries"].is_a? Array)
+              libs = libs + extconf[$config["platform"]]["libraries"]
+            end
             if $config["platform"] == "wm" || $config["platform"] == "win32"
               libs.map! { |lib| lib + ".lib" }
             else
@@ -681,6 +777,42 @@ def public_folder_cp_r(src_dir,dst_dir,level,obfuscate)
   end
 end
 
+def copy_rhoconfig(source, target)
+  override = get_config_override_params
+  mentioned = Set.new
+
+  lines = []
+
+  # read file and edit overriden parameters
+  File.open(source, 'r') do |file|
+    while line = file.gets
+      match = line.match(/^(\s*)(\w+)(\s*=\s*)/)
+      if match
+        name = match[2]
+        if override.has_key?(name)
+          lines << "#{match[1]}#{name}#{match[3]}#{override[name]}"
+          mentioned << name
+          next
+        end
+      end
+      lines << line
+    end
+  end
+
+  # append rest of overriden parameters to text
+  override.each do |key, value|
+    if !mentioned.include?(key)
+      lines << ''
+      lines << "#{key} = #{value}"
+    end
+  end
+
+  # write text to target file
+  File.open(target, 'w') do |file|
+    lines.each { |l| file.puts l }
+  end
+end
+
 def common_bundle_start(startdir, dest)
   puts "common_bundle_start"
   
@@ -718,7 +850,7 @@ def common_bundle_start(startdir, dest)
       public_folder_cp_r app + '/public', File.join($srcdir,'apps/public'), 0, 1
     end
   end
-  cp app + '/rhoconfig.txt', File.join($srcdir,'apps'), :preserve => true
+  copy_rhoconfig(File.join(app, 'rhoconfig.txt'), File.join($srcdir, 'apps', 'rhoconfig.txt'))
 
   if $app_config["app_type"] == 'rhoelements'
     $config_xml = nil
@@ -735,13 +867,14 @@ def common_bundle_start(startdir, dest)
   end
 
   app_version = "\r\napp_version='#{$app_config["version"]}'"  
+  app_version += "\r\ntitle_text='#{$app_config["name"]}'"  if $current_platform == "win32"
+  
   File.open(File.join($srcdir,'apps/rhoconfig.txt'), "a"){ |f| f.write(app_version) }
   File.open(File.join($srcdir,'apps/rhoconfig.txt.timestamp'), "w"){ |f| f.write(Time.now.to_f().to_s()) }
   
   unless $debug
-    rm_rf $srcdir + "/apps/app/test"
     rm_rf $srcdir + "/apps/app/SpecRunner"
-    rm_rf $srcdir + "/apps/app/mspec"
+    rm_rf $srcdir + "/apps/app/spec"
     rm_rf $srcdir + "/apps/app/mspec.rb"
     rm_rf $srcdir + "/apps/app/spec_runner.rb"
   end
@@ -815,7 +948,23 @@ def process_exclude_folders
   end
 
 end
-  
+
+def get_config_override_params
+    override = {}
+    ENV.each do |key, value|
+        key.match(/^rho_override_(.+)$/) do |match|
+            override[match[1]] = value
+        end
+    end
+    return override
+end
+
+def get_extensions
+    value = ENV['rho_extensions']
+    return value.split(',') if value
+    return []
+end
+
 namespace "build" do
   namespace "bundle" do
     task :xruby do
@@ -1381,6 +1530,7 @@ namespace "run" do
         puts "rho_reload_app_changes : #{ENV['rho_reload_app_changes']}"
         $path = ""
         $args = ["-approot='#{$app_path}'", "-rhodespath='#{$startdir}'"]
+        $args << "-security_token=#{ENV['security_token']}" if !ENV['security_token'].nil?
         cmd = nil
 
         if RUBY_PLATFORM =~ /(win|w)32$/
@@ -1470,20 +1620,31 @@ namespace "run" do
                 end
             else
             
-                if $config["platform"] != "bb"
-                    extyml = File.join(extpath, "ext.yml")
-                    next if File.file? extyml
-                end
+                # if $config["platform"] != "bb"
+                #     extyml = File.join(extpath, "ext.yml")
+                #     next if File.file? extyml
+                # end
                 
                 config_ext_paths += "#{extpath};" if extpath && extpath.length() > 0                     
             end    
         end
 
         sim_conf += "ext_path=#{config_ext_paths}\r\n" if config_ext_paths && config_ext_paths.length() > 0 
+
+        security_token = $app_config["security_token"]
+        sim_conf += "security_token=#{security_token}\r\n" if !security_token.nil?
         
         fdir = File.join($app_path, 'rhosimulator')
         mkdir fdir unless File.exist?(fdir)
             
+        get_config_override_params.each do |key, value|
+            if key != 'start_path'
+                puts "Override '#{key}' is not supported."
+                next
+            end
+            sim_conf += "#{key}=#{value}\r\n"
+        end
+
         fname = File.join(fdir, 'rhosimconfig.txt')
         File.open(fname, "wb") do |fconf|
             fconf.write( sim_conf )

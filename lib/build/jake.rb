@@ -34,6 +34,10 @@ SYNC_SERVER_BASE_URL = 'http://rhoconnect-spec-exact_platform.heroku.com'
 SYNC_SERVER_CONSOLE_LOGIN = 'rhoadmin'
 SYNC_SERVER_CONSOLE_PASSWORD = ''
 
+BULK_SYNC_SERVER_URL = 'http://store-bulk.rhohub.com'
+BULK_SYNC_SERVER_CONSOLE_LOGIN = 'rhoadmin'
+BULK_SYNC_SERVER_CONSOLE_PASSWORD = ''
+
 class Hash
   def fetch_r(key)
     if self.has_key?(key) and not self[key].is_a?(Hash)
@@ -153,23 +157,44 @@ class Jake
     require 'rest_client'
     require 'json'
 
-    platform = platform
-    exact_url = SYNC_SERVER_BASE_URL.gsub(/exact_platform/, platform)
-    puts "going to reset server: #{exact_url}"
-    # login to the server
-    unless @srv_token
-      result = RestClient.post("#{exact_url}/login",
-                           {:login => SYNC_SERVER_CONSOLE_LOGIN, :password => SYNC_SERVER_CONSOLE_PASSWORD}.to_json,
-                           :content_type => :json)
-      srv_session_cookie = 'rhoconnect_session=' + result.cookies['rhoconnect_session']
-      @srv_token = RestClient.post("#{exact_url}/api/get_api_token", '', {'Cookie' => srv_session_cookie})
-    end
-    # reset server
-    RestClient.post("#{exact_url}/api/reset", {:api_token => @srv_token}.to_json, :content_type => :json)
+    begin
+        platform = platform
+        exact_url = SYNC_SERVER_BASE_URL.gsub(/exact_platform/, platform)
+        puts "going to reset server: #{exact_url}"
+        # login to the server
+        unless @srv_token			
+		  @srv_token = RestClient.post("#{exact_url}/rc/v1/system/login", { :login => SYNC_SERVER_CONSOLE_LOGIN, :password => SYNC_SERVER_CONSOLE_PASSWORD }.to_json, :content_type => :json)
+        end
+        # reset server
+        RestClient.post("#{exact_url}/api/reset", {:api_token => @srv_token}.to_json, :content_type => :json)
+		puts "reset OK"
+    rescue Exception => e
+      puts "reset_spec_server failed: #{e}"
+    end        
+  end
+
+  def self.reset_bulk_server()
+	require 'rest_client'
+	require 'json'
+	
+	begin
+		platform = platform
+		exact_url = BULK_SYNC_SERVER_URL
+		puts "going to reset server: #{exact_url}"
+		# login to the server
+		unless @bulk_srv_token
+			@bulk_srv_token = RestClient.post("#{exact_url}/rc/v1/system/login", { :login => BULK_SYNC_SERVER_CONSOLE_LOGIN, :password => BULK_SYNC_SERVER_CONSOLE_PASSWORD }.to_json, :content_type => :json)
+		end
+		RestClient.post("#{exact_url}/api/reset", {:api_token => @bulk_srv_token}.to_json, :content_type => :json)
+		puts "reset OK"
+    rescue Exception => e
+		puts "reset_bulk_server failed: #{e}"
+	end        
   end
 
   def self.run_spec_app(platform,appname)
     reset_spec_server(platform) if appname =~ /phone_spec/
+	reset_bulk_server
 
     rhobuildyml = File.join(basedir,'rhobuild.yml')
     #rhobuild = YAML::load_file(rhobuildyml)
@@ -179,20 +204,27 @@ class Jake
     $app_config = Jake.config(File.open(File.join($app_path, "build.yml")))
     $config = Jake.config(File.open(rhobuildyml,'r'))
 
-    server, addr, port = run_local_server
-    File.open(File.join($app_path, 'app', 'local_server.rb'), 'w') do |f|
-      f.puts "SPEC_LOCAL_SERVER_HOST = '#{addr}'"
-      f.puts "SPEC_LOCAL_SERVER_PORT = #{port}"
+    if appname =~ /phone_spec/
+        server, addr, port = run_local_server
+        File.open(File.join($app_path, 'app', 'local_server.rb'), 'w') do |f|
+          f.puts "SPEC_LOCAL_SERVER_HOST = '#{addr}'"
+          f.puts "SPEC_LOCAL_SERVER_PORT = #{port}"
+        end
+        if File.exists?(File.join($app_path, 'server.rb'))
+          $local_server = server
+          require File.join($app_path, 'server.rb')
+        end
     end
-    if File.exists?(File.join($app_path, 'server.rb'))
-      $local_server = server
-      require File.join($app_path, 'server.rb')
-    end
+    
     begin
       Rake::Task.tasks.each { |t| t.reenable }
       Rake::Task['run:' + platform + ':spec'].invoke
     ensure
-      server.shutdown
+    
+      if appname =~ /phone_spec/
+        server.shutdown
+      end
+        
     end
     
     $failed.to_i

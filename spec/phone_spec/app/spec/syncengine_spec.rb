@@ -48,6 +48,13 @@ def getTestDB
     ::Rho::RHO.get_db_partitions['user']
 end
 
+$spec_callback_block = nil
+def sync_callback_spec
+    $spec_callback_block.call() if $spec_callback_block    
+end
+
+SYNC_CALLBACK_NAME = 'sync_callback_spec'
+
 SYNC_SERVER_URL = "http://rhoconnect-spec-exact_platform.heroku.com/application"
 #SYNC_SERVER_URL = "http://rhodes-store-spec-server.heroku.com/application"
 #SYNC_SERVER_URL = 'http://localhost:9292/application'
@@ -58,9 +65,10 @@ def syncserver_url
                     when /blackberry/i then 'bb'
                     when /apple/i      then 'iphone'
                     when /symbian/i    then 'symbian'
-                    when /wp7/i    then 'wp'
+                    when /wp7/i        then 'wp'
+                    when /windows/i    then 'wm'
   end
-  platform = 'win32' if System.get_property('device_name') == 'Win32'
+  platform = 'win32' if System.get_property('platform') == 'WINDOWS_DESKTOP'
 
   exact_url = SYNC_SERVER_URL.gsub(/exact_platform/, platform)
   puts "going to reset server: #{exact_url}"
@@ -96,10 +104,16 @@ describe "SyncEngine_test" do
     Rho::RhoConfig.syncserver = syncserver_url
     
     SyncEngine.set_source_property(getProduct().get_source_id.to_i(), "rho_server_response", "" )        
+    SyncEngine.set_source_property(getProduct().get_source_id.to_i(), "sync_push_callback", "" )        
+    SyncEngine.set_source_property(getProduct().get_source_id.to_i(), "sync_push_error", "0" )        
+    SyncEngine.set_source_property(getProduct().get_source_id.to_i(), "set_sync_push_body", "" )        
+    SyncEngine.set_source_property(getProduct().get_source_id.to_i(), "sync_push_body", "" )        
+    SyncEngine.set_source_property( getProduct().get_source_id.to_i(), "full_update", 'false' );
+    
     ::Rho::RHO.get_user_db().delete_all_from_table('changed_values')
 
     Rho::RhoConfig.bulksync_state='1'    
-    
+    Rho::RhoConfig.sources[getProduct_str]['full_update'] = false
   end
   
 if !defined?(RHO_WP7)
@@ -190,7 +204,7 @@ end
     res['error_code'].to_i.should == ::Rho::RhoError::ERR_CLIENTISNOTLOGGEDIN
 
   end
-
+	
 =begin
   it "should update sources from database" do
     uniq_sources = Rho::RhoConfig::sources.values  
@@ -217,12 +231,10 @@ end
     dbRes.length.should == 1
     dbRes[0]['token_sent'].should == 0
     dbRes[0]['token'].should be_nil
-    if $spec_settings[:schema_model]
-        dbRes[0]['client_id'].should be_nil
-    else
+    if ( dbRes[0]['client_id'] )
         dbRes[0]['client_id'].should == ""
-    end    
-  
+    end
+    
     res = ::Rho::RhoSupport::parse_query_parameters getProduct.sync( "/app/Settings/sync_notify")
     res['status'].should == 'ok'
     res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
@@ -286,7 +298,166 @@ end
     item3 = getProduct.find(item.object)
     item3.should be_nil
   end
+  
+  it "should handle update updated object while sync error" do
+    SyncEngine.logged_in.should == 1
 
+    item = getProduct.find(:first)
+    item.should_not be_nil
+    records = getTestDB().select_from_table('changed_values','*')
+    records.length.should == 0
+
+    @product_test_name1 = Rho::RhoConfig.generate_id().to_s
+    item.update_attributes( {:name => @product_test_name1, :brand => @product_test_name1 } )
+    records1 = getTestDB().select_from_table('changed_values','*', 'update_type' => 'update')
+    records1.length.should == 2
+
+    records2 = nil
+    SyncEngine.set_source_property( getProduct().get_source_id.to_i(), "sync_push_error", "#{Rho::RhoError::ERR_NETWORK}" )
+    $spec_callback_block = Proc.new {
+        item.update_attributes( {:name => 'Test3'} )
+        
+        records2 = getTestDB().select_from_table('changed_values','*', 'update_type' => 'update')
+    }
+    SyncEngine.set_source_property( getProduct().get_source_id.to_i(), "sync_push_callback", SYNC_CALLBACK_NAME );
+    
+    res = ::Rho::RhoSupport::parse_query_parameters getProduct.sync( "/app/Settings/sync_notify")
+    res['status'].should == 'error'
+    res['error_code'].to_i.should == ::Rho::RhoError::ERR_NETWORK
+    
+    records = getTestDB().select_from_table('changed_values','*', { 'update_type' => 'update', 'sent'=> 0} )
+    records.length.should == 2
+
+    records = getTestDB().select_from_table('changed_values','*', {'update_type' => 'update', 'attrib'=>'name'} )
+    records.length.should == 1
+    records[0]['attrib'].should == 'name'
+    records[0]['value'].should == 'Test3'
+
+    records2.length.should == 3
+        
+  end
+
+  it "should handle update updated object while sync" do
+    SyncEngine.logged_in.should == 1
+
+    item = getProduct.find(:first)
+    item.should_not be_nil
+    getTestDB().select_from_table('changed_values','*').length.should == 0
+
+    @product_test_name2 = Rho::RhoConfig.generate_id().to_s
+    item.update_attributes( {:name => @product_test_name2 } )
+    records1 = getTestDB().select_from_table('changed_values','*', 'update_type' => 'update')
+    records1.length.should == 1
+
+    records2 = nil
+    $spec_callback_block = Proc.new {
+        item.update_attributes( {:name => 'Test4'} )
+        
+        records2 = getTestDB().select_from_table('changed_values','*', 'update_type' => 'update')
+    }
+    SyncEngine.set_source_property( getProduct().get_source_id.to_i(), "sync_push_callback", SYNC_CALLBACK_NAME );
+    
+    res = ::Rho::RhoSupport::parse_query_parameters getProduct.sync( "/app/Settings/sync_notify")
+    res['status'].should == 'ok'
+    res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+    
+    records = getTestDB().select_from_table('changed_values','*', { 'update_type' => 'update', 'sent'=> 0} )
+    records.length.should == 1
+    records[0]['attrib'].should == 'name'
+    records[0]['value'].should == 'Test4'
+
+    records2.length.should == 2
+
+    res = ::Rho::RhoSupport::parse_query_parameters getProduct.sync( "/app/Settings/sync_notify")
+    res['status'].should == 'ok'
+    res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+
+    item1 = getProduct.find(item.object)
+    item1.name.should == 'Test4'
+    getTestDB().select_from_table('changed_values','*').length.should == 0
+        
+  end
+
+  it "should handle update updated full_update object while sync" do
+    SyncEngine.logged_in.should == 1
+    SyncEngine.set_source_property( getProduct().get_source_id.to_i(), "full_update", 'true' );
+
+    item = getProduct.find(:first)
+    item.should_not be_nil
+    getTestDB().select_from_table('changed_values','*').length.should == 0
+
+    @product_test_name3 = Rho::RhoConfig.generate_id().to_s
+    item.update_attributes( {:name => @product_test_name3 } )
+    records1 = getTestDB().select_from_table('changed_values','*', 'update_type' => 'update')
+    records1.length.should == 1
+
+    SyncEngine.set_source_property( getProduct().get_source_id.to_i(), "set_sync_push_body", 'true' );
+    records2 = nil
+    records3 = nil
+    $spec_callback_block = Proc.new {
+        records2 = getTestDB().select_from_table('changed_values','*', 'update_type' => 'update')
+    
+        item.update_attributes( {:name => 'Test4'} )
+        
+        records3 = getTestDB().select_from_table('changed_values','*', {'update_type' => 'update', 'sent'=>0} )
+    }
+    SyncEngine.set_source_property( getProduct().get_source_id.to_i(), "sync_push_callback", SYNC_CALLBACK_NAME );
+    
+    res = ::Rho::RhoSupport::parse_query_parameters getProduct.sync( "/app/Settings/sync_notify")
+    res['status'].should == 'ok'
+    res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+
+    pushBody = SyncEngine.get_source_property( getProduct().get_source_id.to_i(), "sync_push_body");
+    pushBody.index("quantity").should_not be_nil
+    
+    records = getTestDB().select_from_table('changed_values','*', { 'update_type' => 'update', 'sent'=> 0} )
+    records.length.should == 1
+    records[0]['attrib'].should == 'name'
+    records[0]['value'].should == 'Test4'
+
+    records2.length.should > 1
+    records3.length.should == 1
+
+    res = ::Rho::RhoSupport::parse_query_parameters getProduct.sync( "/app/Settings/sync_notify")
+    res['status'].should == 'ok'
+    res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+
+    item1 = getProduct.find(item.object)
+    item1.name.should == 'Test4'
+    getTestDB().select_from_table('changed_values','*').length.should == 0
+        
+  end
+
+  it "should handle deleted object while error sync" do
+    SyncEngine.logged_in.should == 1
+
+    item = getProduct.find(:first)
+    item.should_not be_nil
+    records = getTestDB().select_from_table('changed_values','*')
+    records.length.should == 0
+
+    item.destroy
+    getTestDB().select_from_table('changed_values','*', 'update_type' => 'delete' ).length.should > 0
+    getTestDB().select_from_table('changed_values','*', {'update_type' => 'delete', 'sent'=>1} ).length.should == 0
+    
+    records2 = nil
+    SyncEngine.set_source_property( getProduct().get_source_id.to_i(), "sync_push_error", "#{Rho::RhoError::ERR_NETWORK}" )
+    $spec_callback_block = Proc.new {
+        records2 = getTestDB().select_from_table('changed_values','*', { 'update_type' => 'delete', 'sent'=>1} )
+    }
+    SyncEngine.set_source_property( getProduct().get_source_id.to_i(), "sync_push_callback", SYNC_CALLBACK_NAME );
+    
+    res = ::Rho::RhoSupport::parse_query_parameters getProduct.sync( "/app/Settings/sync_notify")
+    res['status'].should == 'error'
+    res['error_code'].to_i.should == ::Rho::RhoError::ERR_NETWORK
+    
+    getTestDB().select_from_table('changed_values','*', 'update_type' => 'delete' ).length.should > 0
+    getTestDB().select_from_table('changed_values','*', {'update_type' => 'delete', 'sent'=>1} ).length.should == 0
+
+    records2.length.should > 0
+        
+  end
+  
   it "should create new Product with Customers" do
     SyncEngine.logged_in.should == 1
   
@@ -323,10 +494,10 @@ end
     records = ::Rho::RHO.get_user_db().select_from_table('changed_values','*')
     records.length.should == 0
     
-    cust1 = getCustomer.create( {:first => "CustTest1"})
+    cust1 = getCustomer.create( {:first => "CustTest1", :last => "Last1"})
 
-    records = ::Rho::RHO.get_user_db().select_from_table('changed_values','*')
-    records.length.should_not == 0
+    records = ::Rho::RHO.get_user_db().select_from_table('changed_values','*', 'update_type' => 'create')
+    records.length.should == 1
 
     Rho::RhoConfig.syncserver = 'http://rhodes-store-server.heroku2.com/application'
     res = ::Rho::RhoSupport::parse_query_parameters getCustomer.sync
@@ -334,8 +505,19 @@ end
     res['error_code'].to_i.should >  ::Rho::RhoError::ERR_NONE
     res['error_code'].to_i.should <  ::Rho::RhoError::ERR_RUNTIME
 
-    records = ::Rho::RHO.get_user_db().select_from_table('changed_values','*')
-    records.length.should_not == 0
+    records = ::Rho::RHO.get_user_db().select_from_table('changed_values','*', 'update_type' => 'create')
+    records.length.should == 1
+    records[0]['attrib'].should == 'object'
+
+    cust1.update_attributes( {:first => "CustTest2"} )
+    records2 = ::Rho::RHO.get_user_db().select_from_table('changed_values','*', 'update_type' => 'create')
+    records2.length.should == records.length
+
+    items2 = ::Rho::RHO.get_user_db().select_from_table('changed_values','*', 'attrib' => 'first')
+    items2.length.should == 0
+    
+    records3 = ::Rho::RHO.get_user_db().select_from_table('changed_values','*', 'update_type' => 'update')
+    records3.length.should == 0
 
     Rho::RhoConfig.syncserver = syncserver_url
     res = ::Rho::RhoSupport::parse_query_parameters getCustomer.sync
@@ -346,7 +528,7 @@ end
     records.length.should == 0
     
   end
- 
+  
   it "should modify Product" do
     SyncEngine.logged_in.should == 1
   
@@ -383,6 +565,24 @@ end
         item.destroy
     end    
 
+    items = getProduct.find(:all, :conditions => {:name => @product_test_name1})
+    items.should_not == nil
+    items.each do |item|
+        item.destroy
+    end    
+
+    items = getProduct.find(:all, :conditions => {:name => @product_test_name2})
+    items.should_not == nil
+    items.each do |item|
+        item.destroy
+    end    
+
+    items = getProduct.find(:all, :conditions => {:name => @product_test_name3})
+    items.should_not == nil
+    items.each do |item|
+        item.destroy
+    end    
+
     items = getCustomer.find(:all, :conditions => {:first => "CustTest1"})
     items.should_not == nil
     items.each do |item|
@@ -412,7 +612,7 @@ end
   end
 
   it "should client register" do
-    if System.get_property('device_name') == 'Win32' || System.get_property('platform') == 'Blackberry'
+    if System.get_property('platform') == 'WINDOWS_DESKTOP' || System.get_property('platform') == 'Blackberry'
         dbRes = ::Rho::RHO.get_user_db().select_from_table('client_info','token,token_sent, client_id')
         dbRes.length.should == 1
         dbRes[0]['token_sent'].should == 1
@@ -599,7 +799,7 @@ end
     
   end
     
-  it "should process update-error" do    
+  it "should process retry update-error" do    
     err_resp = "[{\"version\":3},{\"token\":\"\"},{\"count\":0},{\"progress_count\":0},{\"total_count\":0},{\"update-error\":{\"broken_object_id\":{\"name\":\"wrongname\",\"an_attribute\":\"error update\"},\"broken_object_id-error\":{\"message\":\"error update\"}}}]"
     
     SyncEngine.set_source_property(getProduct().get_source_id.to_i(), "rho_server_response", err_resp )    
@@ -643,6 +843,31 @@ end
         records1[0]["update_type"].should == "update"
     end
         
+  end
+
+  it "should process retry update-error full_update model" do    
+    err_resp = "[{\"version\":3},{\"token\":\"\"},{\"count\":0},{\"progress_count\":0},{\"total_count\":0},{\"update-error\":{\"broken_object_id\":{\"name\":\"wrongname\",\"an_attribute\":\"error update\"},\"broken_object_id-error\":{\"message\":\"error update\"}}}]"
+    
+    SyncEngine.set_source_property(getProduct().get_source_id.to_i(), "rho_server_response", err_resp )    
+    res = ::Rho::RhoSupport::parse_query_parameters getProduct.sync( "/app/Settings/sync_notify")
+    puts "res : #{res}"
+    
+    res['server_errors'].should_not be_nil
+    res['server_errors']['update-error'].should_not be_nil
+    res['server_errors']['update-error']['broken_object_id'].should_not be_nil    
+    res['server_errors']['update-error']['broken_object_id']['message'].should == "error update"
+    res['server_errors']['update-error']['broken_object_id']['attributes']['name'].should == "wrongname"    
+
+    records = getTestDB().select_from_table('changed_values','*', 'update_type' => 'update')
+    records.length.should == 0
+
+    Rho::RhoConfig.sources[getProduct_str]['full_update'] = true
+    getProduct.on_sync_update_error( res['server_errors']['update-error'], :retry)
+    
+    records1 = getTestDB().select_from_table('changed_values','*', 'update_type' => 'update')
+    records1.length.should == 2
+    records1[0]["attrib"].should_not == 'object'
+
   end
 
   it "should rollback update-error" do
@@ -838,6 +1063,9 @@ end
     SyncEngine.set_source_property(getCustomer().get_source_id.to_i(), "rho_server_response", err_resp )    
     res = ::Rho::RhoSupport::parse_query_parameters getCustomer.sync( "/app/Settings/sync_notify")
 
+    test = getTestDB().select_from_table('changed_values','*')
+    puts "test: #{test}"
+
     records2 = getTestDB().select_from_table('changed_values','*', {'update_type' => 'create', 
         'source_id'=>getCustomer().get_source_id.to_i(), 'sent'=>2})
     records2.length.should > 0
@@ -850,7 +1078,8 @@ end
     res['status'].should == 'ok'
     res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
 
-    getTestDB().select_from_table('changed_values','*')
+    test = getTestDB().select_from_table('changed_values','*')
+    puts "test: #{test}"
     records2 = getTestDB().select_from_table('changed_values','*', {'update_type' => 'create', 
         'source_id'=>getCustomer().get_source_id.to_i(), 'sent'=>2})
     records2.length.should > 0
@@ -861,47 +1090,201 @@ end
     item2 = getProduct.find(item.object)
     item2.vars.should_not be_nil
   end
-  
-  it "should not sync non-exist properties from freezed model" do
+ 
+=begin
+	it "should not sync non-exist properties from freezed model with similar names" do
+		SyncEngine.logged_in.should == 1
+		
+		res = ::Rho::RhoSupport::parse_query_parameters getCustomer.sync( "/app/Settings/sync_notify")
+		res['status'].should == 'ok'
+		res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+		
+		puts "customers = #{getCustomer().find(:all).inspect}"
+		
+		cust = getCustomer().find(:first, :conditions => {:first => 'CustTest2'} )
+		cust.should_not be_nil
+		
+		Rhom::Rhom.database_full_reset
+		Rho::RhoConfig.bulksync_state='1'
+		
+		cust1 = getCustomer().find(:first)
+		cust1.should be_nil
+		
+		saved_src = Rho::RhoConfig.sources[getCustomer_str()]
+		begin
+			if !$spec_settings[:schema_model]
+				Rho::RhoConfig.sources[getCustomer_str()]['freezed'] = true
+				else
+				Rho::RhoConfig.sources[getCustomer_str()]['schema']['property'].delete('first')
+				Rho::RhoConfig.sources[getCustomer_str()]['schema']['property'].add('first1')
+				
+			end
+			::Rho::RHO.init_sync_source_properties(Rho::RhoConfig::sources.values)
+			
+			res2 = ::Rho::RhoSupport::parse_query_parameters getCustomer.sync( "/app/Settings/sync_notify")
+			res2['status'].should == 'ok'
+			res2['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+			
+			cust_all = getCustomer().find(:all)
+			cust_all.should_not be_nil
+			cust_all.size.should > 0
+			
+			cust2 = getCustomer().find(:first, :conditions => {:first => 'CustTest2'} )
+			cust2.should be_nil
+			
+			cust3 = getCustomer().find(:first1, :conditions => {:first => 'CustTest2'} )
+			cust3.should be_nil
+			ensure
+			Rho::RhoConfig.sources[getCustomer_str()] = saved_src
+			::Rho::RHO.init_sync_source_properties(Rho::RhoConfig::sources.values)
+		end
+	end
+=end
+		
+  it "should handle update created object while sync error" do
     SyncEngine.logged_in.should == 1
-  
-    res = ::Rho::RhoSupport::parse_query_parameters getCustomer.sync( "/app/Settings/sync_notify")
-    res['status'].should == 'ok'
-    res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
-  
-    cust = getCustomer().find(:first, :conditions => {:first => 'CustTest2'} )
-    cust.should_not be_nil
 
-    Rhom::Rhom.database_full_reset
-    Rho::RhoConfig.bulksync_state='1'
-    
-    cust1 = getCustomer().find(:first)
-    cust1.should be_nil
+    item = getProduct.create({:name => 'Test', :brand => 'Canon' })
+    records = getTestDB().select_from_table('changed_values','*', 'update_type' => 'create')
+    records.length.should == 1
+    records[0]['attrib'].should == 'object'
 
-    saved_src = Rho::RhoConfig.sources[getCustomer_str()]
-    begin
-        if !$spec_settings[:schema_model]
-            Rho::RhoConfig.sources[getCustomer_str()]['freezed'] = true
-        else
-            Rho::RhoConfig.sources[getCustomer_str()]['schema']['property'].delete('first')
-        end
-        ::Rho::RHO.init_sync_source_properties(Rho::RhoConfig::sources.values)
+    item2 = getProduct.create({:name => 'TestDel', :brand => 'Apple' })
+
+    records2 = nil
+    SyncEngine.set_source_property( getProduct().get_source_id.to_i(), "sync_push_error", "#{Rho::RhoError::ERR_NETWORK}" )
+    $spec_callback_block = Proc.new {
+        item.update_attributes( {:name => 'Test2'} )
+        item2.destroy()
         
-        res2 = ::Rho::RhoSupport::parse_query_parameters getCustomer.sync( "/app/Settings/sync_notify")
-        res2['status'].should == 'ok'
-        res2['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+        records2 = getTestDB().select_from_table('changed_values','*', 'update_type' => 'update')
+    }
+    SyncEngine.set_source_property( getProduct().get_source_id.to_i(), "sync_push_callback", SYNC_CALLBACK_NAME );
+    
+    res = ::Rho::RhoSupport::parse_query_parameters getProduct.sync( "/app/Settings/sync_notify")
+    res['status'].should == 'error'
+    res['error_code'].to_i.should == ::Rho::RhoError::ERR_NETWORK
+    
+    records = getTestDB().select_from_table('changed_values','*', 'update_type' => 'create')
+    records.length.should == 1
+    records[0]['attrib'].should == 'object'
 
-        cust_all = getCustomer().find(:all)
-        cust_all.should_not be_nil
-        cust_all.size.should > 0
-
-        cust2 = getCustomer().find(:first, :conditions => {:first => 'CustTest2'} )
-        cust2.should be_nil
-    ensure
-        Rho::RhoConfig.sources[getCustomer_str()] = saved_src
-    end
+    records2.length.should == 1
+    records2[0]['attrib'].should == 'name'
+    records2[0]['value'].should == 'Test2'
+        
   end
-
+	
+  it "should skip unmodified models in sync" do
+	  SyncEngine.logged_in.should == 1
+	  
+	  Rhom::Rhom.database_full_reset
+	  Rho::RhoConfig.bulksync_state='1'    
+	  
+	  getProduct.create({:name => 'SkipLocalChanges'})
+	  getCustomer.create({:first => 'SkipLocalChanges'})
+	  
+	  Rhom::Rhom.have_local_changes.should == true
+	  
+	  res = ::Rho::RhoSupport::parse_query_parameters SyncEngine.dosync	  
+	  res['status'].should == 'complete'
+	  res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+	  	  
+	  Rhom::Rhom.have_local_changes.should == false
+	  
+	  Rhom::Rhom.database_full_reset
+	  Rho::RhoConfig.bulksync_state='1' 
+	  
+	  getProduct.create({:name => 'SkipLocalChanges2'})
+	  
+	  Rhom::Rhom.have_local_changes.should == true
+	  
+	  res = ::Rho::RhoSupport::parse_query_parameters SyncEngine.dosync(false,'',true)
+	  res['status'].should == 'complete'
+	  res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+	  	  
+	  Rhom::Rhom.have_local_changes.should == false
+	  
+	  items = getProduct.find(:all)
+	  items.length.should_not == 0
+	  
+	  items = getCustomer.find(:all)
+	  items.length.should == 0
+	  
+	  Rhom::Rhom.database_full_reset
+	  Rho::RhoConfig.bulksync_state='1' 
+	  
+	  res = ::Rho::RhoSupport::parse_query_parameters SyncEngine.dosync
+	  res['status'].should == 'complete'
+	  res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+	  	  
+	  items = getProduct.find(:all, :conditions => { :name=>'SkipLocalChanges' })
+	  puts "items = #{items.inspect}"
+	  items.length.should_not == 0
+	  items.each do |item|
+		  item.destroy
+	  end
+	  
+	  items = getProduct.find(:all, :conditions => { :name=>'SkipLocalChanges2' })
+	  puts "items = #{items.inspect}"	  
+	  items.length.should_not == 0
+	  items.each do |item|
+		  item.destroy
+	  end
+	  
+	  items = getCustomer.find(:all, :conditions => { :first=>'SkipLocalChanges' })
+	  puts "items = #{items.inspect}"	  
+	  items.length.should_not == 0
+	  items.each do |item|
+		  item.destroy
+	  end
+	  
+	  res = ::Rho::RhoSupport::parse_query_parameters SyncEngine.dosync
+	  res['status'].should == 'complete'
+	  res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+  end
+	
+	it "should not sync non-exist properties from freezed model" do
+		SyncEngine.logged_in.should == 1
+		
+		res = ::Rho::RhoSupport::parse_query_parameters getCustomer.sync( "/app/Settings/sync_notify")
+		res['status'].should == 'ok'
+		res['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+		
+		cust = getCustomer().find(:first, :conditions => {:first => 'CustTest2'} )
+		cust.should_not be_nil
+		
+		Rhom::Rhom.database_full_reset
+		Rho::RhoConfig.bulksync_state='1'
+		
+		cust1 = getCustomer().find(:first)
+		cust1.should be_nil
+		
+		saved_src = Rho::RhoConfig.sources[getCustomer_str()]
+		begin
+			if !$spec_settings[:schema_model]
+				Rho::RhoConfig.sources[getCustomer_str()]['freezed'] = true
+				else
+				Rho::RhoConfig.sources[getCustomer_str()]['schema']['property'].delete('first')
+			end
+			::Rho::RHO.init_sync_source_properties(Rho::RhoConfig::sources.values)
+			
+			res2 = ::Rho::RhoSupport::parse_query_parameters getCustomer.sync( "/app/Settings/sync_notify")
+			res2['status'].should == 'ok'
+			res2['error_code'].to_i.should == ::Rho::RhoError::ERR_NONE
+			
+			cust_all = getCustomer().find(:all)
+			cust_all.should_not be_nil
+			cust_all.size.should > 0
+			
+			cust2 = getCustomer().find(:first, :conditions => {:first => 'CustTest2'} )
+			cust2.should be_nil
+			ensure
+			Rho::RhoConfig.sources[getCustomer_str()] = saved_src
+			::Rho::RHO.init_sync_source_properties(Rho::RhoConfig::sources.values)
+		end
+	end
+  
   it "should logout" do
     SyncEngine.logout()
   

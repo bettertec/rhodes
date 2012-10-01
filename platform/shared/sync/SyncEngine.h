@@ -45,6 +45,7 @@ class CSyncEngine : public net::IRhoSession
     DEFINE_LOGCLASS;
 public:
     enum ESyncState{ esNone, esSyncAllSources, esSyncSource, esSearch, esStop, esExit };
+	enum EBulkSyncState { ebsNotSynced = 0, ebsSynced = 1, ebsLoadBlobs = 2 };
 
     struct CSourceID
     {
@@ -66,6 +67,8 @@ public:
         void setProperty(int nSrcID, const char* szPropName, const char* szPropValue);
         String getProperty(int nSrcID, const char* szPropName);
         boolean getBoolProperty(int nSrcID, const char* szPropName);
+        int getIntProperty(int nSrcID, const char* szPropName);
+		void clearProperties();
     };
 
 private:
@@ -94,7 +97,7 @@ public:
     static CSourceOptions& getSourceOptions(){ return m_oSourceOptions; }
     net::CNetRequestWrapper getNet(){ return getNetRequest(&m_NetRequest); }
 
-    void doSyncAllSources(const String& strQueryParams);
+    void doSyncAllSources(const String& strQueryParams, boolean bSyncOnlyChangedSources);
     void doSyncSource(const CSourceID& oSrcID, const String& strQueryParams);
     void doSearch(rho::Vector<rho::String>& arSources, String strParams, String strAction, boolean bSearchSyncChanges, int nProgressStep);
 
@@ -125,7 +128,12 @@ public:
     void setSchemaChanged(boolean bChanged){ m_bIsSchemaChanged = bChanged; }
     boolean isSchemaChanged(){ return m_bIsSchemaChanged; }
 //IRhoSession
-    virtual const String& getSession(){ return m_strSession; }
+    virtual const String& getSession()
+    { 
+        synchronized(m_mxLoadClientID){
+            return m_strSession;
+        }
+    }
     virtual const String& getContentType(){ return getProtocol().getContentType();}
 
     void loadAllSources();
@@ -164,8 +172,11 @@ private:
     void processServerSources(String strSources);
     void checkSourceAssociations();
 
-    void syncOneSource(int i, const String& strQueryParams);
-    void syncAllSources(const String& strQueryParams);
+    void syncOneSource(int i, const String& strQueryParams, boolean bSyncOnlyIfChanged);
+    void syncAllSources(const String& strQueryParams, boolean bSyncOnlyChangedSources);
+	
+	boolean processBlobs();
+	void loadBulkPartitions();
 
     friend class CSyncSource;
 };

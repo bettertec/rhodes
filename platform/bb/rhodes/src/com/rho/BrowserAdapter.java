@@ -245,6 +245,16 @@ public class BrowserAdapter implements RenderingApplication, IBrowserAdapter
 	    } finally {
 	        SecondaryResourceFetchThread.doneAddingImages();
 	    }
+	    
+		try {
+			IRhoRubyHelper helper = RhoClassFactory.createRhoRubyHelper();
+			if (helper != null)
+				helper.wakeUpGeoLocation();
+		}catch(Exception exc)
+		{
+			LOG.ERROR("wakeUpGeoLocation failed", exc);
+		}
+	    
     }
     
 	public int getAvailableHeight(BrowserContent browserContent) {

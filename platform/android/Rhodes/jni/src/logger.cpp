@@ -24,6 +24,8 @@
 * http://rhomobile.com
 *------------------------------------------------------------------------*/
 
+#include "statistic/RhoProfiler.h"
+
 #include "rhodes/JNIRhodes.h"
 
 #include "rhodes/jni/com_rhomobile_rhodes_Logger.h"
@@ -40,7 +42,7 @@ RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_Logger_E
 RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_Logger_W
   (JNIEnv *env, jclass, jstring tag, jstring msg)
 {
-    RAWLOGC_ERROR(rho_cast<std::string>(env, tag).c_str(), rho_cast<std::string>(env, msg).c_str());
+    RAWLOGC_WARNING(rho_cast<std::string>(env, tag).c_str(), rho_cast<std::string>(env, msg).c_str());
 }
 
 RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_Logger_I
@@ -52,7 +54,9 @@ RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_Logger_I
 RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_Logger_D
   (JNIEnv *env, jclass, jstring tag, jstring msg)
 {
+#ifdef _DEBUG
     RAWLOGC_INFO(rho_cast<std::string>(env, tag).c_str(), rho_cast<std::string>(env, msg).c_str());
+#endif
 }
 
 RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_Logger_T
@@ -60,4 +64,18 @@ RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_Logger_T
 {
     RAWTRACEC(rho_cast<std::string>(env, tag).c_str(), rho_cast<std::string>(env, msg).c_str());
 }
+
+RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_Logger_profStart
+  (JNIEnv *env, jclass, jstring tag)
+{
+    PROF_START(rho_cast<std::string>(env, tag).c_str());
+}
+
+RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_Logger_profStop
+  (JNIEnv *env, jclass, jstring tag)
+{
+    PROF_STOP(rho_cast<std::string>(env, tag).c_str());
+}
+
+
 

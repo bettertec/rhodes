@@ -81,6 +81,11 @@ int callback_object_impl(const char* szNotify, void* data)
 	return 0;
 }
 
+int callback_send_log_impl( const char* szNotify, void* data )
+{
+    return 0;
+}
+
 void rho_free_callbackdata(void* pData)
 {
 	//CCallbackData* callbackObj = pData;
@@ -94,6 +99,8 @@ void rho_free_callbackdata(void* pData)
 @synthesize log_severity;
 @synthesize sync_server;
 @synthesize bulksync_state;
+@synthesize log_server;
+@synthesize log_name;
 
 - (id) init
 {
@@ -106,6 +113,8 @@ void rho_free_callbackdata(void* pData)
 	rho_connectclient_destroy();
 	
 	[sync_server release];
+    [log_server release];
+    [log_name release];
     [super dealloc];
 }
 
@@ -165,6 +174,18 @@ void rho_free_callbackdata(void* pData)
 	}
 
 	return ret;
+}
+
+- (void) setLogServer:(NSString *)server
+{
+    log_server = [server retain];
+    rho_conf_setString( "logserver", [ log_server cStringUsingEncoding:[ NSString defaultCStringEncoding ]]);
+}
+
+- (void) setLogName:(NSString *)name
+{
+    log_name = [name retain];
+    rho_conf_setString( "logname", [ log_name cStringUsingEncoding:[ NSString defaultCStringEncoding ]]);
 }
 
 - (void) addModels: (NSMutableArray*)models
@@ -251,6 +272,28 @@ void rho_free_callbackdata(void* pData)
 	rho_connectclient_database_client_reset();	
 }
 
+- (NSString*) database_export: (NSString*) partition
+{
+	NSString* ret;
+	char* res = rho_connectclient_database_export([partition cStringUsingEncoding:[NSString defaultCStringEncoding]]);
+	
+	if ( res != 0 )
+	{
+		ret = [NSString stringWithUTF8String:res];
+		free(res);
+	} else {
+		ret = [NSString stringWithUTF8String:""];
+	}
+	
+	return ret;
+}
+
+- (BOOL) database_import: (NSString*) partition zip:(NSString*) zip
+{
+	int res = rho_connectclient_database_import([partition cStringUsingEncoding:[NSString defaultCStringEncoding]], [zip cStringUsingEncoding:[NSString defaultCStringEncoding]]);
+	return res == 0 ? FALSE : TRUE;
+}
+
 - (BOOL) is_logged_in
 {
 	return rho_sync_logged_in() == 1 ? TRUE : FALSE;
@@ -322,7 +365,7 @@ void rho_free_callbackdata(void* pData)
 
 - (RhoConnectNotify*) syncAll
 {
-    char* res = (char*)rho_sync_doSyncAllSources(0, "");
+    char* res = (char*)rho_sync_doSyncAllSources(0, "", false);
 	
     RHO_CONNECT_NOTIFY oNotify = {0};
     rho_connectclient_parsenotify(res, &oNotify);
@@ -389,6 +432,11 @@ void rho_free_callbackdata(void* pData)
        [notify getNotifyPtr],
        [action cStringUsingEncoding:[NSString defaultCStringEncoding]]                                  
        );    
+}
+
+- (void) sendLog
+{
+    rho_conf_send_log_in_same_thread();
 }
 
 void copyFromMainBundle( NSFileManager* fileManager,  NSString * source, NSString * target, BOOL remove );

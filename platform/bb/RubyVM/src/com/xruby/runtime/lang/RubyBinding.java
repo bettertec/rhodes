@@ -27,16 +27,16 @@ public class RubyBinding extends RubyBasic {
 
     public RubyValue clone(){
     	RubyBinding cl = new RubyBinding(this.class_);
-    	cl.doClone(this);
+    	cl.doClone((RubyValue)this);
     	return cl;
     }
     protected void doClone(RubyValue orig){
     	RubyBinding cl = (RubyBinding)orig; 
     	scope_ = cl.scope_;
-    	self_ = cl.self_;
+    	self_ = cl.self_.clone();
     	block_ = cl.block_;
-    	variables_ = cl.variables_;
-    	names_ = cl.names_;
+    	variables_ = (RubyArray)cl.variables_.clone();
+    	names_ = new ArrayList(cl.names_);
     	
     	super.doClone(orig);
     }

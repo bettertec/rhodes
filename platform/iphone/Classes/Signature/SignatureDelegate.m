@@ -139,6 +139,86 @@
     prevView = nil;
 }
 
+<<<<<<< HEAD
+=======
+-(void)hideSignatureInlineViewCommand
+{
+    if (signatureInlineView != nil) {
+        [signatureInlineView removeFromSuperview];
+        //[signatureInlineView release];
+        signatureInlineView = nil;
+    }
+}
+
+-(void)hideSignatureInlineView
+{
+    [self performSelectorOnMainThread:@selector(hideSignatureInlineViewCommand) withObject:nil waitUntilDone:NO];
+}
+
+
+-(void)showSignatureInlineViewCommand:(SignatureViewProperties*)properties
+{
+    [self hideSignatureInlineViewCommand];
+    
+    CGRect rect;
+    
+    rect.origin.x = properties.left;
+    rect.origin.y = properties.top;
+    rect.size.width = properties.width;
+    rect.size.height = properties.height;
+    
+    signatureInlineView = [[[SignatureView alloc] initWithFrame:rect] autorelease];
+
+    [signatureInlineView setPenColor:properties.penColor];
+    [signatureInlineView setPenWidth:properties.penWidth];
+    [signatureInlineView setBgColor:properties.bgColor];
+    
+    signatureInlineView.opaque = NO;
+    signatureInlineView.backgroundColor = [UIColor colorWithWhite:1 alpha:0];
+
+    
+    UIWebView* webView = [[[Rhodes sharedInstance] mainView] getWebView:-1];
+    if (webView != nil) {
+        UIView* v = webView;//[[webView subviews] objectAtIndex:0];
+        //UIView* v = [[webView subviews] objectAtIndex:0];
+        [v addSubview:signatureInlineView];
+        [v bringSubviewToFront:signatureInlineView];
+        [v setNeedsDisplay];
+    }
+}
+
+
+-(void)showSignatureInlineView:(SignatureViewProperties*)properties
+{
+    [self performSelectorOnMainThread:@selector(showSignatureInlineViewCommand:) withObject:properties waitUntilDone:NO];
+}
+
+-(void)clearSignatureInlineViewCommand
+{
+    if (signatureInlineView != nil) {
+        [signatureInlineView doClear];
+    }
+}
+
+-(void)clearSignatureInlineView
+{
+    [self performSelectorOnMainThread:@selector(clearSignatureInlineViewCommand) withObject:nil waitUntilDone:NO];
+}
+
+-(void)captureInlineSignatureCommand
+{
+    if (signatureInlineView != nil) {
+        UIImage* img = [signatureInlineView makeUIImage];
+        [self hideSignatureInlineViewCommand];
+        [self useImage:img];
+    }
+}
+
+-(void)captureInlineSignature
+{
+    [self performSelectorOnMainThread:@selector(captureInlineSignatureCommand) withObject:nil waitUntilDone:NO];
+}
+>>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 
 
 @end

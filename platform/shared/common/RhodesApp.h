@@ -38,12 +38,50 @@
 #include "SplashScreen.h"
 #include "AppMenu.h"
 #include "ExtManager.h"
+#include "push/RhoPushManager.h"
 
 #undef DEFAULT_LOGCATEGORY
 #define DEFAULT_LOGCATEGORY "RhodesApp"
 
 namespace rho {
 namespace common {
+	
+	enum enNetworkStatus {
+        networkStatusUnknown,
+        networkStatusConnected,
+        networkStatusDisconnected
+    };
+		
+    class INetworkStatusReceiver
+    {
+    public:
+        virtual ~INetworkStatusReceiver() {}
+        virtual void onNetworkStatusChanged(enNetworkStatus currentStatus) = 0;
+    };
+	
+	class INetworkStatusMonitor
+    {
+    public:
+        virtual ~INetworkStatusMonitor() {}
+        virtual void setPollInterval(int pollInterval) = 0;
+		virtual void setNetworkStatusReceiver(INetworkStatusReceiver* receiver) = 0;
+    };
+	
+	class NetworkStatusReceiver : public INetworkStatusReceiver
+    {
+    private:
+		enNetworkStatus m_prevStatus;
+        String m_callbackUrl;
+		common::CMutex& m_mxAccess;
+		
+    public:
+		NetworkStatusReceiver( common::CMutex& mxAccess );
+        virtual void onNetworkStatusChanged(enNetworkStatus currentStatus);
+        void setCallbackUrl( const String& url ) { m_callbackUrl = url; }
+		
+	private:
+		static String networkStatusToString( enNetworkStatus status );
+    };
 
 class CRhodesApp : public CRhodesAppBase
 {
@@ -74,8 +112,9 @@ private:
     Vector<String> m_arAppBackUrl, m_arAppBackUrlOrig;
     Vector<ICallbackObject*> m_arCallbackObjects;
 
-    common::CMutex m_mxPushCallback;
+    mutable common::CMutex m_mxPushCallback;
     String m_strPushCallback, m_strPushCallbackParams;
+    PushManager m_appPushMgr;
 	
     common::CMutex m_mxScreenRotationCallback;
     String m_strScreenRotationCallback, m_strScreenRotationCallbackParams;
@@ -84,8 +123,12 @@ private:
     //int m_activateCounter;
 
     common::CAutoPtr<common::CThreadQueue> m_appCallbacksQueue;
-    boolean m_bSendingLog;
     CExtManager* m_pExtManager;
+	
+	common::CMutex m_mxNetworkStatus;
+	NetworkStatusReceiver m_networkStatusReceiver;
+    INetworkStatusMonitor* m_pNetworkStatusMonitor;
+	static const int c_defaultNetworkStatusPollInterval = 20;
 
 public:
     ~CRhodesApp(void);
@@ -147,8 +190,6 @@ public:
     void setExtManager( CExtManager* pExtManager ){m_pExtManager = pExtManager; }
     CExtManager&   getExtManager(){ return *m_pExtManager; }
 
-    boolean sendLog(const String& strCallbackUrl);
-
     String addCallbackObject(ICallbackObject* pCallbackObject, String strName);
     unsigned long getCallbackObject(int nIndex);
 
@@ -156,8 +197,17 @@ public:
 
     void runCallbackInThread(const String& strCallback, const String& strBody);
 
-    void setPushNotification(String strUrl, String strParams );
-    boolean callPushCallback(String strData);
+    IRhoPushClient* getDefaultPushClient() {return m_appPushMgr.getDefaultClient(); }
+    void addPushClient(IRhoPushClient* pClient) { m_appPushMgr.addClient(pClient); }
+    void initPushClients();
+    void setPushNotification(const String& strUrl, const String& strParams, const String& types);
+    //void checkPushRegistration(const String& strUrl, const String& strParams, const String& type);
+
+    // Deprecated
+    boolean callPushCallback(const String& strData) const;
+    boolean callPushCallbackWithJsonBody(const String& strUrl, const String& strData, const String& strParams);
+
+    boolean callPushCallback(const String& strType, const String& strJson, const String& strData);
 	
     void setScreenRotationNotification(String strUrl, String strParams);
     void callScreenRotationCallback(int width, int height, int degrees);
@@ -167,8 +217,11 @@ public:
     void notifyLocalServerStarted();
     const char* getFreeListeningPort();
     int determineFreeListeningPort();
+	
+    void setNetworkStatusNotify(const String& url, int poll_interval);
+    void clearNetworkStatusNotify();
+    void setNetworkStatusMonitor(INetworkStatusMonitor* netMonitor);
 
-    void setSendingLog(boolean bSending){m_bSendingLog = bSending; }
 protected:
     virtual void run();
 
@@ -242,6 +295,7 @@ void rho_rhodesapp_setViewMenu(unsigned long valMenu);
 const char* rho_rhodesapp_getappbackurl();
 
 int rho_rhodesapp_callPushCallback(const char* szData);
+//int rho_rhodesapp_callPushCallbackWithJsonBody(const char* szUrl, const char* szData, const char* szParam);
 
 void rho_rhodesapp_callScreenRotationCallback(int width, int height, int degrees);
 void rho_rhodesapp_callPopupCallback(const char *strCallbackUrl, const char *id, const char *title);
@@ -250,6 +304,7 @@ int rho_conf_send_log(const char* callback_url);
 
 void rho_net_request(const char *url);
 void rho_net_request_with_data(const char *url, const char *str_body);
+void rho_net_request_with_data_in_separated_thread(const char *url, const char *str_body);
 
 void rho_rhodesapp_load_url(const char *url);
 
@@ -265,7 +320,10 @@ int rho_is_rho_elements_extension_can_be_used();
 
     
 // should be implemented in platforms code
-void rho_platform_restart_application();    
+void rho_platform_restart_application();
+    
+void rho_sys_set_network_status_notify(const char* url, int poll_interval);
+void rho_sys_clear_network_status_notify();
     
 #ifdef __cplusplus
 };

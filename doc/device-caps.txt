@@ -14,28 +14,31 @@ Rhodes provide access to device specific capabilities such as GPS, PIM, camera, 
 		<th>Android</th>
 		<th>RhoSimulator</th>
 		<th>Symbian</th>
+		<th>Windows Desktop</th>
 	</tr>
-	<tr><td class='cap'>GeoLocation</td><td>0.3</td><td>0.3</td><td class='tbd'>TBD</td><td>0.3</td><td>1.0</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>PIM Contacts</td><td>0.3</td><td>0.3</td><td class='tbd'>TBD</td><td>0.3</td><td>1.0</td><td class='tbd'>3.5</td><td>3.1</td></tr>
-	<tr><td class='cap'>PIM Calendar</td><td>2.2</td><td>2.2</td><td class='tbd'>TBD</td><td>2.2</td><td>2.2</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Camera</td><td>1.0</td><td>1.0</td><td class='tbd'>TBD</td><td>1.0</td><td>1.0</td><td>3.0</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Barcode</td><td>2.1</td><td>2.1</td><td class='tbd'>TBD</td><td>2.1</td><td>2.1</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Date/Time picker</td><td>1.2.2</td><td>2.0</td><td class='tbd'>TBD</td><td>1.2</td><td>1.2</td><td>3.0</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Menu</td><td>1.2.2</td><td>2.0</td><td>3.0</td><td>1.2</td><td>1.5</td><td>3.0</td><td>3.1</td></tr>
-	<tr><td class='cap'>Toolbar</td><td>1.2.2</td><td>2.3</td><td>3.0</td><td class='tbd'>n/a</td><td>1.5</td><td>3.0</td><td>3.1</td></tr>
-	<tr><td class='cap'>Tab Bar</td><td>1.2.2</td><td class='tbd'>3.5</td><td>3.0</td><td class='tbd'>n/a</td><td>1.5</td><td>3.1</td><td>3.1</td></tr>
-	<tr><td class='cap'>Nav Bar</td><td>2.0</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td><td class='tbd'>n/a</td><td>2.0</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Signature Capture</td><td>2.1</td><td>3.0</td><td class='tbd'>TBD</td><td class='tbd'>3.5</td><td>2.1</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td></tr>
-	<tr class='tbd'><td class='cap'>Audio/Video capture</td><td>4.0</td><td>4.0</td><td class='tbd'>TBD</td><td>4.0</td><td>4.0</td><td>4.0</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Bluetooth</td><td>2.2</td><td>2.2</td><td class='tbd'>TBD</td><td>2.2</td><td>2.2</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>NFC</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td>3.0</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Push</td><td>1.2</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td><td>1.2</td><td>2.2</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Screen rotation</td><td>2.1</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td><td>2.0</td><td>2.1</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Native Maps</td><td>1.4</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td><td>1.4</td><td>1.5</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Alerts/Audio File Playback</td><td>1.2</td><td>1.5</td><td class='tbd'>TBD</td><td>1.2</td><td>1.2</td><td>3.1</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Ringtones</td><td>3.5</td><td>1.5</td><td class='tbd'>TBD</td><td>1.5</td><td>1.5</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td></tr>
-	<tr><td class='cap'>Printing</td><td>3.4</td><td>3.4</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>GeoLocation</td><td>0.3</td><td>0.3</td><td class='tbd'>TBD</td><td>0.3</td><td>1.0</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>PIM Contacts</td><td>0.3</td><td>0.3</td><td class='tbd'>TBD</td><td>0.3</td><td>1.0</td><td class='tbd'>3.5</td><td>3.1</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>PIM Calendar</td><td>2.2</td><td>2.2</td><td class='tbd'>TBD</td><td>2.2</td><td>2.2</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>Camera</td><td>1.0</td><td>1.0</td><td class='tbd'>TBD</td><td>1.0</td><td>1.0</td><td>3.0</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>Barcode</td><td>2.1</td><td>2.1</td><td class='tbd'>TBD</td><td>2.1</td><td>2.1</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>Date/Time picker</td><td>1.2.2</td><td>2.0</td><td class='tbd'>TBD</td><td>1.2</td><td>1.2</td><td>3.0</td><td class='tbd'>TBD</td><td>3.0</td></tr>
+	<tr><td class='cap'>Menu</td><td>1.2.2</td><td>2.0</td><td>3.0</td><td>1.2</td><td>1.5</td><td>3.0</td><td>3.1</td><td>3.0</td></tr>
+	<tr><td class='cap'>Toolbar</td><td>1.2.2</td><td>2.3</td><td>3.0</td><td class='tbd'>n/a</td><td>1.5</td><td>3.0</td><td>3.1</td><td>3.0</td></tr>
+	<tr><td class='cap'>Tab Bar</td><td>1.2.2</td><td class='tbd'>3.5</td><td>3.0</td><td class='tbd'>n/a</td><td>1.5</td><td>3.1</td><td>3.1</td><td class='tbd'>3.4</td></tr>
+	<tr><td class='cap'>Nav Bar</td><td>2.0</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td><td class='tbd'>n/a</td><td>2.0</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>Signature Capture</td><td>2.1</td><td>3.0</td><td class='tbd'>TBD</td><td class='tbd'>3.5</td><td>2.1</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr class='tbd'><td class='cap'>Audio/Video capture</td><td>4.0</td><td>4.0</td><td class='tbd'>TBD</td><td>4.0</td><td>4.0</td><td>4.0</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>Bluetooth</td><td>2.2</td><td>2.2</td><td class='tbd'>TBD</td><td>2.2</td><td>2.2</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>NFC</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td>3.0</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>Push</td><td>1.2</td><td class='tbd'>4.0</td><td class='tbd'>TBD</td><td>1.2</td><td>2.2</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>Screen rotation</td><td>2.1</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td><td>2.0</td><td>2.1</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>Native Maps</td><td>1.4</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td><td>1.4</td><td>1.5</td><td>3.4</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>Alerts/Audio File Playback</td><td>1.2</td><td>1.5</td><td class='tbd'>TBD</td><td>1.2</td><td>1.2</td><td>3.1</td><td class='tbd'>TBD</td><td>3.1</td></tr>
+	<tr><td class='cap'>Ringtones</td><td>3.5</td><td>1.5</td><td class='tbd'>TBD</td><td>1.5</td><td>1.5</td><td class='tbd'>3.5</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
+	<tr><td class='cap'>Printing</td><td>3.4</td><td>3.4</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td><td class='tbd'>TBD</td></tr>
 </table>	
+
+**NOTE: As of Rhodes version 3.3.3, the [Barcode](/rhodes/device-caps#barcode), [NFC](/rhodes/device-caps#nfc), and [Inline Signature Capture](/rhodes/device-caps#signature-capture) APIs, as well as [Rhom data encryption](/rhodes/rhom#database-encryption) are removed from Rhodes. These features are only supported in Motorola RhoMobile Suite. If you wish to use these features, you will need to [upgrade to RhoMobile Suite](/rhomobile-install). Your application's build.yml will also need to be modified to [indicate the application type is 'Rhoelements']( /rhoelements/rhoelements2-native#enabling-motorola-device-capabilities). Additionally, a [RhoElements license](/rhoelements/licensing) is required.**
 
 ## System class
 The System Ruby class provides access to the system specific information.
@@ -46,7 +49,7 @@ To get value of a named system property:
 
 Properties:
 
-* platform - APPLE, Blackberry, WINDOWS, ANDROID, SYMBIAN
+* platform - APPLE, Blackberry, WINDOWS, ANDROID, WINDOWS_DESKTOP, SYMBIAN
 * has_camera - is camera available on the device
 * screen_width - screen width in logical pixels (used for set coordinates)
 * screen_height - screen height in logical pixels (used for set coordinates)
@@ -89,25 +92,61 @@ Open application associated with url; behavior may be different on different pla
 	System.open_url(url)
 **NOTE: On iPhone, if you post path of local file, then the specific iOS control (UIDocumentInteractionController) where file will previewed and user will be able open this file by selected application wich supported this filetype.**
 
-Run specified application. Note: appname is platform dependent
+Run specified application. Note: 
 	:::ruby
 	System.run_app(appname, params)
-**NOTE: On iPhone, appname is the same with registered application URL scheme. Params just string. Example : System.run_app('myapp', 'someparams'). Also this the same with : System.open_url('myapp:someparams')**
+	
+appname is platform dependent:
 
+* iPhone: appname is the same with registered application URL scheme. Params just string. Example : 
 
+    System.run_app('myapp', 'someparams'). 
+        
+  Also this the same with : 
+  
+    System.open_url('myapp:someparams')
+    
+* Android: appname is package name : com.<vendor>.<app_name> . For example:
+
+    System.run_app('com.rhomobile.store', 'someparams')
+
+* Windows Mobile, Windows CE: appname is path in registry: <vendor> <app_name>/<app_name>.exe . For example:
+
+    System.run_app('rhomobile store/store.exe', 'someparams')
+
+* Windows Desktop: appname is path in registry: <vendor>/<app_name>/<app_name>.exe . For example:
+
+    System.run_app('rhomobile/store/store.exe', 'someparams')
+
+* Blackberry: appname is <app_name> . For example:
+
+    System.run_app('store', 'someparams')
+        
 Install application from specified url
 	:::ruby
 	System.app_install(url) 
 
 Is specified application installed on device?
+
 	:::ruby
 	System.app_installed?(appname)
 
-**NOTE: On iPhone, appname is the same with registered application URL scheme.**
+**NOTE: see System.run_app for appname information **
+
 	
 Uninstall specified application	
 	:::ruby
 	System.app_uninstall(appname)
+
+**NOTE: see System.run_app for appname information **
+
+Zip one file to specified zip
+	:::ruby
+	System.zip_file(local_path_to_zip, local_path_to_file, password)
+
+Zip several files to specified zip
+	:::ruby
+	System.zip_files(local_path_to_zip, base_path, array_of_files_to_be_zipped, password)
 
 Unzip file to the same folder where zip file is	
 	:::ruby
@@ -131,6 +170,14 @@ To get current application Locale:
 	:::ruby
     LocalizationSimplified::get_cur_locale #get current application locale
 
+To modify application window position and size:
+    :::ruby
+    System.set_window_frame(x,y,width,height) #change application window position and size
+    System.set_window_position(x,y) #change application window position
+    System.set_window_size(width,height) #change application window size
+    System.lock_window_size(locked) #lock/unlock window size change by user
+
+**NOTE: These methods implemented only for Windows Desktop  **
 
 ### Sample
 See layout.erb of [System API Sample application](http://github.com/rhomobile/rhodes-system-api-samples/tree/master/app/layout.erb)  for some of the examples of how to use System class. There is also [system test](http://github.com/rhomobile/rhodes-system-api-samples/tree/master/app/SystemTest/controller.rb) which demonstrate System class usage.
@@ -189,7 +236,7 @@ To show currency (see rails analog for details):
 
 Geolocation information is available in two ways: as an asynchronous service through Ajax calls to a predefined local URL, or in a controller using Ruby calls to the GeoLocation class.
 
-You need to enable the GPS capability to use GeoLocaiton. This is done by adding the following line to build.yml:
+You need to enable the GPS capability to use GeoLocation. This is done by adding the following line to build.yml:
 
 	:::yaml
 	capabilities:
@@ -406,7 +453,7 @@ These two parameters are used to paginate contacts list. If used with :count exa
 
 The next parameters are available at Android only.
 
- * :select - list of contact properties have to be selected from phonebook (Use it to enchance query performance)
+ * :select - list of contact properties have to be selected from phonebook (Use it to enhance query performance)
  * :conditions - hash of conditions to query contacts. Look for more details below.
 
 **NOTE: It is allowed to pass additional params hash at all platforms. Platforms that has no extended functionality will just skip these**
@@ -488,11 +535,11 @@ Condition like
 	:::ruby
 	{:phone => 'not_nil'}
 will select all contacts which has at least one phone.
-The next conditions are currently suported:
+The following conditions are currently supported:
 - 'not_nil'
 - 'is_nil'
 
-**NOTE: It may be useful to sort received contacts (espessially if paginated). Contacts is ordered by 'display_name' column and then splitted for pages. Unfortunately the order inside page is lost while passing the list to ruby**
+**NOTE: It may be useful to sort received contacts (especially if paginated). Contacts is ordered by 'display_name' column and then split for pages. Unfortunately the order inside page is lost while passing the list to ruby**
 
 	:::ruby
 	@count = Rho::RhoContact.find(:count, :conditions => {:phone => 'not_nil'})
@@ -573,10 +620,10 @@ On iPhone and Android additional event properties are supported. These are:
 
 Recurrence properties:
 "recurrence", "frequency"('daily', 'weekly', 'monthly', 'yearly'), "interval", "count", "end_date"
-"count" and "end" rucurrence properties are mutual exclusive. "end" is date/time beyond last event occurence but within same day.     
+"count" and "end" recurrence properties are mutual exclusive. "end" is date/time beyond last event occurrence but within same day.
 
 ### Recurrence properties
-Recurrence properties are groupped in separate hash stored as single event property (event[Rho::RhoEvent::RECURRENCE]).
+Recurrence properties are grouped in separate hash stored as single event property (event[Rho::RhoEvent::RECURRENCE]).
 
 ### Names of properties
 There are helper constants defined in Rho::RhoEvent which can be used to address event values and as predefined set of values (for frequency).
@@ -649,7 +696,7 @@ Choose a picture from Image Gallery (currently supported only on iPhone):
 	Camera::choose_picture('/app/model/camera_callback', options_hash)
 
 
-options_has - hash contain additional parameters :
+options_hash - hash contain additional parameters :
 
 * "camera_type" - "default"(is the same with "main"), "main", "front". Default value = "default"
 * "desired_width" - number, desired width in pixels. Default value = max camera width
@@ -679,17 +726,31 @@ In returned hash:
 
  * "max_resolution" - hash with "width" and "height" numeric values.
 
+### Extended API for Motorola devices (RhoElements applications)
+
+Take a picture:
+	:::ruby
+	Camera::take_picture('/app/model/camera_callback', options_hash)
+
+options_hash - hash contain additional parameters :
+
+* "left" - number, camera left position in pixels. Default value = 0
+* "top" - number, camera top position in pixels. Default value = 0
+* "desired_width" - number, desired width in pixels. Default value = max camera width
+* "desired_height" - number, desired height in pixels. Default value = max camera height
 
 ### Sample
 See controller and view in the /app/Image folder of the [ System API Samples application](http://github.com/rhomobile/rhodes-system-api-samples/tree/master/app/Image/controller.rb) for more information.
 
 ## Barcode
 
+**NOTE: As of Rhodes version 3.3.3, the [Barcode](/rhodes/device-caps#barcode) API is removed from Rhodes. This feature is only supported in Motorola RhoMobile Suite. If you wish to use this feature, you will need to [upgrade to RhoMobile Suite](/rhomobile-install). Your application's build.yml will also need to be modified to [indicate the application type is 'Rhoelements'](/rhoelements/rhoelements2-native#enabling-motorola-device-capabilities). Additionally, a [RhoElements license](/rhoelements/licensing) is required.**
+
 The Barcode API allows to try recognize barcode on an image:
 	:::ruby
 	Barcode.barcode_recognize(image_file_full_path)
 
-Barcode recognition functionality realized as Rhode Native extension. You should add "Barcode" to extension list in build.yml located in your application folder. `Barcode.barcode_recognize(image_file_full_path)` return string with recognized code or emty string if not any recognized barcodes on the image. You can combine Camera for get picture with Barcode recognition for process barcode data - see sample below.
+Barcode recognition functionality realized as Rhode Native extension. You should add "Barcode" to extension list in build.yml located in your application folder. `Barcode.barcode_recognize(image_file_full_path)` return string with recognized code or empty string if not any recognized barcodes on the image. You can combine Camera for get picture with Barcode recognition for process barcode data - see sample below.
 
 For barcode recognition we use Zbar library (iPhone, and Windows Mobile platforms) and ZXing library (Android and BlackBerry platforms). In this case we support next barcode types :
 
@@ -697,7 +758,7 @@ For barcode recognition we use Zbar library (iPhone, and Windows Mobile platform
 * iPhone platform: UPC-A, UPC-E, EAN-8, EAN-13, Code 39, Code 128, QR Code .
 * Android and BlackBerry platforms: UPC-A, UPC-E, EAN-8, EAN-13, Code 39, Code 128, Code 93, QR Code, ITF, Codabar
 
-**NOTE: We are very sorry, but we are removed ZBar source code from our project by ZBar license requirements. For build Barcode extension for WM, you should download ZBar sources from http://zbar.sourceforge.net/ and copy to [rhodes root]/lib/extensions/barcode/ext/barcode/shared/zbar/zbar/ folder "include" and "zbar" folders from ZBar sources. Also you should fix ZBar sources for building by Microsoft Visual Studio (move define of inner function variables to begin of functions, etc.). See detailed instructon in your Rhodes installation at /lib/extensions/barcode/ext/barcode/shared/zbar/zbar/README.TXT**
+**NOTE: We are very sorry, but we are removed ZBar source code from our project by ZBar license requirements. For build Barcode extension for WM, you should download ZBar sources from http://zbar.sourceforge.net/ and copy to [rhodes root]/lib/extensions/barcode/ext/barcode/shared/zbar/zbar/ folder "include" and "zbar" folders from ZBar sources. Also you should fix ZBar sources for building by Microsoft Visual Studio (move define of inner function variables to begin of functions, etc.). See detailed instructions in your Rhodes installation at /lib/extensions/barcode/ext/barcode/shared/zbar/zbar/README.TXT**
 
 On Android and iOS (not supported on iPhone 2G and iPhone 3G !) now supported real-time barcode recognizing (second parameter is hash with options):
 	:::ruby
@@ -707,7 +768,7 @@ On Android also you can use front camera for take_barcode :
 	:::ruby
 	Barcode.take_barcode(url_for(:action => :take_callback), {:camera => 'front'})
 
-This code open special UI for real-time barcode recognizing from camera. If any barcode found recognizing stopped and user can select - confirm recognizing barcode or continue recognizig. If user confirmed or cancelled the callback will be called.
+This code open special UI for real-time barcode recognizing from camera. If any barcode found, recognizing stopped and user can select - confirm recognizing barcode or continue recognizing. If user confirmed or cancelled the callback will be called.
 In callback are these parameters.
  
  * "status" - "ok" or "cancel"
@@ -746,6 +807,8 @@ After user entered signature (or canceled) provided callback url will be called.
  * signature_uri - path to the image with signature   
 
 ### Inline signature capture
+**NOTE: As of Rhodes version 3.3.3, the Inline Signature Capture API is removed from Rhodes. This feature is only supported in Motorola RhoMobile Suite. If you wish to use this feature, you will need to [upgrade to RhoMobile Suite](/rhomobile-install). Your application's build.yml will also need to be modified to [indicate the application type is 'Rhoelements'](/rhoelements/rhoelements2-native#enabling-motorola-device-capabilities). Additionally, a [RhoElements license](/rhoelements/licensing) is required.**
+
 Windows Mobile and Windows CE devices support signature capture started in window, which you can show over current page(scrolling is not supported in this case).
 
 To display window hand writing, where user draw his signature call:
@@ -758,6 +821,13 @@ To display window hand writing, where user draw his signature call:
 Example :
 	:::ruby
 	Rho::SignatureCapture.visible(true, { :imageFormat => "jpg", :penColor => 0xff0000, :penWidth=>3, :bgColor => 0x00ff00 })
+
+`visible` uses the same hash parameters as `take`, with the following additional parameters.
+
+* left - Sets the top left horizontal position of the rectangular capture area in pixels
+* top - Sets the top left vertical position of the rectangular capture area in pixels
+* width - Sets the width of the rectangular capture area in pixels
+* height - Sets the height of the rectangular capture area in pixels
 
 To save Signature to an image file and call callback:
 	:::ruby
@@ -974,8 +1044,9 @@ You can find complete example of using Bluetooth API in [Rhodes-System-Api-Sampl
 ## NFC
 
 NFC (Near Field Communication). NFC API provide access to NFC functionality. You can check NFC availability on current device and register callback for listen event when NFC tag near of device. Currently NFC supported only on Android. And also Android version must be 2.3.3 or later.
-NFC API implemented in native extension. You should add "nfc" to extension list in your nuild.yml before start using NFC in your application. Please see detailed doc : [Rhodes NFC extension](nfc)
+NFC API implemented in native extension. You should add "nfc" to extension list in your build.yml before start using NFC in your application. Please see detailed doc: [Rhodes NFC extension](/rhodes/nfc).
 
+**NOTE: As of Rhodes version 3.3.3, the [NFC](/rhodes/nfc) API is removed from Rhodes. This feature is only supported in Motorola RhoMobile Suite. If you wish to use this feature, you will need to [upgrade to RhoMobile Suite](/rhomobile-install). Your application's build.yml will also need to be modified to [indicate the application type is 'Rhoelements'](/rhoelements/rhoelements2-native#enabling-motorola-device-capabilities). Additionally, a [RhoElements license](/rhoelements/licensing) is required.**
 
 ## Ringtone manager
 
@@ -1006,7 +1077,7 @@ See controller and view in the /app/Ringtones folder of the [System API Samples 
 ## Printing
 
 ### Printing on iOS
-iOS inlude printing support. You should prepare File for printing and open it by standart platform - use:
+iOS include printing support. You should prepare File for printing and open it by standart platform - use:
 	:::ruby
 	System.open_url(file_full_path)
 
@@ -1022,7 +1093,7 @@ Android do not support printing. You can use any third-party application for pri
 You should prepare file for printing and open it by standart platform - use:
 	:::ruby
 	System.open_url(file_full_path)
-Android platfrom open that file in application registered for file extension or show select dialog for manually choose application if there are more than one application registered for this extension.
+Android platform opens that file in application registered for file extension or show select dialog for manually choose application if there are more than one application registered for this extension.
 
 We recommend prepare PDF. You can use PDF-Writer pure Ruby library for it - we include it into rhodes - just include "pdf-writer" and "thread" extensions to your application extension list in build.yml.
 	:::yaml
@@ -1107,7 +1178,7 @@ Now your RhoConnect application is ready to send APNS messages.
 Next, you can setup your Apple Push Provisioning Profile using Apple's [developer site instructions](https://developer.apple.com/iphone/library/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ProvisioningDevelopment/ProvisioningDevelopment.html#//apple_ref/doc/uid/TP40008194-CH104-SW5).  Once you have the profile installed in XCode and on your test device, you are ready to test push.
 
 #### Setup iPhone Device
-Setting up the device is the same process as [building any normal Rhodes application](build#build-for-iphoneipad). When you start the application, make sure to also open the console window (cmd-shift-R). When the application starts, you should see some output in the console that shows the device token (towards the top):
+Setting up the device is the same process as [building any normal Rhodes application](build#building-a-rhodes-application-for-iphoneipad). When you start the application, make sure to also open the console window (cmd-shift-R). When the application starts, you should see some output in the console that shows the device token (towards the top):
 
 	2010-08-19 10:14:22.627 rhorunner[1486:307] Device token is <10fd92ab fa8ee481 55d9af6e 73290863 22b323fd 0d18fdbd 19e92d03 c0fef7c8>
 
@@ -1155,7 +1226,7 @@ If no push notification mode is specified in build.yml then no notifications are
 ### BlackBerry
 <a id="blackberry-push-setup"></a>Notifications to BlackBerry are sent using PAP 2.0 message through a BES/MDS server.
 
-On the simulator, this is done via the MDS simulator tool (which you've probably already seen in the form of a console window everytime you do 'rake run:bb'). On the device, this is done through the BES/MDS server that the phone is configured to use.  
+On the simulator, this is done via the MDS simulator tool (which you've probably already seen in the form of a console window every time you do 'rake run:bb'). On the device, this is done through the BES/MDS server that the phone is configured to use.  
 
 These instructions assume you are familiar with BES/MDS concepts (for more information please see [here](http://na.blackberry.com/eng/services/business/server/full/)).
 
@@ -1200,7 +1271,7 @@ These parameters from [PushApplicationDescriptor](http://www.blackberry.com/deve
 In case of Blackberry, if the audio file is in the public folder, the file name will be `/apps/public/alerts/test-file.mp3`.
 
 ### Push Callback
-Rhodes applications can also handle PUSH notifications that didn't come from a RhoConnect application. 
+<a id="push-callback"></a>Rhodes applications can also handle PUSH notifications that didn't come from a RhoConnect application. 
 
 In this example, we will get the device ID so we can register the device with some push server:
 	:::ruby
@@ -1228,7 +1299,7 @@ Example:
 	end
 
 ### Push Payload
-The Rhodes push payload allows more than one operation in a single message. 
+<a id="push-payload"></a>The Rhodes push payload allows more than one operation in a single message. 
  
 There are no required operations. There are default operations - if operation is not specified, no default operation will be performed.
 
@@ -1360,7 +1431,13 @@ When user rotate device, Rhodes update view corresponding to new orientation. To
 	:::ruby
 	System.set_screen_rotation_notification(callback, params) 
 
-Callback will be called when screen rotate (available since Rhodes 2.0). Callback parameters will be: width, height, degrees
+Callback will be called when screen has rotated (available since Rhodes 2.0).
+Callback parameters are:
+- width - new screen width
+- height - new screen height
+- degrees - screen rotation relative to portrait position
+
+NOTE: On tablet devices with default landscape form factor degrees value in normal position will be 90
 
 ### Sample
 See controller and view in the /app/ScreenRotation folder of the [System API Samples application](http://github.com/rhomobile/rhodes-system-api-samples/tree/master/app/ScreenRotation/controller.rb) for more information.
@@ -1388,7 +1465,7 @@ It is possible to customize the URI with build.yml settings. Default Rhodes URI 
 - host name
 - path prefix
 - optional path and query
-You can customize sheme and host name parts with following build.yml parameters:
+You can customize scheme and host name parts with following build.yml parameters:
     :::ruby
     android:
         URIScheme: myapp
@@ -1437,7 +1514,7 @@ In application you can get start params by
 
 For previous example start params will be "string_with_params".
 
-For execute you rhodes based application from enother rhodes based application use next code:
+For execute you rhodes based application from another rhodes based application use next code:
 	:::ruby
 	System.open_url('myapp:string_with_params')
 
@@ -1464,14 +1541,14 @@ MapView class provides an embeddable map interface, similar to the one provided 
 
 Provider:
 
-There are two providers supported now - 'Google', 'ESRI', "RhoGoogle" and "OSM". 
+The supported providers are 'Google', 'ESRI', "RhoGoogle" and "OSM". 
 
 * 'Google' supported on iPhone, Android and BB. 
 * 'ESRI' supported on iPhone, Android, BB and WM. 
-* 'RhoGoogle' own GoogleMap provider based on Google Static Map API. Have additional features (offline caching for example).  Supported on Android and WM
-* 'OSM' - Open Street Map, support only 'roadmap' map type.   Supported on Android and WM
+* 'RhoGoogle' own GoogleMap provider based on Google Static Map API. Has additional features (offline caching for example). Supported on Android and WM.
+* 'OSM' - Open Street Map, supports only 'roadmap' map type. Supported on Android and WM.
 
-For use ESRI maps in your projects on iPhone:
+To use ESRI maps in your projects on iPhone:
 
 * Install [ESRI iOS SDK](http://resources.arcgis.com/content/arcgis-iphone/api) - use default folders during installations !
 * Add "esri" to your applications extensions list in build.yml file.
@@ -1498,14 +1575,14 @@ Map settings:
 	* [latitude,longitude,latitudeDelta,longitudeDelta]. The area currently displayed by the map view. The region encompasses both the latitude and longitude point on which the map is centered and the span of coordinates to display. The span values provide an implicit zoom value for the map. The larger the displayed area, the lower the amount of zoom. Similarly, the smaller the displayed area, the greater the amount of zoom. 
 		* latitude,longitude - map coordinate of the region center
 		* latitudeDelta - the amount of north-to-south distance (measured in degrees) to display on the map. Unlike longitudinal distances, which vary based on the latitude, one degree of latitude is always approximately 111 kilometers (69 miles).
-		* longitudeDelta - the amount of east-to-west distance (measured in degrees) to display for the map region. The number of kilometers spanned by a longitude range varies based on the current latitude. For example, one degree of longitude spans a distance of approximately 111 kilometers (69 milies) at the equator but shrinks to 0 kilometers at the poles.
+		* longitudeDelta - the amount of east-to-west distance (measured in degrees) to display for the map region. The number of kilometers spanned by a longitude range varies based on the current latitude. For example, one degree of longitude spans a distance of approximately 111 kilometers (69 miles) at the equator but shrinks to 0 kilometers at the poles.
 	* {:center => center, :radius => radius}. Another way to define area displayed by the map view.
 		* center - string describing center of area. Can be any string allowed by google geocoding service. Examples: "1 infinite loop, cupertino, ca 95014", "California, USA", "37.365519,-121.982918"
 		* radius - radius of displayed area measured in degrees
 * zoom_enabled - true if zoom of the map is enabled
-* scroll_enabled - true if scrool of the map is enabled
+* scroll_enabled - true if scroll of the map is enabled
 * shows_user_location - true if current user location is displayed on the map 
-* api_key - Maps JavaScript API Key ([sign up for it here](http://code.google.com/apis/maps/signup.html)). Note that this parameter is ignored on Android! For Android you should get another key and specify it in the app's build.yml as described [here](build#Prerequisites_5)
+* api_key - Maps JavaScript API Key ([sign up for it here](http://code.google.com/apis/maps/signup.html)). Note that this parameter is ignored on Android! For Android you should get another key and specify it in the app's build.yml as described [here](build#build-for-android)
 
 Annotations - array of map annotation objects (list of pins on the map). Annotation:
 
@@ -1620,7 +1697,7 @@ Application can creates folders and files under apps and db roots.
 	               # for file paths from camera callback etc: Rho::RhoApplication::get_blob_path(relative_file_path); 
 	               # to create file path for blob: Rho::RhoApplication::get_blob_folder()
 
-On iOS platform only files stored in /Documents/ bakuped in iCloud etc.
+On iOS platform only files stored in /Documents/ backup in iCloud etc.
 Before Rhodes 3.3.2 all files stored in /Documents/ but Apple require do not placing files in Documents folder except user produced files. 
 Now all files except databases stored in /Library/Caches/Private Documents/ - files in this folder do not bakup.
 If you want make any files should be bakup - use "user folder" for it - Rho::RhoApplication::get_user_path. All you files created in old version in Rho::RhoApplication::get_base_app_path now should be open in Rho::RhoApplication::get_user_path.
@@ -1643,8 +1720,8 @@ Also there are few additional parameters in build.yml (use it only if you want t
 	f.write('my own file !')
 	f.close  
 
-Also you can set special iOS attiribute "do not bakup" to any files or folders or files related to database :
-### setup "do not bakup" attribute for files related database conaint Model 'Product'
+Also you can set special iOS attribute "do not bakup" to any files or folders related to database :
+### setup "do not bakup" attribute for files related database Model 'Product'
 	:::ruby
 	require_model 'Product'
 	db = Rho::RHO::get_src_db('Product')
@@ -1658,7 +1735,7 @@ Device/simulator files folder root - Program Files/<app name>/rho
 To use client with the HTTP proxy you should pass its URL as the first command line argument `-http_proxy_url=http://<login>:<passwod>@<host>:<port>` or add it to rhoconfig.txt.
 
 ## Shutdown hook
-Like any application written in Ruby, rhodes can register a shutdown hook. Shutdown hook is routine registered for execution when the program exits. It usefull for cleanup on exit, saving program states, etc. To create you own shutdown hook you should add at_exit block to the file application.rb. 
+Like any application written in Ruby, rhodes can register a shutdown hook. Shutdown hook is routine registered for execution when the program exits. It useful for cleanup on exit, saving program states, etc. To create you own shutdown hook you should add at_exit block to the file application.rb. 
 For example:
 	:::ruby
 	at_exit do
@@ -1692,7 +1769,7 @@ To make phone calls enable the phone capability. This is done by adding the foll
 	<a href="mailto:test@host.com?subject=testing123">Mailto</a>
 Note, even for an empty address, you must add the @ symbol: <a href="mailto:@?subject=testing123">Mailto</a>
 
-Blackberry: if you need cc, bcc feilds, use rhomailto scheme:
+Blackberry: if you need cc, bcc fields, use rhomailto scheme:
 	:::html
     <a href="rhomailto:test@host.com?cc=geny@mail.ru&bcc=vasy@gmail.com&body=testMessage&subject=sub1">Send e-mail to test@host.com</a>
     
@@ -1722,7 +1799,7 @@ When using jQuery and/or jQuery Mobile in application code, you cannot use usual
     #TestController method:
     def send_mail
         WebView.navigate( 'mailto:test@host.com' )        
-        #to open url inexternal application you can use System.open_url
+        #to open url in external application you can use System.open_url
     end
 
 ### Blackberry
@@ -1825,7 +1902,7 @@ Blackberry 5.0 and above has new BrowserField class, which support javascript, a
 
 WebView.execute_js is also supported in this mode.
 
-NOTE: on Blackberry 6.0 and above it is recommended to use full browser mode. Because overwise some UI elements like combobox is not selectable by trackball:
+NOTE: on Blackberry 6.0 and above it is recommended to use full browser mode, because otherwise some UI elements like combobox are not selectable by trackball:
 
 	# use full browser only on BB 6.0 and above
 	use_bb_full_browser=6

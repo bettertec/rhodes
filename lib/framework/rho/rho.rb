@@ -352,6 +352,12 @@ end
         
         begin
             res = Rho::JSON.parse(data)
+
+			skip_schema = false
+			if res['skip_schema']
+				skip_schema = res['skip_schema'].to_i() > 0
+			end
+			puts "skip_schema = #{skip_schema}"
             if res['partition']
                 str_partition = res['partition']
                 puts "reload sources for partition: #{str_partition}"
@@ -361,26 +367,49 @@ end
                 
                 db.start_transaction
                 begin
+					mapProps = {}
+					mapFreezed = {}
+					
+					Rho::RhoConfig::sources().each do |key,value|
+						if value['partition']==str_partition
+							mapProps[key] = value['property']
+							mapFreezed[key] = value['freezed']
+						end
+					end
+										
                     Rho::RhoConfig::sources().delete_if {|key, value| value['partition']==str_partition }
                     arSrcs = db.select_from_table('sources','source_id, name, sync_priority, partition, sync_type, schema, schema_version, associations, blob_attribs',
                         {'partition'=>str_partition} )
                     arSrcs.each do |src|
                         
-                        if src && src['schema'] && src['schema'].length() > 0
-                        
-                            #puts "src['schema'] :  #{src['schema']}"
-                            hashSchema = Rho::JSON.parse(src['schema'])
-                            #puts "hashSchema :  #{hashSchema}"
+                        if src 
+							if src['schema'] && src['schema'].length() > 0
+								if !skip_schema
+									#puts "src['schema'] :  #{src['schema']}"
+									hashSchema = Rho::JSON.parse(src['schema'])
+									#puts "hashSchema :  #{hashSchema}"
                             
-                            src['schema'] = {}
-                            src['schema']['sql'] = ::Rho::RHO.make_createsql_script( src['name'], hashSchema)
-                            src['schema_version'] = hashSchema['version']
+									src['schema'] = hashSchema
+									src['schema']['sql'] = ::Rho::RHO.make_createsql_script( src['name'], hashSchema)
+									src['schema_version'] = hashSchema['version']
                             
-                            db.update_into_table('sources', {"schema"=>src['schema']['sql'], "schema_version"=>src['schema_version']},{"name"=>src['name']})
+									db.update_into_table('sources', {"schema"=>src['schema']['sql'], "schema_version"=>src['schema_version']},{"name"=>src['name']})
                             
-                            #if str_partition != 'user'
-                            #    @db_partitions['user'].update_into_table('sources', {"schema"=>src['schema']['sql'], "schema_version"=>src['schema_version']},{"name"=>src['name']})
-                            #end
+									#if str_partition != 'user'
+									#    @db_partitions['user'].update_into_table('sources', {"schema"=>src['schema']['sql'], "schema_version"=>src['schema_version']},{"name"=>src['name']})
+									#end
+								end
+							else
+								props = mapProps[src['name']]
+								if props
+									src['property'] = props
+								end
+								
+								freezed = mapFreezed[src['name']]
+								if freezed
+									src['freezed'] = freezed
+								end
+							end
                         end
 
                         src[:loaded] = true
@@ -393,7 +422,8 @@ end
                     raise
                 end                
                 
-                #puts "sources after: #{Rho::RhoConfig::sources()}"            
+                ::Rho::RHO.init_sync_source_properties(Rho::RhoConfig::sources().values())
+				#puts "sources after: #{Rho::RhoConfig::sources()}"            
                 return
             end
         rescue Exception => e
@@ -566,18 +596,21 @@ end
     end
 
     def self.init_sync_source_properties(uniq_sources)
+
         uniq_sources.each do|src|
-            ['pass_through'].each do |prop|
-                next unless src.has_key?(prop)        
+            ['pass_through', 'full_update'].each do |prop|
+                next unless src.has_key?(prop)
                 SyncEngine.set_source_property(src['source_id'], prop, src[prop] ? src[prop].to_s() : '' )
             end            
         end
         
         uniq_sources.each do|src|
             if src.has_key?('freezed') || !src['schema'].nil?
-                hash_props = !src['schema'].nil? ? src['schema']["property"] : src["property"]
-                str_props = hash_props.keys.join(',')
-                SyncEngine.set_source_property(src['source_id'], 'freezed', str_props )
+				hash_props = !src['schema'].nil? ? src['schema']["property"] : src["property"]
+				if (!hash_props.nil?)
+					str_props = hash_props.keys.join(',')
+					SyncEngine.set_source_property(src['source_id'], 'freezed', str_props )
+				end
             end            
         end
         
@@ -648,7 +681,17 @@ end
             call_migrate = true 
           end
           
-          strCreate = make_createsql_script(source['name'], source['schema'])
+			strCreate = make_createsql_script(source['name'], source['schema'])
+			
+			#puts "source['schema'] :  #{source['schema']}"
+			#hashSchema = Rho::JSON.parse(source['schema'])
+			#puts "hashSchema :  #{hashSchema}"
+			
+			#src['schema'] = hashSchema
+			#source['schema']['sql'] = strCreate
+			#src['schema_version'] = hashSchema['version']
+			#strCreate = source['schema']
+			#puts "strCreate: #{strCreate}"
         
           if call_migrate
             db.update_into_table('sources', {"schema"=>strCreate},{"name"=>source['name']})
@@ -833,6 +876,8 @@ end
     
     def serve(req)
       begin
+        RhoProfiler.start_counter('CTRL_ACTION')            
+      
         puts "RHO serve: " + (req ? "#{req['request-uri']}" : '')
         res = init_response
         get_app(req['application']).send :serve, req, res
@@ -840,14 +885,21 @@ end
         init_nativebar
         Rho::RhoController.clean_cached_metadata()
         Rho::RhoConfig.clean_cached_changed
-        return send_response(res)
+        ret = send_response(res)
+        RhoProfiler.stop_counter('CTRL_ACTION') 
+        return ret
       rescue Exception => e
-        return send_error(e)
-      end   
+        ret = send_error(e)
+        RhoProfiler.stop_counter('CTRL_ACTION') 
+        return ret
+      ensure
+        RhoApplication::set_current_controller(nil)
+      end
     end
 
     def serve_hash(req)
       begin
+        RhoProfiler.start_counter('CTRL_ACTION')            
         puts "RHO serve: " + (req ? "#{req['request-uri']}" : '')
         res = init_response
         get_app(req['application']).send :serve, req, res
@@ -855,16 +907,26 @@ end
         init_nativebar
         Rho::RhoController.clean_cached_metadata()
         Rho::RhoConfig.clean_cached_changed
-        return send_response_hash(res)
+        ret = send_response_hash(res)
+        RhoProfiler.stop_counter('CTRL_ACTION') 
+        return ret
       rescue Exception => e
-        return send_error(e,500,true)
-      end 
+        ret = send_error(e,500,true)
+        RhoProfiler.stop_counter('CTRL_ACTION') 
+        return ret
+      ensure
+        RhoApplication::set_current_controller(nil)
+      end
+      
     end
     
     def serve_index(index_name, req)
+      begin
+        RhoProfiler.start_counter('INDEX_ACTION')            
+      
     	# TODO: Removed hardcoded appname
     	get_app(APPNAME).set_menu
-      begin
+      
         puts "RHO serve_index: " + (req ? "#{req['request-uri']}" : '')
         res = init_response
         res['request-body'] = RhoController::renderfile(index_name, req, res)
@@ -872,16 +934,23 @@ end
         init_nativebar
         Rho::RhoController.clean_cached_metadata()
         Rho::RhoConfig.clean_cached_changed
-        return send_response(res)
+        ret = send_response(res)
+        RhoProfiler.stop_counter('INDEX_ACTION')            
+        return ret
       rescue Exception => e
-        return send_error(e)
+        ret = send_error(e)
+        RhoProfiler.stop_counter('INDEX_ACTION')            
+        return ret
       end
     end
 
     def serve_index_hash(index_name, req)
+      begin
+        RhoProfiler.start_counter('INDEX_ACTION')            
+      
     	# TODO: Removed hardcoded appname
     	get_app(APPNAME).set_menu
-      begin
+      
         puts "RHO serve_index: " + (req ? "#{req['request-uri']}" : '')
         res = init_response
         res['request-body'] = RhoController::renderfile(index_name, req, res)
@@ -889,9 +958,14 @@ end
         init_nativebar
         Rho::RhoController.clean_cached_metadata()
         Rho::RhoConfig.clean_cached_changed
-        return send_response_hash(res)
+        ret = send_response_hash(res)
+        RhoProfiler.stop_counter('INDEX_ACTION')            
+        return ret
+        
       rescue Exception => e
-        return send_error(e, 500, true)
+        ret = send_error(e, 500, true)
+        RhoProfiler.stop_counter('INDEX_ACTION')            
+        return ret
       end
     end
 
@@ -1320,7 +1394,7 @@ module Kernel
     
 end    
 
-if defined?(RHO_WP7).nil?
+if !defined?(RHO_WP7) && !defined?( RHO_ME )
 module WebView
 
     class << self

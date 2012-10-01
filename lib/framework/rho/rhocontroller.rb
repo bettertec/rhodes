@@ -32,22 +32,21 @@ module Rho
   class RhoController
   	attr_accessor :menu
 
-    @@rholog = RhoLog.new
     @@before = nil
     def rho_info(str)
-      @@rholog.info("RHO " + self.class.to_s, str)
+      RhoLog.info("RHO " + self.class.to_s, str)
     end
 
     def rho_error(str)
-      @@rholog.error("RHO " + self.class.to_s, str)
+      RhoLog.error("RHO " + self.class.to_s, str)
     end
 
     def app_info(str)
-      @@rholog.info("APP " + self.class.to_s, str)
+      RhoLog.info("APP " + self.class.to_s, str)
     end
 
     def app_error(str)
-      @@rholog.error("APP " + self.class.to_s, str)
+      RhoLog.error("APP " + self.class.to_s, str)
     end
 
     def default_action
@@ -67,6 +66,10 @@ module Rho
                 barcodeModule = Object.const_get('Barcode') if Object.const_defined?('Barcode')
                 if barcodeModule && barcodeModule.respond_to?( :rho_process_moto_callback )
                     barcodeModule.rho_process_moto_callback(params)
+                end
+                cameraModule = Object.const_get('Camera') if Object.const_defined?('Camera')
+                if cameraModule && cameraModule.respond_to?( :rho_process_moto_callback )
+                    cameraModule.rho_process_moto_callback(params)
                 end
                 
             else

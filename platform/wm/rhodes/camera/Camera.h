@@ -39,8 +39,15 @@ public:
 public: 
 	HRESULT takePicture(HWND hwndOwner,LPTSTR pszFilename);
 	HRESULT selectPicture(HWND hwndOwner,LPTSTR pszFilename);
+
+private:
+    StringW generate_filename(LPCTSTR szExt );
+    bool copy_file(LPCTSTR from, LPCTSTR to);
+    LPTSTR get_file_name(LPCTSTR from, LPCTSTR to);
+
 };
 
 extern "C" void choose_picture(char* callback_url, rho_param *options_hash);
 extern "C" void take_picture(char* callback_url, rho_param * options_hash);
 extern "C" VALUE get_camera_info(const char* camera_type);
+extern "C" void save_image_to_device_gallery(const char* image_path, rho_param* options_hash);

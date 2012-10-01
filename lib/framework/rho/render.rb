@@ -56,7 +56,12 @@ module Rho
           res = ""
 
           if filename.end_with?(RHO_ERB_EXT)
-            res = (RhoController.new).inst_render_index(filename, req, res)
+            if RhoApplication::current_controller()
+                puts "reuse current action controller."
+                res = RhoApplication::current_controller().inst_render_index(filename, req, res)            
+            else
+                res = (RhoController.new).inst_render_index(filename, req, res)
+            end    
           else
             res = IO.read(filename)
           end
@@ -90,9 +95,10 @@ module Rho
           rho_info 'index layout' 
           layout = File.dirname(filename) + "/layout" + RHO_ERB_EXT
           @content = eval_compiled_file(layout, getBinding() ) if Rho::file_exist?(layout)
-	  else
+      else
           if @request["headers"]["Transition-Enabled"] == "true"
-			  @content = "<div>#{@content}</div>"
+            #puts "add 'div' in inst_render_index"
+            @content = "<div>#{@content}</div>"
           end
       end
           
@@ -126,6 +132,8 @@ module Rho
         rho_error( "render call in callback. Call WebView.navigate instead" ) 
         return ""
       end  
+
+      RhoProfiler.start_counter('ERB_RENDER')      
 
       options = {} if options.nil? or !options.is_a?(Hash)
       options = options.symbolize_keys
@@ -178,7 +186,12 @@ module Rho
       if xhr? and options[:use_layout_on_ajax] != true
         options[:layout] = false
         if options[:partial].nil? && @request["headers"]["Transition-Enabled"] == "true"
-          @content = "<div>#{@content}</div>"
+          #puts "add 'div' in render"
+          if !(@request["headers"]["Accept"] =~ /^\*\/\*/ || @request["headers"]["Accept"] =~ /^text\/html/)
+            @response["headers"]["Content-Type"] = @request["headers"]["Accept"].gsub(/\,.*/, '')
+          else
+            @content = "<div>#{@content}</div>"
+          end
         end
       elsif options[:layout].nil? or options[:layout] == true
         options[:layout] = self.class.get_layout_name
@@ -194,6 +207,9 @@ module Rho
       RhoController.start_geoview_notification()
       @back_action = options[:back] if options[:back]
       @rendered = true
+      
+      RhoProfiler.stop_counter('ERB_RENDER')      
+      
       @content
     end
 
@@ -231,37 +247,6 @@ module Rho
       options = {} if options.nil? or !options.is_a?(Hash)
       options = options.symbolize_keys
 
-      localclass = Class.new(::Rho::RhoController) do
-        require 'helpers/application_helper'
-        include ApplicationHelper
-        require 'helpers/browser_helper'
-        include BrowserHelper
-        
-        def initialize()
-        end
-        
-        def set_vars(obj=nil)
-          @vars = {}
-          if obj
-            obj.each do |key,value|
-              @vars[key.to_sym()] = value if key && key.length > 0
-            end
-          end
-        end
-        def method_missing(name, *args)
-            unless name == Fixnum
-              if name[name.length()-1] == '='
-                @vars[name.to_s.chop.to_sym()] = args[0]  
-              else
-                @vars[name]
-              end
-            end
-        end
-        def get_binding
-          binding
-        end
-      end
-
       splitpartial = options[:partial].split('/')
       partial_name = splitpartial[-1]
       model = nil
@@ -273,10 +258,33 @@ module Rho
        
       content = ""
       if options[:collection].nil?
-        locals = localclass.new()
+        locals = self.clone
 
-        self.instance_variables.each do |ivar|
-          locals.instance_variable_set(ivar,self.instance_variable_get(ivar))
+        class << locals
+
+          def set_vars(obj = nil)
+            @vars = {}
+            if obj
+              obj.each do |key,value|
+                @vars[key.to_sym()] = value if key && key.length > 0
+              end
+            end
+          end
+
+          def method_missing(name, *args)
+            unless name == Fixnum
+              if name[name.length()-1] == '='
+                @vars[name.to_s.chop.to_sym()] = args[0]
+              else
+                @vars[name]
+              end
+            end
+          end
+
+          def get_binding
+            binding
+          end
+
         end
         
         locals.set_vars(options[:locals])

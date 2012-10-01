@@ -47,7 +47,8 @@ class CProfiler
         virtual bool isGlobal()const{ return false;}
 
         virtual void start(){ m_startTime = common::CTimeInterval::getCurrentTime(); m_bWasStarted = true; }
-        virtual common::CTimeInterval stop(){
+        virtual common::CTimeInterval stop()
+        {
             if ( m_startTime.isEmpty() )
                 return m_startTime;
 
@@ -55,7 +56,15 @@ class CProfiler
             m_startTime = common::CTimeInterval();
             return res;
         }
-        virtual common::CTimeInterval flush(){ return stop(); }
+        virtual common::CTimeInterval flush()
+        { 
+            if ( m_startTime.isEmpty() )
+                return m_startTime;
+
+            common::CTimeInterval res = common::CTimeInterval::getCurrentTime()-m_startTime;
+            m_startTime = common::CTimeInterval::getCurrentTime();
+            return res;
+        }
 
         bool isWasStarted()const{ return m_bWasStarted;}
     };
@@ -67,13 +76,16 @@ class CProfiler
         CGlobalCounter() : CCounter(false){ }
         virtual bool isGlobal()const{ return true;}
 
-        virtual common::CTimeInterval stop(){
+        virtual common::CTimeInterval stop()
+        {
             m_sumGlobal += CCounter::stop();
 
             return m_sumGlobal;
         }
-        virtual common::CTimeInterval flush(){ 
-            common::CTimeInterval res = stop(); 
+        virtual common::CTimeInterval flush()
+        { 
+            m_sumGlobal += CCounter::flush();
+            common::CTimeInterval res = m_sumGlobal;
             m_sumGlobal = common::CTimeInterval();
             return res;
         }
@@ -86,6 +98,7 @@ public:
     ~CProfiler(){}
 
     void startCounter(const char* szCounterName);
+    void startCreatedCounter(const char* szCounterName);
     void stopCounter(const char* szCounterName, bool bDestroy =false);
     void createCounter(const char* szCounterName);
     void destroyCounter(const char* szCounterName);
@@ -106,11 +119,23 @@ void CProfiler::startCounter(const char* szCounterName)
         pCounter->start();
 }
 
+void CProfiler::startCreatedCounter(const char* szCounterName)
+{
+    CCounter* pCounter = m_mapCounters[szCounterName];
+    if ( !pCounter )
+        return;
+
+    if ( !pCounter->isWasStarted() )
+        LOG(INFO) + szCounterName + " : START";
+
+    pCounter->start();
+}
+
 void CProfiler::stopCounter(const char* szCounterName, bool bDestroy /*=false*/)
 {
     CCounter* pCounter = m_mapCounters[szCounterName];
     if ( !pCounter ){
-        LOG(ERROR) + szCounterName + " : Cannot find counter.";
+        //LOG(ERROR) + szCounterName + " : Cannot find counter.";
         return;
     }
 
@@ -156,6 +181,11 @@ extern "C"{
 void rhoStartProfilerCounter(const char* file, int line, const char* szCounterName )
 {
     g_oProfiler.startCounter(szCounterName);
+}
+
+void rhoStartProfilerCreatedCounter(const char* file, int line, const char* szCounterName )
+{
+    g_oProfiler.startCreatedCounter(szCounterName);
 }
 
 void rhoStopProfilerCounter(const char* file, int line, const char* szCounterName )

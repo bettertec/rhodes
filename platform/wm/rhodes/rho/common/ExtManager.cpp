@@ -64,7 +64,7 @@ CRhoExtData CExtManager::makeExtData()
     CRhoExtData oData;
     oData.m_hWnd = getMainWnd();
     oData.m_hInstance = rho_wmimpl_get_appinstance();
-#ifndef RHODES_EMULATOR
+#if !defined(OS_WINDOWS_DESKTOP)
     oData.m_hBrowserWnd = getAppWindow().getWebKitEngine()->GetHTMLWND();
 #endif
 
@@ -148,7 +148,7 @@ void CExtManager::navigate(const wchar_t* szUrl)
 
 bool CExtManager::existsJavascript(const wchar_t* szJSFunction)
 {
-#ifndef RHODES_EMULATOR
+#if !defined(OS_WINDOWS_DESKTOP)
     return getAppWindow().getWebKitEngine()->isExistJavascript(szJSFunction, rho_webview_active_tab());
 #else
     return true;
@@ -157,7 +157,7 @@ bool CExtManager::existsJavascript(const wchar_t* szJSFunction)
 
 void CExtManager::setBrowserGesturing(bool bEnableGesturing)
 {
-#ifndef RHODES_EMULATOR
+#if !defined(OS_WINDOWS_DESKTOP)
     getAppWindow().getWebKitEngine()->setBrowserGesturing(bEnableGesturing);
 #endif
 
@@ -165,7 +165,7 @@ void CExtManager::setBrowserGesturing(bool bEnableGesturing)
 
 void CExtManager::passSipPositionToEngine()
 {
-#ifndef RHODES_EMULATOR
+#if !defined(OS_WINDOWS_DESKTOP)
     getAppWindow().getWebKitEngine()->NotifyEngineOfSipPosition();
 #endif
 }
@@ -227,7 +227,7 @@ void CExtManager::resizeBrowserWindow(RECT rc)
 
 void CExtManager::zoomPage(float fZoom)
 {
-    ::PostMessage( getMainWnd(), WM_COMMAND, IDM_ZOOMPAGE, (LPARAM)fZoom );
+    ::PostMessage( getMainWnd(), WM_COMMAND, IDM_ZOOMPAGE, (LPARAM)new CRhoFloatData(fZoom) );
 }
 
 void CExtManager::zoomText(int nZoom)
@@ -237,7 +237,7 @@ void CExtManager::zoomText(int nZoom)
 
 int CExtManager::getTextZoom() //Enum (0 to 4)
 {
-#ifndef RHODES_EMULATOR
+#if !defined(OS_WINDOWS_DESKTOP)
     return getAppWindow().getWebKitEngine()->GetTextZoomOnTab(rho_webview_active_tab());
 #else
     return 2;
@@ -255,7 +255,7 @@ StringW CExtManager::getConfigPath()
 
 StringW CExtManager::getPageTitle(UINT iTab)
 {
-#ifndef RHODES_EMULATOR
+#if !defined(OS_WINDOWS_DESKTOP)
     wchar_t szBuf[1025];
     szBuf[0]=0;
     getAppWindow().getWebKitEngine()->GetTitleOnTab( szBuf, 1024, iTab );    
@@ -318,6 +318,17 @@ bool CExtManager::onWndMsg(MSG& oMsg)
     for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
     {
         if ( (it->second)->onWndMsg( oMsg ) )
+            return true;
+    }
+
+    return false;
+}
+
+bool CExtManager::onHTMLWndMsg(MSG& oMsg)
+{
+    for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
+    {
+        if ( (it->second)->onHTMLWndMsg( oMsg ) )
             return true;
     }
 
@@ -396,6 +407,18 @@ long CExtManager::OnNavigateError(const wchar_t* szUrlBeingNavigatedTo)
     return 0;
 }
 
+long CExtManager::OnLicenseError(const wchar_t* szUrlBeingNavigatedTo)
+{
+    for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
+    {
+        long lRes = (it->second)->OnLicenseError( szUrlBeingNavigatedTo, makeExtData() );
+        if ( lRes )
+            return lRes;
+    }
+
+    return 0;
+}
+
 void CExtManager::OnAppActivate(bool bActivate)
 {
     for ( HashtablePtr<String, IRhoExtension*>::iterator it = m_hashExtensions.begin(); it != m_hashExtensions.end(); ++it )
@@ -412,6 +435,14 @@ void CExtManager::OnWindowChanged(LPVOID lparam)
     }
 }
 
+DWORD CExtManager::getProcessId()
+{
+#if !defined(OS_WINDOWS_DESKTOP)
+    return getAppWindow().getWebKitEngine()->GetProcessID();    
+#else
+    return 0;
+#endif
+}
 } //namespace common
 } //namespace rho
 

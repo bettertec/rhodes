@@ -1,6 +1,7 @@
 package com.rhomobile.rhodes.webview;
 
 import com.rhomobile.rhodes.Logger;
+import com.rhomobile.rhodes.extmanager.IRhoWebView;
 import com.rhomobile.rhodes.osfunctionality.AndroidFunctionalityManager;
 import com.rhomobile.rhodes.util.PerformOnUiThread;
 
@@ -199,6 +200,16 @@ public class GoogleWebView implements IRhoWebView {
     @Override
     public String getEngineId() {
         return "WEBKIT/GOOGLE/" + Build.VERSION.RELEASE;
+    }
+
+    @Override
+    public void onPause() {
+	AndroidFunctionalityManager.getAndroidFunctionality().pauseWebView(mWebView,true);
+    }
+
+    @Override
+    public void onResume() {
+	AndroidFunctionalityManager.getAndroidFunctionality().pauseWebView(mWebView,false);
     }
 }
 

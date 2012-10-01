@@ -219,6 +219,14 @@ bool CMainWindow::init(IMainWindowCallback* callback, const wchar_t* title)
         ((QtMainWindow*)qtMainWindow), SLOT(fullscreenCommand(int)) );
     QObject::connect(this, SIGNAL(doSetCookie(const char*, const char*)),
         ((QtMainWindow*)qtMainWindow), SLOT(setCookie(const char*, const char*)) );
+    QObject::connect(this, SIGNAL(doSetFrame(int,int,int,int)),
+        ((QtMainWindow*)qtMainWindow), SLOT(setFrame(int,int,int,int)) );
+    QObject::connect(this, SIGNAL(doSetPosition(int,int)),
+        ((QtMainWindow*)qtMainWindow), SLOT(setPosition(int,int)) );
+    QObject::connect(this, SIGNAL(doSetSize(int,int)),
+        ((QtMainWindow*)qtMainWindow), SLOT(setSize(int,int)) );
+    QObject::connect(this, SIGNAL(doLockSize(int)),
+        ((QtMainWindow*)qtMainWindow), SLOT(lockSize(int)) );
     return true;
 }
 
@@ -633,6 +641,7 @@ void CMainWindow::menuAddAction(const char* label, int item)
     ((QtMainWindow*)qtMainWindow)->menuAddAction(QString(label), item);
 }
 
+// Handlers
 void CMainWindow::onActivate(int active)
 {
     rho_rhodesapp_callAppActiveCallback(active);
@@ -724,4 +733,24 @@ void CMainWindow::setCookie(const char* url, const char* cookie)
 void CMainWindow::bringToFront()
 {
     emit doBringToFront();
+}
+
+void CMainWindow::setFrame(int x, int y, int width, int height)
+{
+    emit doSetFrame(x, y, width, height);
+}
+
+void CMainWindow::setPosition(int x, int y)
+{
+    emit doSetPosition(x, y);
+}
+
+void CMainWindow::setSize(int width, int height)
+{
+    emit doSetSize(width, height);
+}
+
+void CMainWindow::lockSize(int locked)
+{
+    emit doLockSize(locked);
 }

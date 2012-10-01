@@ -31,9 +31,15 @@
 #include "common/RhoConf.h"
 #include "logging/RhoLog.h"
 #include "common/app_build_capabilities.h"
+#include "common/RhoFilePath.h"
+#include "common/RhoFile.h"
+#include "unzip/zip.h"
 
 #undef DEFAULT_LOGCATEGORY
 #define DEFAULT_LOGCATEGORY "RhoSystem"
+
+using namespace rho;
+using namespace rho::common;
 
 extern "C"
 {
@@ -98,10 +104,7 @@ VALUE rho_sys_get_property(char* szPropName)
 
 	if (strcasecmp("device_id",szPropName) == 0) 
     {
-        rho::String strDeviceID = "";
-        if ( rho::sync::CClientRegister::getInstance() )
-            strDeviceID = rho::sync::CClientRegister::getInstance()->getDevicePin();
-
+        rho::String strDeviceID = rho::sync::CClientRegister::Get()->getDevicePin();
         return rho_ruby_create_string(strDeviceID.c_str());
     }
 
@@ -152,9 +155,18 @@ VALUE rho_sys_get_property(char* szPropName)
     return rho_ruby_get_NIL();
 }
 
-void rho_sys_set_push_notification(const char *url, const char* params)
+void rho_sys_set_push_notification(const char *url, const char* params, const char* types)
 {
-    RHODESAPP().setPushNotification(url, params);
+    String strTypes = types ? types : String();
+    if ( strTypes.length() == 0 )
+        strTypes = RHOCONF().isExist("push_options") ? RHOCONF().getString("push_options") : String("legacy");
+
+    String item;
+    String::size_type pos = 0;
+
+    while (String_getline(strTypes, item, pos, ';')) {
+        RHODESAPP().setPushNotification(url, params, item);
+    }
 }
 
 void rho_sys_set_screen_rotation_notification(const char *url, const char* params)
@@ -181,7 +193,7 @@ int rho_sys_set_sleeping(int sleeping)
 
 const char* rho_sys_get_start_params() 
 {
-    return rho::common::CRhodesApp::getStartParameters().c_str();
+    return CRhodesApp::getStartParameters().c_str();
 }
 
 void rho_sys_start_timer( int interval, const char *url, const char* params)
@@ -194,5 +206,85 @@ void rho_sys_stop_timer( const char *url )
 {
     RHODESAPP().getTimer().stopTimer(url);
 }
+
+void zip_iter(const char* szVal, void* par)
+{
+    rho::Vector<rho::String>& ar = *((rho::Vector<rho::String>*)(par));
+    ar.addElement(szVal);
+}
+	
+int rho_sys_zip_files_with_path_array_ptr(const char* szZipFilePath, const char *base_path, void* ptrFilesArray, const char* psw);
+
+	
+int rho_sys_zip_files(const char* szZipFilePath, const char *base_path, VALUE valToZipPaths, const char* psw)
+{
+	rho::Vector<rho::String> arFiles;
+    rho_ruby_enum_strary(valToZipPaths, zip_iter, &arFiles);
+	return rho_sys_zip_files_with_path_array_ptr(szZipFilePath,base_path,&arFiles,psw);
+}
+
+int rho_sys_zip_file(const char* szZipFilePath, const char* szToZipPath, const char* psw)
+{
+#if defined(UNICODE) && defined(WIN32)
+    rho::StringW strZipFilePathW;
+    convertToStringW(szZipFilePath, strZipFilePathW);
+
+    CFilePath oPath(szToZipPath);
+    rho::StringW strFileNameW;
+    convertToStringW(oPath.getBaseName(), strFileNameW);
+
+    rho::StringW strToZipPathW;
+    convertToStringW(szToZipPath, strToZipPathW);
+
+    HZIP hz = CreateZip(strZipFilePathW.c_str(), psw);
+    if ( !hz )
+        return -1;
+
+    ZRESULT res;
+    res = ZipAdd( hz, strFileNameW.c_str(), strToZipPathW.c_str() );
+
+    res = CloseZip(hz);
+
+    return res;
+#else
+
+    HZIP hz = CreateZip(szZipFilePath, psw);
+    if ( !hz )
+        return -1;
+
+    CFilePath oPath(szToZipPath);
+
+    ZRESULT res = ZipAdd( hz, oPath.getBaseName(), szToZipPath );
+
+    res = CloseZip(hz);
+
+    return res;
+
+#endif
+
+    return 0;
+}
+
+#if !defined(RHODES_EMULATOR) && !defined(OS_WINDOWS_DESKTOP)
+void rho_sys_set_window_frame(int x0, int y0, int width, int height)
+{
+    LOG(INFO) + "System.set_window_frame is unsupported on current platform.";
+}
+
+void rho_sys_set_window_position(int x0, int y0)
+{
+    LOG(INFO) + "System.set_window_position is unsupported on current platform.";
+}
+
+void rho_sys_set_window_size(int width, int height)
+{
+    LOG(INFO) + "System.set_window_size is unsupported on current platform.";
+}
+
+void rho_sys_lock_window_size(int locked)
+{
+    LOG(INFO) + "System.lock_window_size is unsupported on current platform.";
+}
+#endif
 
 } //extern "C"

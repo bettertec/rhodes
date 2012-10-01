@@ -1,8 +1,19 @@
+## 3.4.2
+* iPhone: support iOS 6 and XCode 4.5
+* Fix several Windows Phone 7 issues
+* Add System.zip_file and System.zip_files methods to iPhone, Android and Windows
+* Support zlib library extension for iPhone, Android and Windows
+* Support openssl, digest-sha2 and ezcrypto libraries for iPhone, Android and Windows
+* Fix Blackberry 4.6 build
+* Fix several issues in RhoConnect client related to bulk and blob synchronization
+
 ## 3.3.3
 * Support freezed models (FixedSchema and PropertyBag)
 * Detect available network types
 * iPhone: support Xcode 4.3
-* Fix Windows Mobile issues
+* Support JQueryMobile on Windows Phone 7
+* Fix several RhoConnect Client issues
+* The following features become part of RhoElements v2: database encryption, Windows Mobile and Windows CE support, Barcode, NFC and Inline Signature Capture
 
 ## 3.3.2
 * iPhone: fix AppStore sumbit issue. Now all files stored in Private Documents, only database and user files in Documents 

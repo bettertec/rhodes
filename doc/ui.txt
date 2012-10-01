@@ -100,7 +100,7 @@ Rhodes 2.0+ includes an improved [CSS Framework](css-framework) which takes adva
 To implement advanced UI for your Rhodes View you may consider using such JavaScript UI frameworks as [Sencha](http://www.sencha.com/). Place one of these libraries in public/js folder of your application, load it in your [layout.erb](#layout), and you are ready to go.
 [Jquery Mobile](http://jquerymobile.com/) is supported out of the box.
 
-Rhodes support for [jQTouch library](http://jqtouch.com/) has been dropped, here you can find instructions on [how to transit your legacy Rhodes application fom jQTouch to jQuery Mobile](jqt-jqm-transition).
+Rhodes support for [jQTouch library](http://jqtouch.com/) has been dropped, here you can find instructions on [how to transit your legacy Rhodes application from jQTouch to jQuery Mobile](jqt-jqm-transition).
 
 ### jQuery Mobile modifications
 
@@ -169,6 +169,56 @@ In case you have jQueryMobile rendering broken on Windows Phone 7.0 you need to 
     <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 
 It should fix jQueryMobile rendering problems on Windows Phone 7.0 platform.
+
+#### White page flickering while transition
+It may happen if controller action method doesn't return any rendered value but performs [WebView.navigate(someUrl)](#control-webview-from-controller-actions) call instead.
+It is important to avoid using [WebView.navigate](#control-webview-from-controller-actions) in action methods because it is intended to be used in callback methods asynchronously.
+
+#### How to make an AJAX call and update page elements
+When one need to update some information on the page without any transition an AJAX call may be performed this way:
+
+    :::html
+    <div data-role="page">
+
+      <div data-role="header" data-position="inline">
+        <h1>AJAX sample</h1>
+      </div>
+
+      <div data-role="content">
+        <ul data-role="listview">
+          <li><p>To reset result just reload the page..</p></li>
+          <li>
+            <a href="#"
+               onclick="$.get('<%= url_for :action => :get_json %>').success(function(data){showResult(data)}); return false;">
+                    Read JSON object via AJAX call
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div>A = <span id="result_a"></span></div>
+      <div>B = <span id="result_b"></span></div>
+      <div>C = <span id="result_c"></span></div>
+
+    </div>
+
+To handle AJAX request a controller action method can return JSON object this way:
+
+    ::::ruby
+    def get_json
+      render :string => '{"a": 1, "b": 2, "c": 3}'
+    end
+
+**NOTE: It is very important to don't use [WebView.execute_js](#control-webview-from-controller-actions) method to update some page elements.
+See next section for details.
+
+#### Improper using of WebView.execute_js method
+At the moment for most of mobile platforms it has been implemented via redirection to URL with 'javascript:' schema.
+
+In case it used in some AJAX call handler method in the controller it may lead to the situation where *success* javascript handler will never be executed.
+
+It may happen because at the moment of *success* handler should be executed an URL of the page already has been changed. It means no any handlers anymore from the previous page which are still valid.
+
 
 ## Loading screen
 
@@ -254,6 +304,8 @@ Load from 'partials' folder:
 	
 ## Control WebView from controller actions
 It is possible to call on the WebView (browser) directly from your controllers. This API is recommended for use from callbacks, such as sync callback or camera callbacks.
+**NOTE: WebView do not support opening internet URLs required authentification. Use AsyncHTTP/AsyncHTTPS API for access to URL required authentification..
+
 
 Force WebView refresh current page
 	:::ruby
@@ -270,6 +322,8 @@ Force WebView to navigate to provided location (url)
 WebView.navigate supports an optional index parameter (defaults to 0, useful for tabbed applications)
 	:::ruby
 	WebView.navigate(url, index)
+
+**NOTE: See [Important notes](#javascript-frameworks) section for details on possible issues with improper use of this method.
 
 Force WebView to navigate to previous page using Browser back
 	:::ruby
@@ -299,6 +353,7 @@ The same as above but for specified tab (if tab bar present)
 	#call method test on the tab page 
 	WebView.execute_js("test();", index) 
 
+**NOTE: See [Important notes](#javascript-frameworks) section for details on possible issues with improper use of this method.
 
 Returns index of @tabs array for the currently selected tab
 	:::ruby
@@ -360,6 +415,11 @@ This will create a default menu with the following items (in top-down order):
 
 All of these menu items with the exception of "View Accounts" call a reserved menu item.  The "View Accounts" item will navigate to the path specified by the hash value, in this case /app/Account.
 
+To disable the Rhodes default menu, use an empty parameter list, as below.
+
+	:::ruby
+	@default_menu = {}
+
 ### Controller Action Menu
 To change the menu for a specific action (in controller.rb):
 
@@ -399,6 +459,8 @@ The following is the default Rhodes menu if none is provided in application.rb:
 Here is list of allowed values for actions for user defined menus, toolbars and tabbars:
 
 * :back - do back navigation using web view history or application's back url
+**NOTE: Android: when press Back on application Home page, application will go to background
+
 * :forward - do forward navigation
 * :home - navigate to configured start_path
 * :options - navigate to configured options_path
@@ -702,7 +764,7 @@ Set the iPhone badge to Tab (only on iOS devices).
 	# set badge '12' to tab 1
 	Rho::NativeTabbar.set_tab_badge( 1, '12')
 
-Rho::NativeTabbar.create() createa a native tab bar UI element and activates its first tab. If you want to see another tab, call Rho::NativeTabbar.switch_tab explicitly just after NativeBar.create, as in the following example.
+Rho::NativeTabbar.create() creates a native tab bar UI element and activates its first tab. If you want to see another tab, call Rho::NativeTabbar.switch_tab explicitly just after NativeBar.create, as in the following example.
 
 	:::ruby
 	require 'rho/rhotabbar'

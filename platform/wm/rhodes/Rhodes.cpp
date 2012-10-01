@@ -59,6 +59,7 @@ extern "C" HINSTANCE rho_wmimpl_get_appinstance();
 extern "C" int rho_sys_check_rollback_bundle(const char* szRhoPath);
 extern "C" void registerRhoExtension();
 extern "C" void rho_webview_navigate(const char* url, int index);
+extern "C" int rho_wm_is_web_app();
 
 #ifdef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
 class CEng;
@@ -177,7 +178,7 @@ public :
 	CMainWindow* GetMainWindowObject() { return &m_appWindow;}
 	CMainWindow& GetAppWindow() { return m_appWindow; }
 	HWND GetWebViewWindow(int index) {	return m_appWindow.getWebViewHWND(
-#ifdef RHODES_EMULATOR
+#if defined(OS_WINDOWS_DESKTOP)
             index
 #endif
         );
@@ -197,7 +198,7 @@ HINSTANCE CRhodesModule::m_hInstance;
 CRhodesModule _AtlModule;
 bool g_restartOnExit = false;
 
-#ifndef RHODES_EMULATOR
+#if !defined(OS_WINDOWS_DESKTOP)
 rho::IBrowserEngine* rho_wmimpl_createBrowserEngine(HWND hwndParent)
 {
 #ifdef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
@@ -206,7 +207,7 @@ rho::IBrowserEngine* rho_wmimpl_createBrowserEngine(HWND hwndParent)
     return new CIEBrowserEngine(hwndParent, rho_wmimpl_get_appinstance());
 #endif //APP_BUILD_CAPABILITY_WEBKIT_BROWSER
 }
-#endif //RHODES_EMULATOR
+#endif //!OS_WINDOWS_DESKTOP
 
 bool CRhodesModule::ParseCommandLine(LPCTSTR lpCmdLine, HRESULT* pnRetCode ) throw( )
 {
@@ -372,6 +373,7 @@ extern "C" void rho_sys_impl_exit_with_errormessage(const char* szTitle, const c
 
 extern "C" void rho_scanner_TEST(HWND hwnd);
 extern "C" void rho_scanner_TEST2();
+extern "C" int rho_wm_impl_CheckLicense();
 
 // This method is called immediately before entering the message loop.
 // It contains initialization code for the application.
@@ -388,7 +390,7 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
     }
     // Note: In this sample, we don't respond differently to different hr success codes.
 
-#ifndef RHODES_EMULATOR
+#if !defined(OS_WINDOWS_DESKTOP)
     // Allow only one instance of the application.
     // the "| 0x01" activates the correct owned window of the previous instance's main window
 	HWND hWnd = NULL;
@@ -451,18 +453,26 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
     RHOSIMCONF().loadFromFile();
     if ( m_strRhodesPath.length() > 0 )
         RHOSIMCONF().setString("rhodes_path", m_strRhodesPath, false );
-    RHOCONF().setString( "rhosim_platform", RHOSIMCONF().getString( "platform"), false);
-    RHOCONF().setString( "app_version", RHOSIMCONF().getString( "app_version"), false);
-    RHOSIMCONF().setString( "ext_path", RHOSIMCONF().getString( "ext_path") + CFilePath::join( m_strRhodesPath, "/lib/extensions/debugger;"), false);
-    RHOSIMCONF().setString( "ext_path", RHOSIMCONF().getString( "ext_path") + CFilePath::join( m_strRhodesPath, "/lib/extensions/uri;"), false);
-    RHOSIMCONF().setString( "ext_path", RHOSIMCONF().getString( "ext_path") + CFilePath::join( m_strRhodesPath, "/lib/extensions/timeout;"), false);
-    RHOSIMCONF().setString( "ext_path", RHOSIMCONF().getString( "ext_path") + CFilePath::join( m_strRhodesPath, "/lib/extensions/digest;"), false);
+    RHOCONF().setString("rhosim_platform", RHOSIMCONF().getString("platform"), false);
+    RHOCONF().setString("app_version", RHOSIMCONF().getString("app_version"), false);
+	String start_path = RHOSIMCONF().getString("start_path");
+    if ( start_path.length() > 0 )
+	    RHOCONF().setString("start_path", start_path, false);
+    RHOSIMCONF().setString("ext_path", RHOSIMCONF().getString("ext_path") + CFilePath::join( m_strRhodesPath, "/lib/extensions/debugger;"), false);
+    RHOSIMCONF().setString("ext_path", RHOSIMCONF().getString("ext_path") + CFilePath::join( m_strRhodesPath, "/lib/extensions/uri;"), false);
+    RHOSIMCONF().setString("ext_path", RHOSIMCONF().getString("ext_path") + CFilePath::join( m_strRhodesPath, "/lib/extensions/timeout;"), false);
+    RHOSIMCONF().setString("ext_path", RHOSIMCONF().getString("ext_path") + CFilePath::join( m_strRhodesPath, "/lib/extensions/digest;"), false);
+    RHOSIMCONF().setString("ext_path", RHOSIMCONF().getString("ext_path") + CFilePath::join( m_strRhodesPath, "/lib/extensions/openssl;"), false);
 #endif
 
     if ( !rho_rhodesapp_canstartapp(g_strCmdLine.c_str(), " /-,") )
     {
+#ifdef OS_WINDOWS_DESKTOP
+	    ::MessageBoxW(0, L"This is hidden app and can be started only with security key.", L"Security Token Verification Failed", MB_ICONERROR | MB_OK);
+#endif
 		LOG(INFO) + "This is hidden app and can be started only with security key.";
-		//return S_FALSE;
+		if (RHOCONF().getString("invalid_security_token_start_path").length() <= 0)
+			return S_FALSE;
     }
 
 	LOG(INFO) + "Rhodes started";
@@ -537,13 +547,24 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
     dwStyle |= WS_OVERLAPPEDWINDOW;
 #endif
     // Create the main application window
+#if defined(OS_WINDOWS_DESKTOP)
 #ifdef RHODES_EMULATOR
-    m_appWindow.Initialize(convertToStringW(RHOSIMCONF().getString("app_name")).c_str());
+    StringW windowTitle = convertToStringW(RHOSIMCONF().getString("app_name"));
+#else
+    StringW windowTitle = convertToStringW(RHODESAPP().getAppTitle());
+#endif
+    m_appWindow.Initialize(windowTitle.c_str());
     if (NULL == m_appWindow.m_hWnd)
     {
         return S_FALSE;
     }
     m_appWindow.ShowWindow(nShowCmd);
+
+#ifndef RHODES_EMULATOR
+    int nRes = rho_wm_impl_CheckLicense();
+    if ( !nRes )
+        ::MessageBoxW(0, L"Please provide RhoElements license key.", L"Motorola License", MB_ICONERROR | MB_OK);
+#endif
 
 #else
     String strTitle = RHODESAPP().getAppTitle();
@@ -571,26 +592,22 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
     m_appWindow.initBrowserWindow();
 #endif
 
-    bool bRE1App = false;
-#if defined(APP_BUILD_CAPABILITY_SHARED_RUNTIME)
-    if (!rho_wmimpl_get_is_version2())
-        bRE1App = true;
-#endif
-
-    if (bRE1App)
-    {
-#if defined(APP_BUILD_CAPABILITY_MOTOROLA)
+    if (rho_wm_is_web_app())
+    {				
+		// This code is moved to rho::CRhoWKBrowserEngine::ProcessOnTopMostWnd()
+/*#if defined(APP_BUILD_CAPABILITY_MOTOROLA)
         registerRhoExtension();
 #endif
 	    m_appWindow.Navigate2(_T("about:blank")
-#ifdef RHODES_EMULATOR
+#if defined(OS_WINDOWS_DESKTOP)
             , -1
 #endif
         );
         
-        rho_webview_navigate( RHOCONF().getString("start_path").c_str(), 0 );
+        rho_webview_navigate( RHOCONF().getString("start_path").c_str(), 0 );*/
+
 /*    	m_appWindow.Navigate2( convertToStringW( RHOCONF().getString("start_path") ).c_str()
-#ifdef RHODES_EMULATOR
+#if defined(OS_WINDOWS_DESKTOP)
             , -1
 #endif
         );*/
@@ -600,11 +617,11 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
         RHODESAPP().startApp();
 
         // Navigate to the "loading..." page
-	    m_appWindow.Navigate2(_T("about:blank")
-    #ifdef RHODES_EMULATOR
+	    /*m_appWindow.Navigate2(_T("about:blank")
+    #if defined(OS_WINDOWS_DESKTOP)
             , -1
     #endif
-        );
+        );*/
     }
     // Show the main application window
     //m_appWindow.ShowWindow(nShowCmd);
@@ -647,15 +664,36 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
 		&g_hNotifyCell);
 
 #elif !defined( OS_PLATFORM_MOTCE )
-	rho_clientregister_create("win32_client");
+    if (RHOCONF().getString("test_push_client").length() > 0 ) 
+	    rho_clientregister_create(RHOCONF().getString("test_push_client").c_str());//"win32_client");
 #endif
 
     return S_OK;
 }
 
+extern "C" int rho_wm_is_web_app()
+{
+    bool bRE1App = false;
+#if defined(APP_BUILD_CAPABILITY_SHARED_RUNTIME)
+    if (!rho_wmimpl_get_is_version2())
+        bRE1App = true;
+#endif
+
+    return bRE1App; 
+}
+
+extern "C" void rho_wm_registerRhoExtension()
+{
+    //Initialize RhoElements Extension
+#if defined(APP_BUILD_CAPABILITY_MOTOROLA)
+    registerRhoExtension();
+#endif
+}
+
+
 void CRhodesModule::RunMessageLoop( ) throw( )
 {
-#ifdef RHODES_EMULATOR
+#if defined(OS_WINDOWS_DESKTOP)
     m_appWindow.MessageLoop();
 #else
     m_appWindow.getWebKitEngine()->RunMessageLoop(m_appWindow);
@@ -673,11 +711,11 @@ void CRhodesModule::RunMessageLoop( ) throw( )
 #endif
     rho_ringtone_manager_stop();
 
-#if !defined(_WIN32_WCE)
-    rho_clientregister_destroy();
-#endif
+//#if !defined(_WIN32_WCE)
+//    rho::sync::CClientRegister::Destroy();
+//#endif
 
-#ifdef RHODES_EMULATOR
+#if defined(OS_WINDOWS_DESKTOP)
     m_appWindow.DestroyUi();
 #endif
 
@@ -685,7 +723,7 @@ void CRhodesModule::RunMessageLoop( ) throw( )
 
     net::CNetRequestImpl::deinitConnection();
 
-#ifndef RHODES_EMULATOR
+#if !defined(OS_WINDOWS_DESKTOP)
 //	ReleaseMutex(m_hMutex);
 #endif
 }
@@ -772,18 +810,20 @@ void rho_platform_restart_application()
     rho_wmsys_run_app(module, (g_strCmdLine + " -restarting").c_str());
 }
 
-typedef void (WINAPI *PCL)(HWND);
 typedef bool (WINAPI *PCSD)();
 
 #ifdef APP_BUILD_CAPABILITY_MOTOROLA
 extern "C" void rho_wm_impl_CheckLicenseWithBarcode(HWND hParent);
 #endif
 
-extern "C" void rho_wm_impl_CheckLicense()
+typedef LPCWSTR (WINAPI *PCL)(HWND, LPCWSTR, LPCWSTR, LPCWSTR);
+typedef int (WINAPI *FUNC_IsLicenseOK)();
+
+extern "C" int rho_wm_impl_CheckLicense()
 {
-#ifdef OS_WINDOWS_DESKTOP
-    return;
-#else
+//#ifdef OS_WINDOWS_DESKTOP
+//    return;
+//#else
 
 #ifdef APP_BUILD_CAPABILITY_MOTOROLA
     rho_wm_impl_CheckLicenseWithBarcode(getMainWnd());
@@ -791,13 +831,40 @@ extern "C" void rho_wm_impl_CheckLicense()
     HINSTANCE hLicenseInstance = LoadLibrary(L"license_rc.dll");
     if(hLicenseInstance)
     {
+#ifdef OS_WINDOWS_DESKTOP
+        PCL pCheckLicense = (PCL) ::GetProcAddress(hLicenseInstance, "_CheckLicense@16");
+        FUNC_IsLicenseOK pIsOK = (FUNC_IsLicenseOK) ::GetProcAddress(hLicenseInstance, "_IsLicenseOK@0");
+#else
         PCL pCheckLicense = (PCL) GetProcAddress(hLicenseInstance, L"CheckLicense");
-        if(pCheckLicense) 
-	        pCheckLicense(getMainWnd());
+        FUNC_IsLicenseOK pIsOK = (FUNC_IsLicenseOK) GetProcAddress(hLicenseInstance, L"IsLicenseOK");
+#endif
+        LPCWSTR szLogText = 0;
+        if(pCheckLicense)
+        {
+            StringW strLicenseW;
+            common::convertToStringW( get_app_build_config_item("motorola_license"), strLicenseW );
+
+            StringW strCompanyW;
+            common::convertToStringW( get_app_build_config_item("motorola_license_company"), strCompanyW );
+
+            StringW strAppNameW;
+#if defined(APP_BUILD_CAPABILITY_SHARED_RUNTIME)
+            strAppNameW = RHODESAPP().getAppNameW();
+#else
+            common::convertToStringW( get_app_build_config_item("name"), strAppNameW );
+#endif
+            szLogText = pCheckLicense( getMainWnd(), strAppNameW.c_str(), strLicenseW.c_str(), strCompanyW.c_str() );
+        }
+
+        if ( szLogText && *szLogText )
+            LOGC(INFO, "License") + szLogText;
+
+        return pIsOK ? pIsOK() : 0;
     }
 #endif
 
-#endif
+    return 0;
+//#endif
 }
 
 extern "C" int rho_wm_impl_CheckSymbolDevice()
@@ -907,15 +974,15 @@ extern "C" void rho_appmanager_load( void* httpContext, char* szQuery)
 {
 }
 
-extern "C" void Init_openssl(void)
-{
-}
+//extern "C" void Init_openssl(void)
+//{
+//}
 
 //extern "C" void Init_digest(void)
 //{
 //}
 
-#ifndef RHODES_EMULATOR
+#if !defined(OS_WINDOWS_DESKTOP)
 extern "C" void Init_fcntl(void)
 {
 }

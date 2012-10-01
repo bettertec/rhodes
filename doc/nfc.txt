@@ -2,6 +2,8 @@
 
 The Near Field Communications (NFC) API allows you to use NFC functionality in your Rhodes application. With the NFC API, you can check to see if the mobile device supports NFC, and if so, have it listen for an NFC tag and register a callback if it finds one. You can also have your device push out an NFC tag. 
 
+**NOTE: As of Rhodes version 3.3.3, the NFC API is removed from Rhodes. This feature is only supported in Motorola RhoMobile Suite. If you wish to use this feature, you will need to [upgrade to RhoMobile Suite](/rhomobile-install). Your application's build.yml will also need to be modified to [indicate the application type is 'Rhoelements']( /rhoelements/rhoelements2-native#enabling-motorola-device-capabilities). Additionally, a [RhoElements license](/rhoelements/licensing) is required.**
+
 Example Code
 -----------
 Example code for NFC is located here.
@@ -23,11 +25,10 @@ To create a Rhodes NFC application, you generate a Rhodes application, then you 
 
 ## Setting up build.yml
 
-NFC is currently supported only on the Android platform, OS version 2.3.3 or later. You must edit the Android section in your build.yml file for NFC. The version must be 2.3.3 or later, and NFC must be in the extension list.
+NFC is supported only on Android devices with Android 2.3.3 or later. You must edit the Android section in your build.yml file for NFC: 'nfc' extension must be in the extension list.
 
 	:::text
 	android:
-	  version: 2.3.3
 	  extensions:
 	  - nfc
 
@@ -55,7 +56,7 @@ You can use the method NFCManager.is_supported to see if NFC is supported on you
 
 If your method is going to read or write NFC tags, it also needs to set the callback methods that process the NFC tag. The NFCManager.set_nfc_tech_callback is for reading and writing NFC tags (when the Android ACTION_TECH_DISCOVERED event is processed). NFCManager.set_nfc_callback is for peer-to-peer communication (when the Android ACTION_NDEF_DISCOVERED or ACTION_TAG_DISCOVERED events are processed).
 
-For NFCManager.set_nfc_tech_callback (the Android ACTION_TECH_DISCOVERED event), set up your list of techs in a resource file : [Rhodes ROOT]/lib/extensions/nfc/ext/nfc/platform/android/additional_files/res/xml/filter_nfc.xml. Refet to the Android documentation - [Android ACTION_TECH_DISCOVERED description](http://developer.android.com/reference/android/nfc/NfcAdapter.html#ACTION_TECH_DISCOVERED). Here is an example.
+For NFCManager.set_nfc_tech_callback (the Android ACTION_TECH_DISCOVERED event), set up your list of techs in a resource file : [Rhodes ROOT]/lib/extensions/nfc/ext/nfc/platform/android/additional_files/res/xml/filter_nfc.xml. Refer to the Android documentation - [Android ACTION_TECH_DISCOVERED description](http://developer.android.com/reference/android/nfc/NfcAdapter.html#ACTION_TECH_DISCOVERED). Here is an example.
 
 	:::xml
 	<?xml version="1.0" encoding="utf-8"?>
@@ -1282,7 +1283,7 @@ None.
 
 ### NFCManager.enable
 
-The enable method enables NFC event processing on your mobile device. Your nfc and nfc_tech callback methods are executed only if Rhodes NFC is enabled. On Android, when Rhodes NFC is enabled and the application activity is in the foreground, the activity gets high priority for NFC events. Android will not show additional UI for the select Activity for Tag processing; the Rhodes applciation will processed the tag.
+The enable method enables NFC event processing on your mobile device. Your nfc and nfc_tech callback methods are executed only if Rhodes NFC is enabled. On Android, when Rhodes NFC is enabled and the application activity is in the foreground, the activity gets high priority for NFC events. Android will not show additional UI for the select Activity for Tag processing; the Rhodes application will process the tag.
 
 #### Returns
 

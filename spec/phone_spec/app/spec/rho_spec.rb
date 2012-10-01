@@ -23,13 +23,93 @@ require 'date'
 require 'time'
 
 describe "System" do
-   
+
    it "should test app_installed?" do
    	[1..1000].each do |i|
    			System::app_installed?("mythebesttestandroidapplication")
    	end
    end
-  
+
+if !defined?(RHO_WP7) && System.get_property('platform') != 'Blackberry'
+    it "should test zip/unzip file" do
+
+		dir_name = Rho::RhoApplication::get_app_path('DataTemp')
+		Dir.mkdir(dir_name) unless Dir.exists?(dir_name)
+
+        file_name = File.join(Rho::RhoApplication::get_app_path('DataTemp'), 'ziptest.txt')
+        file_name_zip = File.join(Rho::RhoApplication::get_app_path('DataTemp'), 'ziptest.zip')
+        
+        File.delete(file_name) if File.exists?(file_name)
+        File.exists?(file_name).should ==  false
+
+        File.delete(file_name_zip) if File.exists?(file_name_zip)
+        File.exists?(file_name_zip).should ==  false
+
+        write_data  = "this is zip rhodes test"
+        f = File.new(file_name, "wb")
+        f.write(write_data)
+        f.close
+
+        System.zip_file(file_name_zip, file_name)
+        File.exists?(file_name_zip).should == true
+        
+        File.delete(file_name) if File.exists?(file_name)
+        File.exists?(file_name).should ==  false
+
+        System.unzip_file(file_name_zip)
+        File.exists?(file_name).should == true
+    end    
+    
+    it "should test zip/unzip folder" do
+
+		dir_name1 = Rho::RhoApplication::get_app_path('DataTemp')
+		Dir.mkdir(dir_name1) unless Dir.exists?(dir_name1)
+		dir_name = File.join(dir_name1, 'ZipFolder')
+		Dir.mkdir(dir_name) unless Dir.exists?(dir_name)
+
+        file_name = File.join(Rho::RhoApplication::get_app_path('DataTemp/ZipFolder'), 'ziptest.txt')
+        file_name1 = File.join(Rho::RhoApplication::get_app_path('DataTemp/ZipFolder'), 'ziptest1.txt')
+        file_name_zip = File.join(Rho::RhoApplication::get_app_path('DataTemp'), 'zipfolder.zip')
+        
+        File.delete(file_name) if File.exists?(file_name)
+        File.exists?(file_name).should ==  false
+        File.delete(file_name1) if File.exists?(file_name1)
+        File.exists?(file_name1).should ==  false
+
+        File.delete(file_name_zip) if File.exists?(file_name_zip)
+        File.exists?(file_name_zip).should ==  false
+
+        write_data  = "this is zip rhodes test"
+        f = File.new(file_name, "wb")
+        f.write(write_data)
+        f.close
+
+        write_data  = "this is zip rhodes test2"
+        f = File.new(file_name1, "wb")
+        f.write(write_data)
+        f.close
+
+        files = [] #[dir_name]
+        files += Dir.glob(File.join(dir_name, "*") )
+        puts "files: #{files}"
+        System.zip_files(file_name_zip, dir_name1, files)
+        File.exists?(file_name_zip).should == true
+        
+        File.delete(file_name) if File.exists?(file_name)
+        File.exists?(file_name).should ==  false
+        File.delete(file_name1) if File.exists?(file_name1)
+        File.exists?(file_name1).should ==  false
+        Dir.delete(dir_name) if Dir.exists?(dir_name)
+        Dir.exists?(dir_name).should ==  false
+
+        System.unzip_file(file_name_zip)
+        Dir.exists?(dir_name).should == true
+        File.exists?(file_name).should == true
+        File.exists?(file_name1).should == true
+    end    
+    
+end
+
 end
 
 describe "RhoConfig" do
@@ -164,12 +244,10 @@ describe "RhoRuby" do
 
   it "should create octet string" do
     val = "\1\2\3\0\5\8\6\7\34\39" #octet numbers
-=begin    
-    val[3].should == "\x00"
-    val[8].should == "\x1C"
-    val[9].should == "\x03"
-    val[10].should == '9'
-=end          
+    #val[3].should == "\x00"
+    #val[8].should == "\x1C"
+    #val[9].should == "\x03"
+    #val[10].should == '9'
   end
 if !defined?(RHO_WP7)
   it "should support encoding" do
@@ -179,10 +257,8 @@ end
   
   it "should create hex string" do
     val = "\x21\x43"
-=begin        
-    val[0].should == "\x21"
-    val[1].should == "\x43"
-=end              
+    #val[0].should == "\x21"
+    #val[1].should == "\x43"
   end
 
   it "should base64 binary string" do

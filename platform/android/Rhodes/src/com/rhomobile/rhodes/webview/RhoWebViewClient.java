@@ -30,6 +30,7 @@ import com.rhomobile.rhodes.Logger;
 import com.rhomobile.rhodes.RhoConf;
 import com.rhomobile.rhodes.RhodesActivity;
 import com.rhomobile.rhodes.RhodesService;
+import com.rhomobile.rhodes.extmanager.IRhoExtension;
 import com.rhomobile.rhodes.extmanager.RhoExtManager;
 
 import android.graphics.Bitmap;
@@ -53,6 +54,8 @@ public class RhoWebViewClient extends WebViewClient
     public void onPageStarted(WebView view, String url, Bitmap favicon) {
         super.onPageStarted(view, url, favicon);
         
+        Logger.profStart("BROWSER_PAGE");
+        
         if (!RhoConf.getBool("disable_loading_indication"))
             RhodesActivity.safeGetInstance().getWindow().setFeatureInt(Window.FEATURE_PROGRESS, 0);
         else
@@ -63,6 +66,9 @@ public class RhoWebViewClient extends WebViewClient
     
     @Override
     public void onPageFinished(WebView view, String url) {
+        
+        Logger.profStop("BROWSER_PAGE");
+        
         // Set title
         String title = view.getTitle();
         RhodesActivity.safeGetInstance().setTitle(title);
@@ -75,17 +81,18 @@ public class RhoWebViewClient extends WebViewClient
     }
     
     @Override
-    public void onReceivedError(WebView view, int errorCode, String description, String failingUrl)
-    {
+    public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
         super.onReceivedError(view, errorCode, description, failingUrl);
         
-        RhoExtManager.getImplementationInstance().onLoadError(view);
+        Logger.profStop("BROWSER_PAGE");
         
         StringBuilder msg = new StringBuilder(failingUrl);
         msg.append(" failed: ");
         msg.append(errorCode);
         msg.append(" - " + description);
         Logger.E(TAG, msg.toString());
+
+        RhoExtManager.getImplementationInstance().onLoadError(view, IRhoExtension.LoadErrorReason.INTERNAL_ERROR);
     }
 
     @Override

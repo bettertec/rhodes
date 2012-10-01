@@ -42,6 +42,7 @@
 #include "rubyext/WebView.h"
 #include "rubyext/GeoLocation.h"
 #include "common/app_build_configs.h"
+#include "common/app_build_capabilities.h"
 #include "unzip/unzip.h"
 #include "common/Tokenizer.h"
 
@@ -311,10 +312,6 @@ void CAppCallbacksQueue::processCommand(IQueueCommand* pCmd)
 
     m_pInstance = new CRhodesApp(strRootPath, strUserPath, strRuntimePath);
 
-    String push_pin = RHOCONF().getString("push_pin");
-    if(!push_pin.empty())
-        rho::sync::CClientRegister::Create(push_pin.c_str());
-
     return (CRhodesApp*)m_pInstance;
 }
 
@@ -330,14 +327,15 @@ void CAppCallbacksQueue::processCommand(IQueueCommand* pCmd)
 }
 
 CRhodesApp::CRhodesApp(const String& strRootPath, const String& strUserPath, const String& strRuntimePath)
-    :CRhodesAppBase(strRootPath, strUserPath, strRuntimePath)
+    :CRhodesAppBase(strRootPath, strUserPath, strRuntimePath), 
+     m_appPushMgr(*this), m_networkStatusReceiver(m_mxNetworkStatus)
 {
     m_bExit = false;
     m_bDeactivationMode = false;
     m_bRestartServer = false;
-    m_bSendingLog = false;
     //m_activateCounter = 0;
     m_pExtManager = 0;
+	m_pNetworkStatusMonitor = 0;
 
     m_appCallbacksQueue = new CAppCallbacksQueue();
 
@@ -350,7 +348,7 @@ CRhodesApp::CRhodesApp(const String& strRootPath, const String& strUserPath, con
 
     initAppUrls();
 
-   	LOGCONF().initRemoteLog();
+    LOGCONF().initRemoteLog();
 
     initHttpServer();
 
@@ -395,6 +393,7 @@ void CRhodesApp::run()
 
     getExtManager().close();
     rubyext::CGeoLocation::Destroy();
+    sync::CClientRegister::Destroy();
     sync::CSyncThread::Destroy();
 
     net::CAsyncHttp::Destroy();
@@ -451,38 +450,6 @@ void CRhodesApp::stopApp()
     #endif
 
 //    net::CAsyncHttp::Destroy();
-}
-
-template <typename T>
-class CRhoCallInThread : public common::CRhoThread
-{
-public:
-    CRhoCallInThread(T* cb)
-        :CRhoThread(), m_cb(cb)
-    {
-        start(epNormal);
-    }
-
-private:
-    virtual void run()
-    {
-        m_cb->run(*this);
-    }
-
-    virtual void runObject()
-    {
-        common::CRhoThread::runObject();
-        delete this;
-    }
-
-private:
-    common::CAutoPtr<T> m_cb;
-};
-
-template <typename T>
-void rho_rhodesapp_call_in_thread(T *cb)
-{
-    new CRhoCallInThread<T>(cb);
 }
 
 class CRhoCallbackCall
@@ -571,7 +538,7 @@ void CRhodesApp::callUiDestroyedCallback()
         LOG(ERROR) + "UI destroy callback failed. Code: " + resp.getRespCode() + "; Error body: " + resp.getCharData();
     }
 }
-
+	
 void CRhodesApp::callAppActiveCallback(boolean bActive)
 {
     if ( m_bExit )
@@ -678,6 +645,7 @@ class CJsonResponse : public rho::ICallbackObject
 {
     String m_strJson;
 public:
+    CJsonResponse(const String& strJson) : m_strJson(strJson) { }
     CJsonResponse(const char* szJson) : m_strJson(szJson) { }
     virtual unsigned long getObjectValue()
     {
@@ -778,13 +746,13 @@ void CRhodesApp::callPopupCallback(String strCallbackUrl, const String &id, cons
 
 static void callback_syncdb(void *arg, String const &/*query*/ )
 {
-    rho_sync_doSyncAllSources(1,"");
+    rho_sync_doSyncAllSources(1,"",false);
     rho_http_sendresponse(arg, "");
 }
 
 static void callback_dosync(void *arg, String const &/*query*/ )
 {
-    rho_sync_doSyncAllSources(1,"");
+    rho_sync_doSyncAllSources(1,"",false);
     rho_http_sendresponse(arg, "ok");
 }
 
@@ -1242,20 +1210,20 @@ int CRhodesApp::determineFreeListeningPort()
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if ( sockfd < 0 )
     {
-        LOG(WARNING) + "Unable to open socket";
+        LOG(ERROR) + "Unable to open socket";
         noerrors = 0;
     }
     
     int disable = 0;
     if (noerrors && setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (const char*)&disable, sizeof(disable)) != 0)
     {
-        LOG(WARNING) + "Unable to set socket option";
+        LOG(ERROR) + "Unable to set socket option";
         noerrors = 0;
     }
 #if defined(OS_MACOSX)
     if (noerrors && setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, (const char *)&disable, sizeof(disable)) != 0)
     {
-        LOG(WARNING) + "Unable to set socket option";
+        LOG(ERROR) + "Unable to set socket option";
         noerrors = 0;
     }
 #endif
@@ -1277,8 +1245,10 @@ int CRhodesApp::determineFreeListeningPort()
         
         LOG(INFO) + "Trying to bind of " + listenPort + " port...";
 
-        if ( bind( sockfd, (struct sockaddr *) &serv_addr, sizeof( serv_addr ) ) != 0 )
+        int nBindRes = bind( sockfd, (struct sockaddr *) &serv_addr, sizeof( serv_addr ) );
+        if ( nBindRes != 0 )
         {
+            LOG(INFO) + "Bind of " + listenPort + " port is failed with code: " + nBindRes;
             if (listenPort != 0)
             {
                 // Fill serv_addr again but with dynamically selected port
@@ -1313,7 +1283,7 @@ int CRhodesApp::determineFreeListeningPort()
         
         if (getsockname( sockfd, (struct sockaddr *)&serv_addr, &length ) != 0)
         {
-            LOG(WARNING) + "Can not get socket info";
+            LOG(ERROR) + "Can not get socket info";
             nFreePort = 0;
         }
         else
@@ -1351,9 +1321,15 @@ void CRhodesApp::initAppUrls()
     m_strHomeUrl = "http://127.0.0.1:";
 #endif
     m_strHomeUrl += getFreeListeningPort();
+    m_strHomeUrlLocalHost = String("http://localhost:") + getFreeListeningPort();
 
+#ifndef RHODES_EMULATOR
     m_strLoadingPagePath = "file://" + getRhoRootPath() + "apps/app/loading.html";
 	m_strLoadingPngPath = getRhoRootPath() + "apps/app/loading.png";
+#else
+    m_strLoadingPagePath = "file://" + getRhoRootPath() + "app/loading.html";
+	m_strLoadingPngPath = getRhoRootPath() + "app/loading.png";
+#endif
 }
 
 void CRhodesApp::keepLastVisitedUrl(String strUrl)
@@ -1433,7 +1409,7 @@ void CRhodesApp::navigateBack()
 String CRhodesApp::getAppName()
 {
     String strAppName;
-#ifdef OS_WINCE
+#ifdef WINDOWS_PLATFORM
     String path = rho_native_rhopath();
     String_replace(path, '/', '\\');
 
@@ -1522,65 +1498,6 @@ void CRhodesApp::navigateToUrl( const String& strUrl)
     rho_webview_navigate(strUrl.c_str(), -1);
 }
 
-class CRhoSendLogCall
-{
-    String m_strCallback;
-public:
-    CRhoSendLogCall(const String& strCallback): m_strCallback(strCallback){}
-
-    void run(common::CRhoThread &)
-    {
-        String strDevicePin = rho::sync::CClientRegister::getInstance() ? rho::sync::CClientRegister::getInstance()->getDevicePin() : "";
-	    String strClientID = rho::sync::CSyncThread::getSyncEngine().readClientID();
-        
-        String strLogUrl = RHOCONF().getPath("logserver");
-        if ( strLogUrl.length() == 0 )
-            strLogUrl = RHOCONF().getPath("syncserver");
-        
-	    String strQuery = strLogUrl + "client_log?" +
-            "client_id=" + strClientID + "&device_pin=" + strDevicePin + "&log_name=" + RHOCONF().getString("logname");
-        
-        net::CMultipartItem oItem;
-        oItem.m_strFilePath = LOGCONF().getLogFilePath();
-        oItem.m_strContentType = "application/octet-stream";
-        
-        boolean bOldSaveToFile = LOGCONF().isLogToFile();
-        LOGCONF().setLogToFile(false);
-        NetRequest oNetRequest;
-        oNetRequest.setSslVerifyPeer(false);
-        
-        NetResponse resp = getNetRequest(&oNetRequest).pushMultipartData( strQuery, oItem, &(rho::sync::CSyncThread::getSyncEngine()), null );
-        LOGCONF().setLogToFile(bOldSaveToFile);
-        
-        boolean isOK = true;
-        
-        if ( !resp.isOK() )
-        {
-            LOG(ERROR) + "send_log failed : network error - " + resp.getRespCode() + "; Body - " + resp.getCharData();
-            isOK = false;
-        }
-
-        if (m_strCallback.length() > 0) 
-        {
-            const char* body = isOK ? "rho_callback=1&status=ok" : "rho_callback=1&status=error";
-
-            rho_net_request_with_data(RHODESAPP().canonicalizeRhoUrl(m_strCallback).c_str(), body);
-        }
-
-        RHODESAPP().setSendingLog(false);
-    }
-};
-
-boolean CRhodesApp::sendLog( const String& strCallbackUrl) 
-{
-    if ( m_bSendingLog )
-        return true;
-
-    m_bSendingLog = true;
-    rho_rhodesapp_call_in_thread( new CRhoSendLogCall(strCallbackUrl) );
-    return true;
-}
-
 String CRhodesApp::addCallbackObject(ICallbackObject* pCallbackObject, String strName)
 {
     int nIndex = -1;
@@ -1619,16 +1536,44 @@ unsigned long CRhodesApp::getCallbackObject(int nIndex)
     return valRes;
 }
 
-void CRhodesApp::setPushNotification(String strUrl, String strParams )
+void CRhodesApp::initPushClients()
 {
-    synchronized(m_mxPushCallback)
+    static bool first = true;
+    if(first)
     {
-        m_strPushCallback = canonicalizeRhoUrl(strUrl);
-        m_strPushCallbackParams = strParams;
+        first = false;
+        m_appPushMgr.initClients();
     }
 }
 
-boolean CRhodesApp::callPushCallback(String strData)
+void CRhodesApp::setPushNotification(const String& strUrl, const String& strParams, const String& strType )
+{
+    if(strType == "legacy")
+    {
+        synchronized(m_mxPushCallback)
+        {
+            m_strPushCallback = strUrl;
+            if (m_strPushCallback.length())
+                m_strPushCallback = canonicalizeRhoUrl(m_strPushCallback);
+
+            m_strPushCallbackParams = strParams;
+        }
+    }
+    else
+    {
+        String canonicalUrl;
+        if (strUrl.length())
+            canonicalUrl = canonicalizeRhoUrl(strUrl);
+
+        if(strType.length())
+            m_appPushMgr.setNotificationUrl(strType, canonicalUrl, strParams);
+        else
+            m_appPushMgr.setNotificationUrl(canonicalUrl, strParams);
+    }
+}
+
+// Deprecated
+boolean CRhodesApp::callPushCallback(const String& strData) const
 {
     synchronized(m_mxPushCallback)
     {
@@ -1650,6 +1595,41 @@ boolean CRhodesApp::callPushCallback(String strData)
     }
 
     return false;
+}
+
+boolean CRhodesApp::callPushCallbackWithJsonBody(const String& strUrl, const String& strData, const String& strParams)
+{
+    synchronized(m_mxPushCallback)
+    {
+        if (strUrl.length() == 0)
+            return false;
+
+        String strCanonicalUrl = canonicalizeRhoUrl(strUrl);
+
+        String strBody = addCallbackObject( new CJsonResponse( strData ), "__rho_inline" ) + "&rho_callback=1";
+        if (strParams.length() > 0)
+        {
+            strBody += "&";
+            strBody += strParams;
+        }
+
+        NetResponse resp = getNetRequest().pushData( strCanonicalUrl, strBody, null );
+        if (!resp.isOK())
+            LOG(ERROR) + "Push notification failed. Code: " + resp.getRespCode() + "; Error body: " + resp.getCharData();
+        else
+        {
+            const char* szData = resp.getCharData();
+            LOG(TRACE) + "Push callback resp data: " + (szData ? szData : "NULL");
+            return !(szData && strcmp(szData,"rho_push") == 0);
+        }
+    }
+
+    return false;
+}
+
+boolean CRhodesApp::callPushCallback(const String& strType, const String& strJson, const String& strData)
+{
+    return m_appPushMgr.callNotification(strType, strJson, strData);
 }
 
 void CRhodesApp::setScreenRotationNotification(String strUrl, String strParams)
@@ -1684,6 +1664,11 @@ void CRhodesApp::callScreenRotationCallback(int width, int height, int degrees)
 		
         if ( m_strScreenRotationCallbackParams.length() > 0 )
             strBody += "&" + m_strPushCallbackParams;
+		
+		String i = "calling Screen rotation notification: ";
+		i += m_strScreenRotationCallback;
+		RAWLOG_ERROR(i.c_str());
+
 			
 		NetResponse resp = getNetRequest().pushData( m_strScreenRotationCallback, strBody, null);
         if (!resp.isOK()) {
@@ -1724,7 +1709,7 @@ void CRhodesApp::loadUrl(String url)
         return;
     }else if ( strcasecmp(url.c_str(), "sync")==0 )
     {
-        rho_sync_doSyncAllSources(1,"");
+        rho_sync_doSyncAllSources(1,"",false);
         return;
     }
 
@@ -1742,6 +1727,98 @@ void CRhodesApp::notifyLocalServerStarted()
 {
     m_appCallbacksQueue->addQueueCommand(new CAppCallbacksQueue::Command(CAppCallbacksQueue::local_server_started));
 }
+	
+	
+	void CRhodesApp::setNetworkStatusNotify(const String& url, int poll_interval)
+	{
+		synchronized(m_mxNetworkStatus)
+		{
+			String s = url;
+			if (s.length() > 0) {
+				s = canonicalizeRhoUrl(url);
+			}
+			m_networkStatusReceiver.setCallbackUrl(s);
+			if ( m_pNetworkStatusMonitor != 0 )
+			{
+				if ( poll_interval <= 0 ) {
+					poll_interval = c_defaultNetworkStatusPollInterval;
+				}
+				m_pNetworkStatusMonitor->setPollInterval(poll_interval);
+			}
+		}
+	}
+	
+	void CRhodesApp::clearNetworkStatusNotify()
+	{
+		synchronized(m_mxNetworkStatus)
+		{
+			m_networkStatusReceiver.setCallbackUrl("");
+		}
+	}
+	
+	void CRhodesApp::setNetworkStatusMonitor( INetworkStatusMonitor* netMonitor )
+	{
+		synchronized(m_mxNetworkStatus)
+		{
+			m_pNetworkStatusMonitor = netMonitor;
+			if ( m_pNetworkStatusMonitor != 0)
+			{
+				m_pNetworkStatusMonitor->setNetworkStatusReceiver(&m_networkStatusReceiver);
+				m_pNetworkStatusMonitor->setPollInterval( c_defaultNetworkStatusPollInterval );
+			}
+		}
+	}
+	
+	
+	NetworkStatusReceiver::NetworkStatusReceiver( common::CMutex& mxAccess ) :
+		m_prevStatus( networkStatusUnknown ),
+		m_mxAccess(mxAccess)
+	{
+	}
+	
+	
+	void NetworkStatusReceiver::onNetworkStatusChanged( enNetworkStatus currentStatus )
+	{
+		if ( !rho_ruby_is_started() )
+			return;
+		
+		synchronized(m_mxAccess)
+		{
+			if ( !m_callbackUrl.empty() && (m_prevStatus != currentStatus) )
+			{
+				String strBody = "";
+				strBody += "current_status=" + networkStatusToString(currentStatus);
+				strBody += "&prev_status=" + networkStatusToString(m_prevStatus);
+			
+				NetResponse resp = getNetRequest().pushData( m_callbackUrl, strBody, null );
+			
+				if ( !resp.isOK() )
+				{
+					LOG(ERROR) + "Fire notification failed. Code: " + resp.getRespCode() + "; Error body: " + resp.getCharData();
+				}
+			}
+			m_prevStatus = currentStatus;
+		}
+	}
+	
+	rho::String NetworkStatusReceiver::networkStatusToString( enNetworkStatus status )
+	{
+		switch (status) 
+		{
+			case networkStatusConnected:
+				return "connected";
+				break;
+			case networkStatusDisconnected:
+				return "disconnected";
+				break;
+			case networkStatusUnknown:
+				return "unknown";
+				break;
+		}
+		return "";
+	}
+
+	
 
 } //namespace common
 } //namespace rho
@@ -1988,6 +2065,15 @@ int rho_rhodesapp_callPushCallback(const char* szData)
     return RHODESAPP().callPushCallback(szData?szData:"") ? 1 : 0;
 }
 
+//int rho_rhodesapp_callPushCallbackWithJsonBody(const char* szUrl, const char* szData, const char* szParam)
+//{
+//    if ( !rho::common::CRhodesApp::getInstance() )
+//        return 1;
+//
+//    return RHODESAPP().callPushCallbackWithJsonBody(szUrl, szData, szParam) ? 1 : 0;
+//}
+
+
 void rho_rhodesapp_callScreenRotationCallback(int width, int height, int degrees)
 {
     if ( !rho::common::CRhodesApp::getInstance() )
@@ -2010,24 +2096,25 @@ int rho_rhodesapp_isrubycompiler()
     return 0;
 }
 
-int rho_conf_send_log(const char* callback_url)
-{
-    rho::String s_callback_url = "";
-    if (callback_url != NULL) {
-        s_callback_url = callback_url;
-    }
-    return RHODESAPP().sendLog(s_callback_url);
-}
-
 void rho_net_request(const char *url)
 {
-    getNetRequest().pullData(url, null);
+    String strCallbackUrl = RHODESAPP().canonicalizeRhoUrl(url);
+    getNetRequest().pullData(strCallbackUrl.c_str(), null);
 }
-
-void rho_net_request_with_data(const char *url, const char *str_body) 
+    
+void rho_net_request_with_data(const char *url, const char *str_body)
 {
-    getNetRequest().pushData(url, str_body, null);
+    String strCallbackUrl = RHODESAPP().canonicalizeRhoUrl(url);
+    getNetRequest().pushData(strCallbackUrl.c_str(), str_body, null);
 }
+    
+void rho_net_request_with_data_in_separated_thread(const char *url, const char *str_body) {
+    String strCallbackUrl = RHODESAPP().canonicalizeRhoUrl(url);
+    String strBody = str_body;
+    RHODESAPP().runCallbackInThread(strCallbackUrl, strBody);
+}
+    
+
 	
 void rho_rhodesapp_load_url(const char *url)
 {
@@ -2102,18 +2189,16 @@ int rho_rhodesapp_canstartapp(const char* szCmdLine, const char* szSeparators)
 int rho_is_motorola_licence_checked() {
 	const char* szMotorolaLicence = get_app_build_config_item("motorola_license");
 	const char* szMotorolaLicenceCompany = get_app_build_config_item("motorola_license_company");
+	const char* szAppName = get_app_build_config_item("name");
     
     if ((szMotorolaLicence == NULL) || (szMotorolaLicenceCompany == NULL)) {
         return 0;
     }
 
     int res_check = 1;
-#ifdef OS_ANDROID
-    res_check = MotorolaLicence_check(szMotorolaLicenceCompany, szMotorolaLicence);
-#endif
-    
-#ifdef OS_MACOSX
-    res_check = MotorolaLicence_check(szMotorolaLicenceCompany, szMotorolaLicence);
+#if defined( OS_ANDROID ) || defined( OS_MACOSX )
+    //res_check = MotorolaLicence_check(szMotorolaLicenceCompany, szMotorolaLicence);
+    res_check = MotorolaLicence_check(szMotorolaLicenceCompany, szMotorolaLicence, szAppName);
 #endif
     
     return res_check;
@@ -2121,13 +2206,12 @@ int rho_is_motorola_licence_checked() {
     
 int rho_is_rho_elements_extension_can_be_used() {
     int res_check = 1;
-
-#if defined( OS_ANDROID ) || defined( OS_MACOS )
-	const char* szMotorolaLicence = get_app_build_config_item("motorola_license");
-	const char* szMotorolaLicenceCompany = get_app_build_config_item("motorola_license_company");
+#if defined( OS_MACOSX ) || (defined( OS_ANDROID ) && !defined ( APP_BUILD_CAPABILITY_MOTOROLA ))
+        const char* szMotorolaLicence = get_app_build_config_item("motorola_license");
+        const char* szMotorolaLicenceCompany = get_app_build_config_item("motorola_license_company");
     
-    if ((szMotorolaLicence == NULL) || (szMotorolaLicenceCompany == NULL))
-        res_check = 0;
+        if ((szMotorolaLicence == NULL) || (szMotorolaLicenceCompany == NULL))
+            res_check = 0;
 #endif
 
     return res_check;
@@ -2142,19 +2226,21 @@ int rho_can_app_started_with_current_licence() {
     }
         
     int res_check = 1;
-#ifdef OS_ANDROID
-#ifdef APP_BUILD_CAPABILITY_MOTOROLA
-    // ET1
-    res_check = 1;
-#else
-    res_check = rho_is_motorola_licence_checked();
-#endif    
-#endif    
-#ifdef OS_MACOSX
-    res_check = rho_is_motorola_licence_checked();
+#if defined( OS_MACOSX ) || (defined( OS_ANDROID ) && !defined ( APP_BUILD_CAPABILITY_MOTOROLA ))
+        res_check = rho_is_motorola_licence_checked();
 #endif        
     return res_check;
 }
-    
+ 
+	void rho_sys_set_network_status_notify(const char* url, int poll_interval)
+	{
+		RHODESAPP().setNetworkStatusNotify(url,poll_interval);
+	}
+	
+	void rho_sys_clear_network_status_notify()
+	{
+		RHODESAPP().clearNetworkStatusNotify();
+	}
+
 
 } //extern "C"

@@ -38,6 +38,8 @@
 @property(setter=setLogSeverity:) int  log_severity;
 @property(assign, setter=setSyncServer:) NSString* sync_server;
 @property(setter=setBulkSyncState:, getter=getBulkSyncState) int bulksync_state;
+@property(assign, setter=setLogServer:) NSString* log_server;
+@property(assign, setter=setLogName:) NSString* log_name;
 
 + (void) initDatabase;
 + (void) setNotification: (SEL) callback target:(id)target;
@@ -55,6 +57,9 @@
 - (void) database_full_reset_and_logout;
 - (void) database_client_reset;
 - (BOOL) is_logged_in;
+
+- (NSString*) database_export: (NSString*) partition;
+- (BOOL) database_import: (NSString*) partition zip:(NSString*) zip;
 
 - (RhoConnectNotify*) loginWithUser: (NSString*) user pwd:(NSString*) pwd;
 - (void) loginWithUser: (NSString*) user pwd:(NSString*) pwd callback:(SEL) callback target:(id)target;
@@ -76,6 +81,8 @@
 - (void) onCreateError: (RhoConnectNotify*)notify action: (NSString*)action;
 - (void) onUpdateError: (RhoConnectNotify*)notify action: (NSString*)action;
 - (void) onDeleteError: (RhoConnectNotify*)notify action: (NSString*)action;
+
+- (void) sendLog;
 
 + (NSString*) storagePath;
 + (NSString*) pathForStorageFile: (NSString*) file;

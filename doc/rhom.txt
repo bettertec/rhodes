@@ -55,7 +55,7 @@ This will generate a file called `product.rb` which looks like:
 	  # Uncomment the following line to enable sync with Product.
 	  # enable :sync
 
-	  #add model specifc code here
+	  #add model specific code here
 	end
 	
 There are several features you can enable or disable in the model, below is a complete list:
@@ -70,7 +70,7 @@ There are several features you can enable or disable in the model, below is a co
 	  enable :sync 
 
 	  # Set the type of sync this model
-	  # will use (default :incrmental).
+	  # will use (default :incremental).
 	  # Set to :bulk_only to disable incremental
 	  # sync and only use bulk sync.
 	  set :sync_type, :bulk_only 
@@ -171,7 +171,7 @@ Below is a full list of options available to fixed schema models:
 	  enable :sync 
 
 	  # Set the type of sync this model
-	  # will use (default :incrmental).
+	  # will use (default :incremental).
 	  # Set to :bulk_only to disable incremental
 	  # sync and only use bulk sync.
 	  set :sync_type, :bulk_only 
@@ -626,7 +626,7 @@ Name of the source.
 	  #=> "Product"
 	
 ### `last_updated`
-Last time the source was successfully synchronzied (in `Time.at` format).
+Last time the source was successfully synchronized (in `Time.at` format).
 
 	:::ruby
 	@source.last_updated.to_s
@@ -767,6 +767,24 @@ Case|priority|4900dc4c072c|High|
 
 **NOTE: The column names are always the first line of the file.**
 
+## Importing and exporting the database
+You can export local database partition with all its blob objects to zip archive. Also you can import previously exported partition:
+
+### `Rhom::Rhom.database_export(partition)`
+
+	:::ruby
+	@path_to_zip_file = Rhom::Rhom.database_export('partition_name')
+
+Call to database_export will return local path to created archive with database and blob objects.
+
+### 'Rhom::Rhom.database_import(partition,zip)'
+
+	:::ruby
+	Rhom::Rhom.database_import('partition_name',@path_to_zip_file) 
+
+This will import database and blob objects from zip archive, created with 'database_export' call. If imported archive is inconsistent, or other failure will occur during import process, original database will be restored.
+
+
 ## Advanced Queries
 
 ### `find(*args)` (advanced conditions)
@@ -876,12 +894,15 @@ To use number comparison conditions in find use CAST :
         :conditions => ["CAST(rating as INTEGER)< ?", "#{size}"], :select => ['rating'] )
         
 ## Database Encryption
+
+**NOTE: As of Rhodes version 3.3.3, [Rhom data encryption](/rhodes/rhom#database-encryption) is removed from Rhodes. This feature is only supported in Motorola RhoMobile Suite. If you wish to use this feature, you will need to [upgrade to RhoMobile Suite](/rhomobile-install). Your application's build.yml will also need to be modified to [indicate the application type is 'Rhoelements']( /rhoelements/rhoelements2-native#enabling-motorola-device-capabilities). Additionally, a [RhoElements license](/rhoelements/licensing) is required.**
+
 If your application requires that the local database is encrypted on the filesystem, you can enable it by setting a flag in `build.yml`:
 
 	:::yaml
 	encrypt_database: 1
 
-**NOTE:  Database encryption is not supported for applications that use bulk sync at this time.**
+**NOTE: Database encryption is not supported for applications that use bulk sync at this time.**
 
 ### Platform Notes
 * iOS: Uses AES 128 encryption algorithm from iOS SDK.
@@ -902,8 +923,8 @@ If your application requires that the local database is encrypted on the filesys
 	bb:   
 	  use_sqlite: 0
 	  
-## Perfomance Tips
-* Before test application for perfomance set warning log level in rhoconfig.txt(MUST set for Blackberry testing):
+## Performance Tips
+* Before test application for performance set warning log level in rhoconfig.txt(MUST set for Blackberry testing):
 
         MinSeverity = 3
     

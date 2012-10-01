@@ -27,6 +27,7 @@
 #include "sqlite/sqlite3.h"
 #include "ruby.h"
 
+#include "statistic/RhoProfiler.h"
 #include "logging/RhoLog.h"
 #undef DEFAULT_LOGCATEGORY
 #define DEFAULT_LOGCATEGORY "DB"
@@ -47,6 +48,8 @@ extern void rho_db_lock(void* pDB);
 extern void rho_db_unlock(void* pDB);
 extern int  rho_db_is_table_exist(void* pDB, const char* szTableName);
 extern VALUE ruby_db_execute(int argc, VALUE *argv, VALUE self);
+extern VALUE rho_db_export( void* pDB );
+extern int rho_db_import( void* pDB, const char* zipName );
 
 static VALUE db_allocate(VALUE klass)
 {
@@ -105,6 +108,35 @@ static VALUE db_start_transaction(int argc, VALUE *argv, VALUE self){
 	
 	return INT2NUM(rc);
 }
+
+static VALUE db_export( int argc, VALUE *argv, VALUE self) {
+	void **ppDB = NULL;		
+	
+	if (argc > 0)
+		rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)",argc);
+	
+	Data_Get_Struct(self, void *, ppDB);
+	
+	return rho_db_export(*ppDB);
+}
+
+static VALUE db_import( int argc, VALUE *argv, VALUE self) {
+	void **ppDB = NULL;
+	char* szZipName = NULL;
+	int rc = 0;
+	
+	if (argc != 1)
+		rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",argc);
+	
+	Data_Get_Struct(self, void *, ppDB);
+	
+	szZipName = StringValuePtr(argv[0]);
+
+	rc = rho_db_import(*ppDB,szZipName);
+	
+	return rc ? Qtrue : Qfalse;
+}
+
 
 static VALUE db_commit(int argc, VALUE *argv, VALUE self){
 	//sqlite3 * db = NULL;
@@ -249,17 +281,23 @@ static VALUE db_execute(int argc, VALUE *argv, VALUE self)
 
     RAWTRACE1("db_execute: %s", sql);
 
+    PROF_START_CREATED("SQLITE");
     if ( is_batch )
     {
+        PROF_START_CREATED("SQLITE_EXEC");
+
         rho_db_lock(*ppDB);
         nRes = sqlite3_exec(db, sql,  NULL, NULL, &szErrMsg);
         rho_db_unlock(*ppDB);
+
+        PROF_STOP("SQLITE_EXEC");
     }
     else
     {
         rho_db_lock(*ppDB);
-
+        PROF_START_CREATED("SQLITE_PREPARE");
         nRes = rho_db_prepare_statement(*ppDB, sql, -1, &statement);
+        PROF_STOP("SQLITE_PREPARE");
         //nRes = sqlite3_prepare_v2(db, sql, -1, &statement, NULL);
         if ( nRes != SQLITE_OK)
         {
@@ -307,7 +345,11 @@ static VALUE db_execute(int argc, VALUE *argv, VALUE self)
             }
         }
 
-	    while( (nRes=sqlite3_step(statement)) == SQLITE_ROW) {
+        PROF_START_CREATED("SQLITE_EXEC");
+        nRes = sqlite3_step(statement);
+        PROF_STOP("SQLITE_EXEC");
+
+	    while( nRes== SQLITE_ROW ) {
 		    int nCount = sqlite3_data_count(statement);
 		    int nCol = 0;
 		    VALUE hashRec = rb_hash_new();
@@ -350,9 +392,15 @@ static VALUE db_execute(int argc, VALUE *argv, VALUE self)
 		    }
     		
 		    rb_ary_push(arRes, hashRec);
+
+            PROF_START_CREATED("SQLITE_EXEC");
+            nRes = sqlite3_step(statement);
+            PROF_STOP("SQLITE_EXEC");
+
 	    }
 
         rho_db_unlock(*ppDB);
+
     }
 
     if ( statement )
@@ -369,6 +417,8 @@ static VALUE db_execute(int argc, VALUE *argv, VALUE self)
 
         rb_raise(rb_eArgError, "could not execute statement: %d; Message: %s",nRes, (szErrMsg?szErrMsg:""));
     }
+
+    PROF_STOP("SQLITE");
 
 	return arRes;
 }
@@ -390,5 +440,7 @@ void Init_sqlite3_api(void)
     rb_define_method(mDatabase, "destroy_tables", db_destroy_tables, -1);	
     rb_define_method(mDatabase, "table_exist?", db_is_table_exist, -1);
     rb_define_method(mDatabase, "is_ui_waitfordb", db_is_ui_waitfordb, -1);
+	rb_define_method(mDatabase, "export", db_export, -1 );
+	rb_define_method(mDatabase, "import", db_import, -1 );
 }
 

@@ -65,6 +65,9 @@
 		656E39321497A64300288105 /* BundleManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 656E39311497A64300288105 /* BundleManager.cpp */; };
 		A22F9EFB14605D09006D8F1A /* PhonebookParams.h in Headers */ = {isa = PBXBuildFile; fileRef = A22F9EFA14605D09006D8F1A /* PhonebookParams.h */; };
 		A22F9EFF14605D82006D8F1A /* PhonebookParams.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A22F9EFE14605D82006D8F1A /* PhonebookParams.cpp */; };
+		A2D0557D15A7500A002376EE /* IRhoPushClient.h in Headers */ = {isa = PBXBuildFile; fileRef = A2D0557A15A7500A002376EE /* IRhoPushClient.h */; };
+		A2D0557E15A7500A002376EE /* RhoPushManager.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A2D0557B15A7500A002376EE /* RhoPushManager.cpp */; };
+		A2D0557F15A7500A002376EE /* RhoPushManager.h in Headers */ = {isa = PBXBuildFile; fileRef = A2D0557C15A7500A002376EE /* RhoPushManager.h */; };
 		BD2C950810AE0D4B008D4692 /* PosixThreadImpl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BD2C950610AE0D4B008D4692 /* PosixThreadImpl.cpp */; };
 		BD2C950910AE0D4B008D4692 /* PosixThreadImpl.h in Headers */ = {isa = PBXBuildFile; fileRef = BD2C950710AE0D4B008D4692 /* PosixThreadImpl.h */; };
 		BD2CEFCE10ADF10D002356D9 /* CURLNetRequest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BD2CEFCB10ADF10D002356D9 /* CURLNetRequest.cpp */; };
@@ -77,6 +80,9 @@
 		BDD11ECE113664E700349BE3 /* rhoparams.h in Headers */ = {isa = PBXBuildFile; fileRef = BDD11ECC113664E700349BE3 /* rhoparams.h */; };
 		BDFCB13D112EE2B500AE3724 /* ssl.cpp in Sources */ = {isa = PBXBuildFile; fileRef = BDFCB13B112EE2B500AE3724 /* ssl.cpp */; };
 		BDFCB13E112EE2B500AE3724 /* ssl.h in Headers */ = {isa = PBXBuildFile; fileRef = BDFCB13C112EE2B500AE3724 /* ssl.h */; };
+		C5D2784415A1F33A00A7EFC7 /* ZipFiles.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C5D2784315A1F33A00A7EFC7 /* ZipFiles.cpp */; };
+		C5D47762156A4ED000943A2D /* zip.cpp in Sources */ = {isa = PBXBuildFile; fileRef = C5D47760156A4ED000943A2D /* zip.cpp */; };
+		C5D47763156A4ED000943A2D /* zip.h in Headers */ = {isa = PBXBuildFile; fileRef = C5D47761156A4ED000943A2D /* zip.h */; };
 		FA5F58DF12ADDA6D00C7613A /* app_build_configs.c in Sources */ = {isa = PBXBuildFile; fileRef = FA5F58DD12ADDA6D00C7613A /* app_build_configs.c */; };
 		FA5F58E012ADDA6D00C7613A /* app_build_configs.h in Headers */ = {isa = PBXBuildFile; fileRef = FA5F58DE12ADDA6D00C7613A /* app_build_configs.h */; };
 		FAC6EE5B143B1FC800B8E352 /* BaseMapEngine.cpp in Sources */ = {isa = PBXBuildFile; fileRef = FAC6EE4F143B1FC800B8E352 /* BaseMapEngine.cpp */; };
@@ -154,6 +160,9 @@
 		656E39311497A64300288105 /* BundleManager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = BundleManager.cpp; path = ../../shared/common/BundleManager.cpp; sourceTree = "<group>"; };
 		A22F9EFA14605D09006D8F1A /* PhonebookParams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PhonebookParams.h; path = ../../shared/common/phonebook/PhonebookParams.h; sourceTree = "<group>"; };
 		A22F9EFE14605D82006D8F1A /* PhonebookParams.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PhonebookParams.cpp; path = ../../shared/common/phonebook/PhonebookParams.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		A2D0557A15A7500A002376EE /* IRhoPushClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = IRhoPushClient.h; path = ../../shared/common/push/IRhoPushClient.h; sourceTree = "<group>"; };
+		A2D0557B15A7500A002376EE /* RhoPushManager.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = RhoPushManager.cpp; path = ../../shared/common/push/RhoPushManager.cpp; sourceTree = "<group>"; };
+		A2D0557C15A7500A002376EE /* RhoPushManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RhoPushManager.h; path = ../../shared/common/push/RhoPushManager.h; sourceTree = "<group>"; };
 		BD2C950610AE0D4B008D4692 /* PosixThreadImpl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = PosixThreadImpl.cpp; path = ../../shared/common/PosixThreadImpl.cpp; sourceTree = SOURCE_ROOT; };
 		BD2C950710AE0D4B008D4692 /* PosixThreadImpl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = PosixThreadImpl.h; path = ../../shared/common/PosixThreadImpl.h; sourceTree = SOURCE_ROOT; };
 		BD2CEFCB10ADF10D002356D9 /* CURLNetRequest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = CURLNetRequest.cpp; path = ../../shared/net/CURLNetRequest.cpp; sourceTree = SOURCE_ROOT; };
@@ -166,6 +175,10 @@
 		BDD11ECC113664E700349BE3 /* rhoparams.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = rhoparams.h; path = ../../shared/common/rhoparams.h; sourceTree = SOURCE_ROOT; };
 		BDFCB13B112EE2B500AE3724 /* ssl.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ssl.cpp; path = ../../shared/net/ssl.cpp; sourceTree = SOURCE_ROOT; };
 		BDFCB13C112EE2B500AE3724 /* ssl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ssl.h; path = ../../shared/net/ssl.h; sourceTree = SOURCE_ROOT; };
+		C5D2784315A1F33A00A7EFC7 /* ZipFiles.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = ZipFiles.cpp; path = ../../shared/rubyext/ZipFiles.cpp; sourceTree = "<group>"; };
+		C5D47760156A4ED000943A2D /* zip.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = zip.cpp; path = ../../shared/unzip/zip.cpp; sourceTree = "<group>"; };
+		C5D47761156A4ED000943A2D /* zip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = zip.h; path = ../../shared/unzip/zip.h; sourceTree = "<group>"; };
+		C5DEC5691575069800AE4AC1 /* RhoSettingsDefs.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = RhoSettingsDefs.h; path = ../../shared/common/RhoSettingsDefs.h; sourceTree = "<group>"; };
 		D2AAC046055464E500DB518D /* librholib.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = librholib.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		FA5F58DD12ADDA6D00C7613A /* app_build_configs.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = app_build_configs.c; path = ../../shared/common/app_build_configs.c; sourceTree = SOURCE_ROOT; };
 		FA5F58DE12ADDA6D00C7613A /* app_build_configs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = app_build_configs.h; path = ../../shared/common/app_build_configs.h; sourceTree = SOURCE_ROOT; };
@@ -231,6 +244,8 @@
 		5C59BF4A115B4BA300E96ADE /* unzip */ = {
 			isa = PBXGroup;
 			children = (
+				C5D47760156A4ED000943A2D /* zip.cpp */,
+				C5D47761156A4ED000943A2D /* zip.h */,
 				5C59BF4B115B4BC300E96ADE /* unzip.cpp */,
 				5C59BF4C115B4BC300E96ADE /* unzip.h */,
 			);
@@ -249,6 +264,7 @@
 		5C7162600F8B7DEE0096B6AA /* common */ = {
 			isa = PBXGroup;
 			children = (
+				A2D0558115A75027002376EE /* push */,
 				A22F9EFD14605D12006D8F1A /* phonebook */,
 				FAC6EE4C143B1F1E00B8E352 /* map */,
 				FAC6EE67143B20B600B8E352 /* RhoMath.cpp */,
@@ -293,6 +309,7 @@
 				BD8DF8861147C8090041A968 /* SplashScreen.cpp */,
 				BD8DF8871147C8090041A968 /* SplashScreen.h */,
 				5C71626E0F8B7E170096B6AA /* StringConverter.h */,
+				C5DEC5691575069800AE4AC1 /* RhoSettingsDefs.h */,
 			);
 			name = common;
 			sourceTree = "<group>";
@@ -315,6 +332,7 @@
 		5C798931113BD10C005F8736 /* rubyext */ = {
 			isa = PBXGroup;
 			children = (
+				C5D2784315A1F33A00A7EFC7 /* ZipFiles.cpp */,
 				5C2CE15B122ACA9E005EDBC4 /* RhoAppAdapter.cpp */,
 				5CECDBB2113FE3620084A75B /* System.cpp */,
 				5C798932113BD148005F8736 /* GeoLocation.cpp */,
@@ -358,6 +376,16 @@
 				A22F9EFE14605D82006D8F1A /* PhonebookParams.cpp */,
 			);
 			name = phonebook;
+			sourceTree = "<group>";
+		};
+		A2D0558115A75027002376EE /* push */ = {
+			isa = PBXGroup;
+			children = (
+				A2D0557A15A7500A002376EE /* IRhoPushClient.h */,
+				A2D0557B15A7500A002376EE /* RhoPushManager.cpp */,
+				A2D0557C15A7500A002376EE /* RhoPushManager.h */,
+			);
+			name = push;
 			sourceTree = "<group>";
 		};
 		C6A0FF2B0290797F04C91782 /* Documentation */ = {
@@ -441,6 +469,9 @@
 				FAC6EE66143B1FC800B8E352 /* OSMMapEngine.h in Headers */,
 				FAC6EE6A143B20B600B8E352 /* RhoMath.h in Headers */,
 				A22F9EFB14605D09006D8F1A /* PhonebookParams.h in Headers */,
+				C5D47763156A4ED000943A2D /* zip.h in Headers */,
+				A2D0557D15A7500A002376EE /* IRhoPushClient.h in Headers */,
+				A2D0557F15A7500A002376EE /* RhoPushManager.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -531,6 +562,9 @@
 				FAC6EE69143B20B600B8E352 /* RhoMath.cpp in Sources */,
 				A22F9EFF14605D82006D8F1A /* PhonebookParams.cpp in Sources */,
 				656E39321497A64300288105 /* BundleManager.cpp in Sources */,
+				C5D47762156A4ED000943A2D /* zip.cpp in Sources */,
+				C5D2784415A1F33A00A7EFC7 /* ZipFiles.cpp in Sources */,
+				A2D0557E15A7500A002376EE /* RhoPushManager.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -541,10 +575,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					armv7,
-					armv6,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
@@ -560,9 +591,10 @@
 				PRODUCT_NAME = rholib;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
+				STRIPFLAGS = "";
 				SYMROOT = ../build;
 				USER_HEADER_SEARCH_PATHS = "../../shared/curl/include ../../shared";
-				VALID_ARCHS = "armv6 armv7 i386";
+				VALID_ARCHS = "armv7 i386";
 			};
 			name = Debug;
 		};
@@ -570,10 +602,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					armv7,
-					armv6,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				INSTALL_PATH = /usr/local/lib;
@@ -586,9 +615,10 @@
 				PRODUCT_NAME = rholib;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
+				STRIPFLAGS = "";
 				SYMROOT = ../build;
 				USER_HEADER_SEARCH_PATHS = "../../shared/curl/include ../../shared";
-				VALID_ARCHS = "armv6 armv7 i386";
+				VALID_ARCHS = "armv7 i386";
 			};
 			name = Release;
 		};
@@ -637,10 +667,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					armv6,
-					armv7,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				GCC_MODEL_TUNING = G5;
 				INSTALL_PATH = /usr/local/lib;
@@ -653,8 +680,10 @@
 				PRODUCT_NAME = rholib;
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
+				STRIPFLAGS = "";
 				SYMROOT = ../build;
 				USER_HEADER_SEARCH_PATHS = "../../shared/curl/include ../../shared";
+				VALID_ARCHS = armv7;
 			};
 			name = Distribution;
 		};

@@ -34,6 +34,7 @@
 #include <QtWebKit/QWebInspector>
 #include <QAction>
 #include <QMessageBox>
+#include <QBasicTimer>
 #include "QtWebInspector.h"
 #include "MainWindowCallback.h"
 #include "common/IRhoThreadImpl.h"
@@ -59,10 +60,13 @@ public:
     virtual void hideEvent(QHideEvent *);
     virtual void showEvent(QShowEvent *);
     virtual void closeEvent(QCloseEvent *);
+    virtual void paintEvent(QPaintEvent *);
+    virtual void timerEvent(QTimerEvent *event);
     void setCallback(IMainWindowCallback* callback);
     int getLogicalDpiX();
     int getLogicalDpiY();
     void bringToFront();
+    void adjustWebInspector();
     // webview
     void navigate(QString url, int index);
     void GoBack(void);
@@ -102,7 +106,7 @@ private:
     Ui::QtMainWindow *ui;
     QWebInspector *main_webInspector;
     QtWebInspector* webInspectorWindow;
-    IMainWindowCallback* cb;
+    IMainWindowCallback* mainWindowCallback;
     std::vector<QWebView*> tabViews;
     std::vector<QWebInspector*> tabInspect;
     QWebView* main_webView;
@@ -112,6 +116,8 @@ private:
     //TODO: CSyncStatusDlg *m_SyncStatusDlg;
     int m_LogicalDpiX;
     int m_LogicalDpiY;
+	bool firstShow, m_bFirstLoad;
+    QBasicTimer m_SplashTimer;
 
 private slots:
     void on_webView_urlChanged(QUrl );
@@ -119,6 +125,9 @@ private slots:
     void on_webView_loadStarted();
     void on_webView_linkClicked(const QUrl&);
     void on_actionBack_triggered();
+    void on_actionRotateRight_triggered();
+    void on_actionRotateLeft_triggered();
+    void on_actionRotate180_triggered();
     void on_tabBar_currentChanged(int index);
     void on_menuMain_aboutToShow();
     void on_actionAbout_triggered();
@@ -142,6 +151,10 @@ public slots:
     void takeSignature(void*); //TODO: Signature::Params*
     void fullscreenCommand(int);
     void setCookie(const char* url, const char* cookie);
+    void setFrame(int x, int y, int width, int height);
+    void setPosition(int x, int y);
+    void setSize(int width, int height);
+    void lockSize(int locked);
 protected:
     void resizeEvent(QResizeEvent *);
 };

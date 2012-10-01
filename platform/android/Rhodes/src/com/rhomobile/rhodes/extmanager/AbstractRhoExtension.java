@@ -5,6 +5,11 @@ import android.graphics.Rect;
 public abstract class AbstractRhoExtension implements IRhoExtension {
 
     @Override
+    public IRhoWebView onCreateWebView(IRhoExtManager extManager, int tabIndex) {
+        return null;
+    }
+
+    @Override
     public void onSetPropertiesData(IRhoExtManager extManager, String propId,
             String data, int pos, int total, IRhoExtData ext) {
     }
@@ -66,7 +71,7 @@ public abstract class AbstractRhoExtension implements IRhoExtension {
     }
 
     @Override
-    public void onNavigateError(IRhoExtManager extManager, String url, IRhoExtData ext) {
+    public void onNavigateError(IRhoExtManager extManager, String url, LoadErrorReason reason, IRhoExtData ext) {
     }
 
     @Override

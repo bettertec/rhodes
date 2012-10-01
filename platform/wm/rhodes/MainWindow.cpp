@@ -51,6 +51,7 @@
 #include "common/RhoFilePath.h"
 #include "common/RhoFile.h"
 #include "bluetooth/Bluetooth.h"
+#include "statistic/RhoProfiler.h"
 
 #ifndef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
 #include "MetaHandler.h"
@@ -273,6 +274,8 @@ LRESULT CMainWindow::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*
 #endif //OS_WINCE
 
 	rho_rhodesapp_callUiCreatedCallback();
+
+	RHODESAPP().setNetworkStatusMonitor(&m_networkStatusMonitor);
 
     return 0;
 }
@@ -546,11 +549,13 @@ LRESULT CMainWindow::OnBeforeNavigate(UINT uMsg, WPARAM wParam, LPARAM lParam, B
 
 LRESULT CMainWindow::OnNavigateTimeout (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
 {
+    PROF_STOP("BROWSER_PAGE");
     return RHODESAPP().getExtManager().OnNavigateTimeout((LPCTSTR)lParam);
 }
 
 LRESULT CMainWindow::OnNavigateError (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
 {
+    PROF_STOP("BROWSER_PAGE");
     return RHODESAPP().getExtManager().OnNavigateError((LPCTSTR)lParam);
 }
 
@@ -991,7 +996,9 @@ LRESULT CMainWindow::OnStopNavigate(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWn
 
 LRESULT CMainWindow::OnZoomPage(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& /*bHandled*/)
 {
-    float fZoom = (float)(long)(hWndCtl);
+    CRhoFloatData* pFloatData = (CRhoFloatData*)(hWndCtl);
+    float fZoom = pFloatData->m_fValue;
+    delete pFloatData;
     if ( m_pBrowserEng )
         m_pBrowserEng->ZoomPageOnTab(fZoom, rho_webview_active_tab());
 
@@ -1056,6 +1063,7 @@ LRESULT CMainWindow::OnConnectionsNetworkCount(UINT /*uMsg*/, WPARAM wParam, LPA
 #if defined (_WIN32_WCE)
 
 	rho_sysimpl_sethas_network( wParam );
+	m_networkStatusMonitor.notifyReceiver( ((int)wParam!=0)?rho::common::networkStatusConnected:rho::common::networkStatusDisconnected );
 
 #endif
 	return 0;
@@ -1066,6 +1074,7 @@ LRESULT CMainWindow::OnConnectionsNetworkCell(UINT /*uMsg*/, WPARAM wParam, LPAR
 #if defined (_WIN32_WCE)
 
 	rho_sysimpl_sethas_cellnetwork( (int)wParam );
+	m_networkStatusMonitor.notifyReceiver( (wParam!=0)?rho::common::networkStatusConnected:rho::common::networkStatusDisconnected );
 
 #endif
 	return 0;
@@ -1212,6 +1221,12 @@ LRESULT CMainWindow::OnLicenseScreen(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam
 		}*/
 	}
 #endif
+
+    //Fix issue with lost focus after License Screen hides
+    HWND hBrowserWnd = m_pBrowserEng ? m_pBrowserEng->GetHTMLWND() : NULL;
+    if (hBrowserWnd && !::IsIconic(m_hWnd))
+        ::SetFocus(hBrowserWnd);
+
 	return 0;
 }	
 
@@ -1260,6 +1275,8 @@ extern "C" void rho_wmsys_run_app(const char* szPath, const char* szParams );
 bool Rhodes_WM_ProcessBeforeNavigate(LPCTSTR url)
 {
     LOG(TRACE) + "OnBeforeNavigate2: " + url;
+
+    PROF_START("BROWSER_PAGE");
 
     RHODESAPP().getExtManager().onBeforeNavigate(url);
 
@@ -1336,7 +1353,9 @@ void CMainWindow::ProcessNavigateComplete(LPCTSTR url)
         ::ShowWindow(m_pBrowserEng->GetHTMLWND(), SW_SHOW);
 
 
-    LOG(TRACE) + "OnNavigateComplete2: " + url;
+    RAWLOGC_INFO("WebView", "Page load complete." );
+
+    PROF_STOP("BROWSER_PAGE");
 
     RHODESAPP().getExtManager().onNavigateComplete(url);
 }

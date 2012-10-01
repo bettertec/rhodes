@@ -25,7 +25,8 @@
 *------------------------------------------------------------------------*/
 
 #include "ClientRegister.h"
-#include "sync/SyncThread.h"
+#include "SyncThread.h"
+#include "ILoginListener.h"
 #include "common/RhoConf.h"
 #include "common/RhodesApp.h"
 
@@ -37,19 +38,48 @@ namespace sync{
 using namespace rho::common;
 using namespace rho::db;
 
-#define THREAD_WAIT_TIMEOUT 10
+static const int THREAD_WAIT_TIMEOUT = 10;
+static const char * const PUSH_PIN_NAME = "push_pin";
+
 
 IMPLEMENT_LOGCLASS(CClientRegister,"ClientRegister");
 
 CClientRegister* CClientRegister::m_pInstance = 0;
+bool CClientRegister::s_sslVerifyPeer = true;
+VectorPtr<ILoginListener*> CClientRegister::s_loginListeners;
 	
-/*static*/ CClientRegister* CClientRegister::Create(const char* device_pin) 
+/*static*/ CClientRegister* CClientRegister::Get()
 {
-	if ( m_pInstance ) 
-		return m_pInstance;
+    if (!m_pInstance)
+    {
+        m_pInstance = new CClientRegister();
+    }
+    return m_pInstance;
+}
 
-	m_pInstance = new CClientRegister(device_pin);
-	return m_pInstance;
+/*static*/ CClientRegister* CClientRegister::Create()
+{
+    String session = CSyncThread::getSyncEngine().loadSession();
+    if (session.length() > 0)
+    {
+        Get()->setRhoconnectCredentials("", "", session);
+    }
+    Get()->startUp();
+    return m_pInstance;
+}
+
+/*static*/ CClientRegister* CClientRegister::Create(const String& devicePin)
+{
+    Get()->setDevicehPin(devicePin);
+    return m_pInstance;
+}
+
+/*static*/ void CClientRegister::Stop()
+{
+    if(m_pInstance)
+    {
+        m_pInstance->doStop();
+    }
 }
 
 /*static*/ void CClientRegister::Destroy()
@@ -60,27 +90,70 @@ CClientRegister* CClientRegister::m_pInstance = 0;
     m_pInstance = 0;
 }
 
-CClientRegister::CClientRegister(const char* device_pin) : CRhoThread() 
+/*static*/ void CClientRegister::SetSslVerifyPeer(boolean b)
 {
-	m_strDevicePin = device_pin;
-    m_nPollInterval = POLL_INTERVAL_SECONDS;
+    s_sslVerifyPeer = b;
+    if (m_pInstance)
+        m_pInstance->m_NetRequest.setSslVerifyPeer(b);
+}
 
-    startUp();
+
+/*static*/void CClientRegister::AddLoginListener(ILoginListener* listener)
+{
+    s_loginListeners.addElement(listener);
+}
+
+CClientRegister::CClientRegister() : m_nPollInterval(POLL_INTERVAL_SECONDS)
+{
+    m_NetRequest.setSslVerifyPeer(s_sslVerifyPeer);
+
 }
 
 CClientRegister::~CClientRegister()
 {
-	m_NetRequest.cancel();
-	
-    stop(WAIT_BEFOREKILL_SECONDS);
+    doStop();
     m_pInstance = null;
 }
+void CClientRegister::setRhoconnectCredentials(const String& user, const String& pass, const String& session)
+{
+    LOG(INFO) + "New Sync credentials - user: " + user + ", sess: " + session;
 
-void CClientRegister::startUp() 
-{	
+    for(VectorPtr<ILoginListener*>::iterator I = s_loginListeners.begin(); I != s_loginListeners.end(); ++I)
+    {
+        (*I)->onLogin(user, pass, session);
+    }
+    startUp();
+}
+
+void CClientRegister::dropRhoconnectCredentials(const String& session)
+{
+    for(VectorPtr<ILoginListener*>::iterator I = s_loginListeners.begin(); I != s_loginListeners.end(); ++I)
+    {
+        (*I)->onLogout(session);
+    }
+}
+
+void CClientRegister::setDevicehPin(const String& pin)
+{
+    m_strDevicePin = pin;
+    RHOCONF().setString(PUSH_PIN_NAME, pin, true);
+
+    if (pin.length() > 0)
+    {
+        startUp();
+    } else
+    {
+        doStop();
+    }
+}
+
+void CClientRegister::startUp()
+{
     if ( RHOCONF().getString("syncserver").length() > 0 )
     {
-    	start(epLow);
+        LOG(INFO) + "Starting ClientRegister...";
+
+        start(epLow);
         stopWait();
     }
 }
@@ -88,10 +161,10 @@ void CClientRegister::startUp()
 void CClientRegister::run()
 {
     unsigned i = 0;
-    LOG(INFO)+"ClientRegister start";
+    LOG(INFO)+"ClientRegister is started";
 	while(!isStopping()) 
 	{
-	    i++;
+        i++;
         LOG(INFO)+"Try to register: " + i;
         if ( CSyncThread::getInstance() != null )
 		{
@@ -111,20 +184,45 @@ void CClientRegister::run()
 
 String CClientRegister::getRegisterBody(const String& strClientID)
 {
+	IRhoPushClient* pushClient = RHODESAPP().getDefaultPushClient();
 	int port = RHOCONF().getInt("push_port");
 
-    return CSyncThread::getSyncEngine().getProtocol().getClientRegisterBody( strClientID, m_strDevicePin, 
-        port > 0 ? port : DEFAULT_PUSH_PORT, rho_rhodesapp_getplatform(), rho_sysimpl_get_phone_id() );
+	String body = CSyncThread::getSyncEngine().getProtocol().getClientRegisterBody( strClientID, m_strDevicePin,
+        port > 0 ? port : DEFAULT_PUSH_PORT, rho_rhodesapp_getplatform(), rho_sysimpl_get_phone_id(),
+        /*device_push_type*/ (0 != pushClient) ? pushClient->getType() : "" /*it means native push type*/);
+
+	LOG(INFO)+"getRegisterBody() BODY is: " + body;
+	return body;
+
+	/*
+    if(m_isAns)
+		body = CSyncThread::getSyncEngine().getProtocol().getClientAnsRegisterBody( strClientID, m_strDevicePin,
+			port > 0 ? port : DEFAULT_PUSH_PORT, rho_rhodesapp_getplatform(), rho_sysimpl_get_phone_id() );
+	else
+		body = CSyncThread::getSyncEngine().getProtocol().getClientRegisterBody( strClientID, m_strDevicePin,
+			port > 0 ? port : DEFAULT_PUSH_PORT, rho_rhodesapp_getplatform(), rho_sysimpl_get_phone_id() );
+	*/
+
 }
 
 boolean CClientRegister::doRegister(CSyncEngine& oSync)
 {
-	String session = oSync.loadSession();
-	if ( session.length() == 0 )
+    String session = oSync.loadSession();
+    if ( session.length() == 0 )
     {
         m_nPollInterval = POLL_INTERVAL_INFINITE;
         LOG(INFO)+"Session is empty, do register later";
-		return false;
+        return false;
+    }
+    if ( m_strDevicePin.length() == 0 )
+    {
+        m_strDevicePin = RHOCONF().getString(PUSH_PIN_NAME);
+    }
+    if ( m_strDevicePin.length() == 0 )
+    {
+        m_nPollInterval = POLL_INTERVAL_INFINITE;
+        LOG(INFO)+"Device PUSH pin is empty, do register later";
+        return false;
     }
     m_nPollInterval = POLL_INTERVAL_SECONDS;
 
@@ -161,6 +259,14 @@ boolean CClientRegister::doRegister(CSyncEngine& oSync)
 
 	LOG(WARNING)+"Network error: "+ resp.getRespCode();
 	return false;
+}
+
+void CClientRegister::doStop()
+{
+    LOG(INFO) + "Stopping ClientRegister...";
+
+    m_NetRequest.cancel();
+    stop(WAIT_BEFOREKILL_SECONDS);
 }
 
 }

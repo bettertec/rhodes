@@ -103,7 +103,8 @@ final public class RhodesApplication extends RhodesApplicationPlatform implement
 	
 	private static final RhoLogger LOG = RhoLogger.RHO_STRIP_LOG ? new RhoEmptyLogger() : 
 		new RhoLogger("RhodesApplication");
-	
+	private static final RhoProfiler PROF = RhoProfiler.RHO_STRIP_PROFILER ? new RhoEmptyProfiler() : 
+		new RhoProfiler();
 
 	class CKeyListener  implements KeyListener{
 
@@ -1410,18 +1411,11 @@ final public class RhodesApplication extends RhodesApplicationPlatform implement
         
         RHODESAPP().getSplashScreen().hide();
         
+        PROF.START("BROWSER_PAGE");
         m_bDisableInput = true;
         m_oBrowserAdapter.processConnection(connection, e);
         m_bDisableInput = false;
-        
-		try {
-			IRhoRubyHelper helper = RhoClassFactory.createRhoRubyHelper();
-			helper.wakeUpGeoLocation();
-		}catch(Exception exc)
-		{
-			LOG.ERROR("wakeUpGeoLocation failed", exc);
-		}
-        
+        PROF.STOP("BROWSER_PAGE");
     }
 
     public static class PrimaryResourceFetchThread {//extends Thread {

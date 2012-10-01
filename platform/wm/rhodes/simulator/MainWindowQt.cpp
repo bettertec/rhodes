@@ -81,11 +81,6 @@ void CMainWindow::updateSizeProperties(int width, int height)
     LOGCONF().setLogView(&m_logView);
 }
 
-void CMainWindow::logEvent(const ::std::string& message)
-{
-    LOG(INFO) + message;
-}
-
 void CMainWindow::onWebViewUrlChanged(const ::std::string& url)
 {
     rho::String sUrl = url;
@@ -202,7 +197,11 @@ void* CMainWindow::init(IMainWindowCallback* callback, const wchar_t* title)
 {
     int argc = 0;
     QCoreApplication::setOrganizationName("Rhomobile");
+#ifndef RHODES_EMULATOR
+	QCoreApplication::setApplicationName(RHODESAPP().getAppName().c_str());
+#else
     QCoreApplication::setApplicationName("RhoSimulator");
+#endif
     qtApplication = (void*)new QApplication(argc, 0);
     qtMainWindow = (void*)new QtMainWindow();
     ((QtMainWindow*)qtMainWindow)->setWindowTitle(QString::fromWCharArray(title));
@@ -388,17 +387,29 @@ void CMainWindow::createToolbar(rho_param *p)
                     if ( icon && *icon )
                         strImagePath = rho::common::CFilePath::join( RHODESAPP().getRhoRootPath(), icon );
                     else {
+#if defined(RHODES_EMULATOR)
+#define RHODES_EMULATOR_PLATFORM_STR ".wm"
+#elif defined(RHO_SYMBIAN)
+#define RHODES_EMULATOR_PLATFORM_STR ".sym"
+#else
+#define RHODES_EMULATOR_PLATFORM_STR
+#endif
                         if ( strcasecmp(action, "options")==0 )
-                            strImagePath = "res/options_btn.wm.png";
+                            strImagePath = "res/options_btn" RHODES_EMULATOR_PLATFORM_STR ".png";
                         else if ( strcasecmp(action, "home")==0 )
-                            strImagePath = "res/home_btn.wm.png";
+                            strImagePath = "res/home_btn" RHODES_EMULATOR_PLATFORM_STR ".png";
                         else if ( strcasecmp(action, "refresh")==0 )
-                            strImagePath = "res/refresh_btn.wm.png";
+                            strImagePath = "res/refresh_btn" RHODES_EMULATOR_PLATFORM_STR ".png";
                         else if ( strcasecmp(action, "back")==0 )
-                            strImagePath = "res/back_btn.wm.png";
+                            strImagePath = "res/back_btn" RHODES_EMULATOR_PLATFORM_STR ".png";
                         else if ( strcasecmp(action, "forward")==0 )
-                            strImagePath = "res/forward_btn.wm.png";
+                            strImagePath = "res/forward_btn" RHODES_EMULATOR_PLATFORM_STR ".png";
+#undef RHODES_EMULATOR_PLATFORM_STR
+#ifdef RHODES_EMULATOR
                         strImagePath = strImagePath.length() > 0 ? CFilePath::join( RHOSIMCONF().getRhoRuntimePath(), "lib/framework/" + strImagePath) : String();
+#else
+                        strImagePath = strImagePath.length() > 0 ? CFilePath::join( rho_native_reruntimepath() , "lib/" + strImagePath) : String();
+#endif
                     }
 
                     ((QtMainWindow*)qtMainWindow)->toolbarAddAction(QIcon(QString(strImagePath.c_str())), QString(label), action, wasSeparator);
@@ -604,6 +615,27 @@ void CMainWindow::menuAddAction(const char* label, int item)
     ((QtMainWindow*)qtMainWindow)->menuAddAction(QString(label), item);
 }
 
+// Window frame
+void CMainWindow::setFrame(int x, int y, int width, int height)
+{
+	((QtMainWindow*)qtMainWindow)->setFrame(x, y, width, height);
+}
+
+void CMainWindow::setPosition(int x, int y)
+{
+    ((QtMainWindow*)qtMainWindow)->setPosition(x, y);
+}
+
+void CMainWindow::setSize(int width, int height)
+{
+	((QtMainWindow*)qtMainWindow)->setSize(width, height);
+}
+
+void CMainWindow::lockSize(int locked)
+{
+	((QtMainWindow*)qtMainWindow)->lockSize(locked);
+}
+
 
 // **************************************************************************
 //
@@ -732,6 +764,13 @@ LRESULT CMainWindow::OnExecuteJS(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCt
     }
     return 0;
 }
+
+LRESULT CMainWindow::OnFullscreenCommand (WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& /*bHandled*/)
+{
+    LOG(INFO) + "OnFullscreenCommand";
+    ((QtMainWindow*)qtMainWindow)->fullscreenCommand((int)hWndCtl);
+    return 0;
+};
 
 LRESULT CMainWindow::OnSetCookieCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& /*bHandled*/)
 {

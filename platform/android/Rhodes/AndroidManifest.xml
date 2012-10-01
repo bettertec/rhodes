@@ -2,8 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.rhomobile.rhodes"
     android:installLocation="auto"
-    android:versionCode="38"
-    android:versionName="3.3.3">
+    android:versionCode="40"
+    android:versionName="3.5.0">
     
     <uses-sdk android:minSdkVersion="8" />
     
@@ -21,7 +21,7 @@
             android:configChanges="orientation|keyboardHidden"
             android:screenOrientation="portrait"
             android:launchMode="singleTask"
-			android:windowSoftInputMode="stateHidden|adjustPan"
+			android:windowSoftInputMode="adjustPan|stateHidden"
 			>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -109,7 +109,7 @@
                 <category android:name="com.rhomobile.rhodes" />
             </intent-filter>
         </receiver>
-        
+		
         <service
             android:name="com.rhomobile.rhodes.RhodesService" />
         
@@ -125,5 +125,6 @@
     <permission android:name="com.rhomobile.rhodes.permission.C2D_MESSAGE" android:protectionLevel="signature" />
     <uses-permission android:name="com.rhomobile.rhodes.permission.C2D_MESSAGE" />
     <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+	<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     
 </manifest> 

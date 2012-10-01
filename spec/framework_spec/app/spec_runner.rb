@@ -1,4 +1,5 @@
 require 'mspec'
+require 'spec/spec_helper'
 
 class SpecRunner < MSpecScript
   def initialize
@@ -25,7 +26,7 @@ class SpecRunner < MSpecScript
       end
 
       
-      if ( System.get_property('platform') == 'WINDOWS' )
+      if ( System.get_property('platform') == 'WINDOWS' ) || ( System.get_property('platform') == 'WINDOWS_DESKTOP' )
         next if file =~ /\/execution_spec$/           
       end
       
@@ -34,7 +35,7 @@ class SpecRunner < MSpecScript
     # CORE
     core = []
 
-    core << 'argf' unless System.get_property('platform') == 'WINDOWS'
+    core << 'argf' unless System.get_property('platform') == 'WINDOWS' || System.get_property('platform') == 'WINDOWS_DESKTOP'
     core << 'array'
     core << 'basicobject'    
     core << 'bignum'    
@@ -49,7 +50,7 @@ class SpecRunner < MSpecScript
     core << 'enumerable'   
     #has multiple crashes
     #core << 'enumerator'   
-    #core << 'env' unless System.get_property('platform') == 'WINDOWS'
+    #core << 'env' unless System.get_property('platform') == 'WINDOWS' || System.get_property('platform') == 'WINDOWS_DESKTOP'
     core << 'exception'
     core << 'false'
     core << 'file'
@@ -73,12 +74,12 @@ class SpecRunner < MSpecScript
     core << 'objectspace'
     core << 'precision'
     core << 'proc'
-    core << 'process' unless System.get_property('platform') == 'WINDOWS'
+    core << 'process' unless System.get_property('platform') == 'WINDOWS' || System.get_property('platform') == 'WINDOWS_DESKTOP'
     core << 'random'    
     core << 'range'
     core << 'rational'
     core << 'regexp'
-    core << 'signal'  unless System.get_property('platform') == 'WINDOWS'
+    core << 'signal'  unless System.get_property('platform') == 'WINDOWS' || System.get_property('platform') == 'WINDOWS_DESKTOP'
     core << 'string'
     core << 'struct'
     core << 'symbol'

@@ -54,6 +54,12 @@
 		BDFBD9A410B1B9E500BAAFAB /* forward_btn.png in Resources */ = {isa = PBXBuildFile; fileRef = BDFBD9A210B1B9E500BAAFAB /* forward_btn.png */; };
 		BDFBD9A510B1B9E500BAAFAB /* home_btn.png in Resources */ = {isa = PBXBuildFile; fileRef = BDFBD9A310B1B9E500BAAFAB /* home_btn.png */; };
 		BDFBD9A710B1BA2000BAAFAB /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = BDFBD9A610B1BA2000BAAFAB /* icon.png */; };
+<<<<<<< HEAD
+=======
+		C5D0D0C1153F279A00B8BF21 /* InitMemoryInfoCollector.mm in Sources */ = {isa = PBXBuildFile; fileRef = C5D0D0C0153F279A00B8BF21 /* InitMemoryInfoCollector.mm */; };
+		C5D90EF815F4F58D005F7C86 /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = C5D90EF715F4F58D005F7C86 /* Reachability.m */; };
+		C5D90EFB15F4FC92005F7C86 /* NetworkStatusMonitor.mm in Sources */ = {isa = PBXBuildFile; fileRef = C5D90EFA15F4FC92005F7C86 /* NetworkStatusMonitor.mm */; };
+>>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 		F5128ADD1069752F002F00E5 /* MapAnnotation.m in Sources */ = {isa = PBXBuildFile; fileRef = F5128ADC1069752F002F00E5 /* MapAnnotation.m */; };
 		F5128C2C106C1FF3002F00E5 /* GoogleGeocoder.m in Sources */ = {isa = PBXBuildFile; fileRef = F5128C2B106C1FF3002F00E5 /* GoogleGeocoder.m */; };
 		F51668E00FFD5F740079F023 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F51668DF0FFD5F740079F023 /* AudioToolbox.framework */; };
@@ -86,6 +92,7 @@
 		FA52317B12E7511700AB55CC /* esri.png in Resources */ = {isa = PBXBuildFile; fileRef = FA52317412E7511700AB55CC /* esri.png */; };
 		FA52317C12E7511700AB55CC /* esri@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FA52317512E7511700AB55CC /* esri@2x.png */; };
 		FA52330112E9204300AB55CC /* BluePushpin@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = FA52330012E9204300AB55CC /* BluePushpin@2x.png */; };
+		FA673A5715FCD787005CAD64 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA673A5615FCD787005CAD64 /* CoreMotion.framework */; };
 		FAC6EE6D143B3AF100B8E352 /* RhoMapViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FAC6EE6C143B3AF100B8E352 /* RhoMapViewController.m */; };
 		FACA4C781270AC0900777CFF /* LeftViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FACA4C711270AC0900777CFF /* LeftViewController.m */; };
 		FACA4C791270AC0900777CFF /* RightViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FACA4C731270AC0900777CFF /* RightViewController.m */; };
@@ -234,6 +241,15 @@
 		BDFBD9A210B1B9E500BAAFAB /* forward_btn.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = forward_btn.png; sourceTree = "<group>"; };
 		BDFBD9A310B1B9E500BAAFAB /* home_btn.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = home_btn.png; sourceTree = "<group>"; };
 		BDFBD9A610B1BA2000BAAFAB /* icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon.png; sourceTree = SOURCE_ROOT; };
+<<<<<<< HEAD
+=======
+		C5D0D0BF153F279300B8BF21 /* InitMemoryInfoCollector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InitMemoryInfoCollector.h; sourceTree = "<group>"; };
+		C5D0D0C0153F279A00B8BF21 /* InitMemoryInfoCollector.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = InitMemoryInfoCollector.mm; sourceTree = "<group>"; };
+		C5D90EF615F4F58D005F7C86 /* Reachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
+		C5D90EF715F4F58D005F7C86 /* Reachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
+		C5D90EF915F4FC92005F7C86 /* NetworkStatusMonitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetworkStatusMonitor.h; sourceTree = "<group>"; };
+		C5D90EFA15F4FC92005F7C86 /* NetworkStatusMonitor.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = NetworkStatusMonitor.mm; sourceTree = "<group>"; };
+>>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 		F5128ADB1069752F002F00E5 /* MapAnnotation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MapAnnotation.h; path = MapView/MapAnnotation.h; sourceTree = "<group>"; };
 		F5128ADC1069752F002F00E5 /* MapAnnotation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MapAnnotation.m; path = MapView/MapAnnotation.m; sourceTree = "<group>"; };
 		F5128C2A106C1FF3002F00E5 /* GoogleGeocoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GoogleGeocoder.h; path = Classes/MapView/GoogleGeocoder.h; sourceTree = SOURCE_ROOT; };
@@ -288,6 +304,7 @@
 		FA52317412E7511700AB55CC /* esri.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = esri.png; path = ESRI/esri.png; sourceTree = "<group>"; };
 		FA52317512E7511700AB55CC /* esri@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "esri@2x.png"; path = "ESRI/esri@2x.png"; sourceTree = "<group>"; };
 		FA52330012E9204300AB55CC /* BluePushpin@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = "BluePushpin@2x.png"; path = "ESRI/BluePushpin@2x.png"; sourceTree = "<group>"; };
+		FA673A5615FCD787005CAD64 /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS6.0.sdk/System/Library/Frameworks/CoreMotion.framework; sourceTree = DEVELOPER_DIR; };
 		FAC6EE6B143B3AF100B8E352 /* RhoMapViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = RhoMapViewController.h; path = MapView/RhoMapViewController.h; sourceTree = "<group>"; };
 		FAC6EE6C143B3AF100B8E352 /* RhoMapViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RhoMapViewController.m; path = MapView/RhoMapViewController.m; sourceTree = "<group>"; };
 		FACA4C701270AC0900777CFF /* LeftViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = LeftViewController.h; path = SplitView/LeftViewController.h; sourceTree = "<group>"; };
@@ -308,6 +325,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FA673A5715FCD787005CAD64 /* CoreMotion.framework in Frameworks */,
 				FA3C79E2136ED8BB002302E5 /* CoreMedia.framework in Frameworks */,
 				FA3C79AE136ED523002302E5 /* CoreVideo.framework in Frameworks */,
 				FA4D3F8D136B0A98009D6E63 /* libiconv.dylib in Frameworks */,
@@ -342,6 +360,8 @@
 		080E96DDFE201D6D7F000001 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				C5D90EF615F4F58D005F7C86 /* Reachability.h */,
+				C5D90EF715F4F58D005F7C86 /* Reachability.m */,
 				FA522E6C12DEA74F00AB55CC /* NativeView */,
 				BDC6F34611F4ABBF0056C1C3 /* icon57.png */,
 				BDC6F34711F4ABBF0056C1C3 /* icon72.png */,
@@ -373,6 +393,8 @@
 				BD5B7449113BE2DB00C6070A /* SplashViewController.m */,
 				BD6A6228123E46BB0093E03C /* RhoViewController.h */,
 				BD6A6229123E46BB0093E03C /* RhoViewController.m */,
+				C5D90EF915F4FC92005F7C86 /* NetworkStatusMonitor.h */,
+				C5D90EFA15F4FC92005F7C86 /* NetworkStatusMonitor.mm */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -427,6 +449,7 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				FA673A5615FCD787005CAD64 /* CoreMotion.framework */,
 				BDA4BA9F109A347400467AB9 /* libz.dylib */,
 				46B007061033776600D0C2F4 /* CoreGraphics.framework */,
 				F516695F0FFD78770079F023 /* AVFoundation.framework */,
@@ -903,7 +926,7 @@
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
+			shellPath = /bin/bash;
 			shellScript = "source ~/.profile\ncd ${SRCROOT}\ncd ../../\nrake build:iphone:rhobundle";
 		};
 		5C61F2BD1022321A0013E321 /* Move alerts to root of app */ = {
@@ -917,7 +940,7 @@
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
+			shellPath = /bin/bash;
 			shellScript = "if [ -d ${TARGET_BUILD_DIR}/${TARGET_NAME}.app/apps/public/alerts ]; then\n\tnf=$(ls ${TARGET_BUILD_DIR}/${TARGET_NAME}.app/apps/public/alerts | wc -l)\n\tif [ \"$nf\" -eq \"0\" ];  then \n\t\techo 'Alerts folder is empty...' \n\telse\n\t\techo Moving $nf alert\\(s\\)...\n\t\tmv ${TARGET_BUILD_DIR}/${TARGET_NAME}.app/apps/public/alerts/*.* ${TARGET_BUILD_DIR}/${TARGET_NAME}.app\n\tfi\nelse\n\techo 'Alerts folder is not found...'\nfi\n";
 		};
 		BD4D7DCE10AE2DA4003DCE59 /* Copy RhoBundle */ = {
@@ -931,7 +954,7 @@
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
+			shellPath = /bin/bash;
 			shellScript = "RHO_SOURCE_DIR=${SRCROOT}/bin/RhoBundle\nRHO_TARGET_DIR=${TARGET_BUILD_DIR}/${TARGET_NAME}.app\necho \"Create dir $RHO_TARGET_DIR\"\nmkdir -p ${RHO_TARGET_DIR}\nfor i in `ls -1 ${RHO_SOURCE_DIR}`\ndo\n  echo \"rm -Rf $RHO_TARGET_DIR/$i\"\n  rm -Rf ${RHO_TARGET_DIR}/$i\ndone\necho \"cp -Rf $RHO_SOURCE_DIR/* $RHO_TARGET_DIR\"\ncp -Rf ${RHO_SOURCE_DIR}/* ${RHO_TARGET_DIR}";
 		};
 		FA4207711277930A00BDE415 /* Copy Loading images */ = {
@@ -945,7 +968,7 @@
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
+			shellPath = /bin/bash;
 			shellScript = "RHO_SOURCE_DIR=${SRCROOT}\nRHO_TARGET_DIR=${TARGET_BUILD_DIR}/${TARGET_NAME}.app\necho \"Create dir $RHO_TARGET_DIR\"\nmkdir -p ${RHO_TARGET_DIR}\n\nif [ -e ${RHO_SOURCE_DIR}/Default.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default@2x.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default@2x.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default@2x.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-Portrait.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-Portrait.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-Portrait.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-PortraitUpsideDown.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-PortraitUpsideDown.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-PortraitUpsideDown.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-Landscape.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-Landscape.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-Landscape.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-LandscapeLeft.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeLeft.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeLeft.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-LandscapeRight.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeRight.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeRight.png ${RHO_TARGET_DIR}\nfi";
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -1002,6 +1025,13 @@
 				FA522E8112DEA7B300AB55CC /* RhoNativeViewManager.mm in Sources */,
 				FA52300D12E4BBC700AB55CC /* MapViewManager.m in Sources */,
 				FAC6EE6D143B3AF100B8E352 /* RhoMapViewController.m in Sources */,
+<<<<<<< HEAD
+=======
+				FA14CECD150130DB00734801 /* DateTimePickerViewController.m in Sources */,
+				C5D0D0C1153F279A00B8BF21 /* InitMemoryInfoCollector.mm in Sources */,
+				C5D90EF815F4F58D005F7C86 /* Reachability.m in Sources */,
+				C5D90EFB15F4FC92005F7C86 /* NetworkStatusMonitor.mm in Sources */,
+>>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1040,13 +1070,11 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					armv7,
-					armv6,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CODE_SIGN_ENTITLEMENTS = "";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COMPRESS_PNG_FILES = NO;
 				COPY_PHASE_STRIP = NO;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -1054,7 +1082,7 @@
 				GCC_PREFIX_HEADER = rhorunner_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
 				INFOPLIST_FILE = Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 3.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
@@ -1070,7 +1098,7 @@
 				STANDARD_C_PLUS_PLUS_LIBRARY_TYPE = dynamic;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../shared/ruby/iphone ../shared/ruby/include ../shared/curl/include ../shared/ ../shared/syncengine ../shared/logging ../shared/common rhoextlib";
-				VALID_ARCHS = "armv6 armv7 i386";
+				VALID_ARCHS = "armv7 i386";
 			};
 			name = Debug;
 		};
@@ -1078,20 +1106,18 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					armv7,
-					armv6,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CODE_SIGN_ENTITLEMENTS = Entitlements.plist;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COMPRESS_PNG_FILES = NO;
 				COPY_PHASE_STRIP = YES;
 				EXTENSIONS_LDFLAGS = "-filelist $(TARGET_TEMP_DIR)/rhodeslibs.txt";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = rhorunner_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = "";
 				INFOPLIST_FILE = Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 3.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
@@ -1106,7 +1132,7 @@
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../shared/ruby/iphone ../shared/ruby/include ../shared/curl/include ../shared/ ../shared/syncengine ../shared/logging ../shared/common rhoextlib";
-				VALID_ARCHS = "armv6 armv7 i386";
+				VALID_ARCHS = "armv7 i386";
 			};
 			name = Release;
 		};
@@ -1156,19 +1182,17 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = (
-					armv6,
-					armv7,
-				);
+				ARCHS = "$(ARCHS_STANDARD_32_BIT)";
 				CODE_SIGN_ENTITLEMENTS = Entitlements.plist;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				COMPRESS_PNG_FILES = NO;
 				COPY_PHASE_STRIP = YES;
 				EXTENSIONS_LDFLAGS = "-filelist $(TARGET_TEMP_DIR)/rhodeslibs.txt";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = rhorunner_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 3.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
@@ -1179,9 +1203,12 @@
 				OTHER_CFLAGS = "";
 				OTHER_CPLUSPLUSFLAGS = "$(OTHER_CFLAGS)";
 				PRODUCT_NAME = rhorunner;
+				PROVISIONING_PROFILE = "";
+				"PROVISIONING_PROFILE[sdk=iphoneos*]" = "";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				USER_HEADER_SEARCH_PATHS = "../shared/ruby/iphone ../shared/ruby/include ../shared/curl/include ../shared/ ../shared/syncengine ../shared/logging ../shared/common rhoextlib";
+				VALID_ARCHS = armv7;
 			};
 			name = Distribution;
 		};

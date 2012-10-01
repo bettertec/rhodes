@@ -44,6 +44,13 @@ struct CRhoExtData
     HWND       m_hBrowserWnd;
 };
 
+struct CRhoFloatData
+{
+    float m_fValue;
+
+    CRhoFloatData(float fValue):m_fValue(fValue){}
+};
+
 struct IRhoExtension 
 {
     virtual ~IRhoExtension(){}
@@ -59,8 +66,10 @@ struct IRhoExtension
     virtual long OnAuthenticationRequest(int nEnum, void* pData, const CRhoExtData& oExtData){return 0;}
     virtual long OnGeolocationData(int nEnum, void* pData, const CRhoExtData& oExtData){return 0;}
     virtual long OnNavigateError(const wchar_t* szUrlBeingNavigatedTo, const CRhoExtData& oExtData){return 0;}
+    virtual long OnLicenseError(const wchar_t* szUrlBeingNavigatedTo, const CRhoExtData& oExtData){return 0;}
     virtual void OnAppActivate(bool bActivate, const CRhoExtData& oExtData){}
     virtual void OnWindowChanged(LPVOID lparam){}
+    virtual bool onHTMLWndMsg(MSG& oMsg){return false;}
 };
 
 struct IRhoExtManager
@@ -99,6 +108,7 @@ struct IRhoExtManager
 
     virtual void setBrowserGesturing(bool bEnableGesturing) = 0;
     virtual void passSipPositionToEngine() = 0;
+	virtual DWORD getProcessId() = 0;
 };
 
 class CExtManager : public IRhoExtManager
@@ -117,12 +127,14 @@ public:
     void onNavigateComplete(const wchar_t* szUrlBeingNavigatedTo);
     void onDocumentComplete(const wchar_t* szUrlOfDocument);
     bool onWndMsg(MSG& oMsg);
+    bool onHTMLWndMsg(MSG& oMsg);
     long OnNavigateTimeout(const wchar_t* szUrlBeingNavigatedTo);
     long OnSIPState(bool bSIPState);
     long OnAlertPopup(int nEnum, void* pData);
     long OnAuthenticationRequest(int nEnum, void* pData);
     long OnGeolocationData(int nEnum, void* pData);
     long OnNavigateError(const wchar_t* szUrlBeingNavigatedTo);
+    long OnLicenseError(const wchar_t* szUrlBeingNavigatedTo);
     void OnAppActivate(bool bActivate);
     void OnWindowChanged(LPVOID lparam);
 
@@ -157,6 +169,7 @@ public:
     virtual StringW getConfigPath();
     virtual void setBrowserGesturing(bool bEnableGesturing);
     virtual void passSipPositionToEngine();
+	virtual DWORD getProcessId();
 };
 
 } //namespace common

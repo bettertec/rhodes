@@ -139,7 +139,7 @@ int CSyncThread::getLastPollInterval()
 void CSyncThread::onTimeout()//throws Exception
 {
     if ( isNoCommands() && getPollInterval()>0 )
-        addQueueCommandInt(new CSyncCommand(scSyncAll,false,""));
+        addQueueCommandInt(new CSyncCommand(scSyncAll,false,"",false));
 }
 
 void CSyncThread::checkShowStatus(CSyncCommand& oSyncCmd)
@@ -158,7 +158,7 @@ void CSyncThread::processCommand(IQueueCommand* pCmd)
     {
     case scSyncAll:
         checkShowStatus(oSyncCmd);
-        m_oSyncEngine.doSyncAllSources(oSyncCmd.m_strQueryParams);
+        m_oSyncEngine.doSyncAllSources(oSyncCmd.m_strQueryParams,oSyncCmd.m_bSyncOnlyChangedSources);
         break;
     case scSyncOne:
         {
@@ -255,9 +255,9 @@ extern "C" {
 using namespace rho::sync;
 using namespace rho::db;
 	
-unsigned long rho_sync_doSyncAllSources(int show_status_popup, const char * query_params/* = 0*/)
+unsigned long rho_sync_doSyncAllSources(int show_status_popup, const char * query_params/* = 0*/, int sync_only_changed_sources)
 {
-    CSyncThread::getInstance()->addQueueCommand(new CSyncThread::CSyncCommand(CSyncThread::scSyncAll,show_status_popup!=0,query_params));
+    CSyncThread::getInstance()->addQueueCommand(new CSyncThread::CSyncCommand(CSyncThread::scSyncAll,show_status_popup!=0,query_params,sync_only_changed_sources!=0));
 
     return CSyncThread::getInstance()->getRetValue();
 }
@@ -278,7 +278,7 @@ unsigned long rho_sync_doSyncSourceByName(const char* szSrcName)
 unsigned long rho_sync_doSyncSource(unsigned long nSrcID,int show_status_popup, const char * query_params/* = 0*/)
 {
     CRhoRubyStringOrInt oSrcID = rho_ruby_getstringorint(nSrcID);
-    CSyncThread::getInstance()->addQueueCommand(new CSyncThread::CSyncCommand(CSyncThread::scSyncOne, oSrcID.m_szStr, (int)oSrcID.m_nInt, show_status_popup!=0, query_params ) );
+    CSyncThread::getInstance()->addQueueCommand(new CSyncThread::CSyncCommand(CSyncThread::scSyncOne, oSrcID.m_szStr, (int)oSrcID.m_nInt, show_status_popup!=0, query_params, false ) );
 
     return CSyncThread::getInstance()->getRetValue();
 }	
@@ -361,14 +361,12 @@ void rho_sync_set_syncserver(const char* syncserver)
     if ( syncserver && *syncserver )
     {
         CSyncThread::getInstance()->start(CSyncThread::epLow);
-        if ( CClientRegister::getInstance() != null )
-            CClientRegister::getInstance()->startUp();
+        //CClientRegister::Create();
     }
     else
     {
         CSyncThread::getInstance()->stop(CSyncThread::SYNC_WAIT_BEFOREKILL_SECONDS);
-        if ( CClientRegister::getInstance() != null )
-            CClientRegister::getInstance()->stop(CSyncThread::SYNC_WAIT_BEFOREKILL_SECONDS);
+        CClientRegister::Stop();
     }
 }
 
@@ -511,6 +509,13 @@ void rho_sync_set_source_property(int nSrcID, const char* szPropName, const char
     CSyncEngine::getSourceOptions().setProperty(nSrcID, szPropName, szPropValue);
 }
 
+#ifndef RHO_NO_RUBY
+unsigned long rho_sync_get_source_property(int nSrcID, const char* szPropName)
+{
+    return rho_ruby_create_string( CSyncEngine::getSourceOptions().getProperty(nSrcID, szPropName).c_str() );
+}
+#endif //RHO_NO_RUBY
+
 void rho_sync_set_ssl_verify_peer(int b)
 {
     CSyncThread::getSyncEngine().setSslVerifyPeer(b == 0 ? false : true);
@@ -519,12 +524,7 @@ void rho_sync_set_ssl_verify_peer(int b)
 
 void rho_sync_register_push()
 {
-    if ( CClientRegister::getInstance() != null )
-    {
-        rho::db::CDBAdapter::getUserDB().executeSQL("UPDATE client_info SET token_sent=?", 0 );
-        CClientRegister::getInstance()->startUp();
-    }
-
+    RAWLOG_WARNING("'register_push' is not implemented!");
 }
 
 }

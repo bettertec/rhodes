@@ -375,6 +375,13 @@ void rho_ruby_loadallsyncsources()
     rb_funcall(framework, loadAllSyncSources_mid, 0 );
 }
 
+void rho_ruby_callmethod(const char* szMethodPath)
+{
+    ID rbMethodCall;
+    CONST_ID(rbMethodCall, szMethodPath);
+    rb_funcall(Qnil, rbMethodCall, 0);
+}
+
 void rho_ruby_reset_db_on_sync_user_changed()
 {
     rb_funcall(framework, resetDBOnSyncUserChanged_mid, 0);
@@ -509,6 +516,11 @@ VALUE rho_ruby_create_string(const char* szVal)
 VALUE rho_ruby_create_string_withlen(int len)
 {
     return rb_str_new("", len);
+}
+
+VALUE rho_ruby_create_string_withlen2(const char* szVal, int len)
+{
+    return rb_str_new(szVal, len);
 }
 
 VALUE rho_ruby_create_time(long t)

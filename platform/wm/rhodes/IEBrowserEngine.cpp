@@ -8,8 +8,9 @@
 #include <webvw.h>
 #endif
 
-extern "C" void rho_wm_impl_CheckLicense();
+extern "C" int rho_wm_impl_CheckLicense();
 extern "C" int rho_wm_impl_CheckSymbolDevice();
+extern "C" void rho_wm_registerRhoExtension();
 
 CIEBrowserEngine::CIEBrowserEngine(HWND hParentWnd, HINSTANCE hInstance) :
     m_spIWebBrowser2(NULL)
@@ -38,6 +39,8 @@ CIEBrowserEngine::CIEBrowserEngine(HWND hParentWnd, HINSTANCE hInstance) :
     if ( !RHOCONF().getBool("wm_show_statusbar") )
         m_spIWebBrowser2->put_StatusBar(VARIANT_FALSE);
 
+    rho_wm_registerRhoExtension();
+
 }
 
 CIEBrowserEngine::~CIEBrowserEngine(void)
@@ -48,6 +51,9 @@ CIEBrowserEngine::~CIEBrowserEngine(void)
 BOOL CIEBrowserEngine::Navigate(LPCTSTR szURL)
 {
     BSTR bstrUrl = SysAllocString(szURL);
+    if ( wcsncmp(szURL, L"http://127.0.0.1", 16 ) == 0 )
+        wcsncpy( bstrUrl+7, L"localhost", 9 );
+
     BOOL bRes = m_spIWebBrowser2->Navigate(bstrUrl, NULL, &CComVariant(L"_self"), NULL, NULL) == S_OK;
 
     SysFreeString(bstrUrl);    
@@ -251,4 +257,9 @@ void CIEBrowserEngine::setBrowserGesturing(bool bEnableGesturing)
 
 void CIEBrowserEngine::NotifyEngineOfSipPosition()
 {
+}
+
+DWORD CIEBrowserEngine::GetProcessID()
+{
+    return ::GetCurrentProcessId();
 }
