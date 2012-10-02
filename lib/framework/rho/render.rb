@@ -206,6 +206,8 @@ module Rho
       RhoController.start_objectnotify()
       RhoController.start_geoview_notification()
       @back_action = options[:back] if options[:back]
+      puts options
+      puts "changed back_url to #{@back_action}"
       @rendered = true
       
       RhoProfiler.stop_counter('ERB_RENDER')      
