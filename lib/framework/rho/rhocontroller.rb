@@ -117,9 +117,9 @@ module Rho
         
       res = render unless @rendered or @redirected
         
-      application.set_menu(@menu, @back_action)
-  	  @menu = nil
-  	  @back_action = nil;
+      application.set_menu(@menu, @back_action) if @back_action
+      #@menu = nil
+      #@back_action = nil;
   	  res
     end
 

@@ -1238,7 +1238,7 @@ namespace "build" do
 
       version = version["major"]*10000 + version["minor"]*100 + version["patch"]
       
-      usesPermissions = ['android.permission.INTERNET', 'android.permission.PERSISTENT_ACTIVITY', 'android.permission.WAKE_LOCK']
+      usesPermissions = ['android.permission.INTERNET', 'android.permission.PERSISTENT_ACTIVITY']#, 'android.permission.WAKE_LOCK'
       $app_config["capabilities"].each do |cap|
         cap = ANDROID_PERMISSIONS[cap]
         next if cap.nil?
