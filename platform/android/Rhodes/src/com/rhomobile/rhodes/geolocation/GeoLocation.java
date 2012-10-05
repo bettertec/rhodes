@@ -75,7 +75,9 @@ public class GeoLocation {
 			geoCallback();
 		}
 		else {
-			Logger.T(TAG, "onGeoCallback() SKIP");
+			String myMsg = "onGeoCallback() SKIP - because ourIsEnable: " + ourIsEnable + " and ourIsErrorState " + ourIsErrorState;
+			//Logger.T(TAG, "onGeoCallback() SKIP");
+			Logger.T(TAG, myMsg);
 		}
 	}
 	
@@ -194,6 +196,8 @@ public class GeoLocation {
 		try {
 			checkState();
 			Logger.T(TAG, "isKnownPosition");
+			String myMsg = "position is known: " + ourIsKnownPosition;
+			Logger.T(TAG, myMsg);
 			return ourIsKnownPosition;
 		}
 		catch (Exception e) {

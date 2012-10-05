@@ -95,8 +95,10 @@ public class GeoLocationImpl {
 		}
 		
 		void requestLastLocation() {
+			Logger.T(TAG, "GeoLocation: requestLastLocation called!");
 			if (this.provider != null && this.manager != null) {
 				Location location = this.manager.getLastKnownLocation(this.providerName);
+				Logger.T(TAG, location.toString());
 				onLocationChanged(location);
 			}
 		}
@@ -148,8 +150,8 @@ public class GeoLocationImpl {
 		synchronized (mListeners) {
 			while (it.hasNext()) {
 				String provider = it.next();
-				if (provider.equals(LocationManager.PASSIVE_PROVIDER))
-					continue;
+				//if (provider.equals(LocationManager.PASSIVE_PROVIDER))
+					//continue;
 				
 				RhoLocationListener listener = new RhoLocationListener(provider, man);
 				mSwitchedOffListeners.add(listener);
