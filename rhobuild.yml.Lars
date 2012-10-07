@@ -1,0 +1,43 @@
+--- 
+env: 
+  app: C:/Programmierung/bettertaxi/CustomerApp
+  paths: 
+    android-ndk: D:/Downloads/BRO&BI~1/Programmierung/android-ndk-r8b
+    java: C:/Programmierung/jdk1.7.0_02/bin
+    android: C:/Program Files (x86)/Android/android-sdk
+    4.6: 
+      jde: C:/Program Files/Research In Motion/BlackBerry JDE 4.6.0
+      sim: 9000
+      mds: C:/Program Files/Research In Motion/BlackBerry JDE 4.6.0/MDS
+    cabwiz: C:/Program Files/Windows Mobile 6 SDK/Tools/CabWiz
+    4.2: 
+      jde: C:/Program Files/Research In Motion/BlackBerry JDE 4.2.0
+      sim: 8100
+      mds: C:/Program Files/Research In Motion/BlackBerry Email and MDS Services Simulators 4.1.2/MDS
+excludedirs: 
+  bb: 
+  - public/js/iui
+  - public/js/jquery*
+  - public/jqtouch*
+  - public/js/prototype*
+  - public/css/iphone*
+  - public/iwebkit
+  - public/themes
+  - "**/jquery*.js"
+  - "**/*.db"
+  - public/images/android
+  - public/images/iphone
+  all: 
+  - "**/.*.swo"
+  - "**/.*.swn"
+  - "**/.DS_Store"
+android: 
+build: 
+  symbianpath: platform/symbian
+  bb: 
+  bbsignpwd: somepasswordhere
+  bbpath: platform/bb
+  wmpath: platform/wm
+  androidpath: platform/android
+  wppath: platform/wp7
+  iphonepath: platform/iphone

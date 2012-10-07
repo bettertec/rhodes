@@ -98,7 +98,8 @@ public class GeoLocationImpl {
 			Logger.T(TAG, "GeoLocation: requestLastLocation called!");
 			if (this.provider != null && this.manager != null) {
 				Location location = this.manager.getLastKnownLocation(this.providerName);
-				Logger.T(TAG, location.toString());
+				if (location != null)
+						Logger.T(TAG, location.toString());
 				onLocationChanged(location);
 			}
 		}
