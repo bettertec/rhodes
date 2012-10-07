@@ -45,6 +45,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
@@ -522,5 +524,12 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		RhoBluetoothManager.onActivityResult(requestCode, resultCode, data);
 	}
+    
+    
+    public void onConfigurationChanged(Configuration newConfig)
+    {
+        super.onConfigurationChanged(newConfig);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+    }
 	
 }
