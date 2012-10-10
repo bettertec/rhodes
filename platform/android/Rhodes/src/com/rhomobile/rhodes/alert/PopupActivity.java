@@ -35,6 +35,8 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
@@ -203,6 +205,14 @@ public class PopupActivity extends BaseActivity {
 
         createDialog(title, message, icon, buttons, callback, addInput,
                 inputPlaceholder, loadingIndicator);
+        
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+    }
+    
+    public void onConfigurationChanged(Configuration newConfig)
+    {
+        super.onConfigurationChanged(newConfig);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
 
     synchronized private void createDialog(String title, String message,
@@ -460,6 +470,7 @@ public class PopupActivity extends BaseActivity {
         intent.putExtra(INTENT_EXTRA_PREFIX + ".buttons.titles",
                 new String[] { hide });
         ctx.startActivity(intent);
+        
     }
 
     public synchronized static void hidePopup() {

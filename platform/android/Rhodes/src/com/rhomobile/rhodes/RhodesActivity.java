@@ -216,6 +216,9 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
 				}
 			});
 		}
+        
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        
 	}
 	
 	public static void setFullscreen(int enable) {
