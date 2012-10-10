@@ -39,7 +39,6 @@ extern "C" {
 int rho_geo_known_position();
 void rho_geoimpl_settimeout(int nTimeoutSec);
 int rho_geo_is_available();
-int rho_geo_number_available();
 }
 
 namespace rho {
@@ -84,6 +83,28 @@ CGeoLocation::CGeoLocation()
     m_nGeoPingTimeoutSec = 0;
 }
 
+
+void CGeoLocation::callGeoCallback(const char* pszError, boolean bRunInThread)
+{
+    synchronized(m_mxNotify)
+    {
+        RAWTRACE4("Call geo callback: %s, %s, status=%s, runInThread=%d.",
+                     m_Notify.m_strUrl.c_str(), m_Notify.m_strParams.c_str(), pszError?pszError:"ok", (int)bRunInThread);
+        callGeoCallback(m_Notify, pszError, bRunInThread);
+        if(pszError && !strcmp(pszError, "stop")) {
+            RAWTRACE("Reset geo notification callback to default.");
+            m_Notify = CGeoNotification();
+        }
+        RAWTRACE4("Call geo view callback: %s, %s, status=%s, runInThread=%d.",
+                     m_ViewNotify.m_strUrl.c_str(), m_ViewNotify.m_strParams.c_str(), pszError?pszError:"ok", (int)bRunInThread);
+        callGeoCallback(m_ViewNotify, pszError, bRunInThread);
+        if (pszError) {
+            RAWTRACE("Reset geo view notification callback to default.");
+            m_ViewNotify = CGeoNotification();
+        }
+    }
+}
+
 void CGeoLocation::callGeoCallback(const CGeoNotification& oNotify, const char* pszError, boolean bRunInThread)
 {
     if ((oNotify.m_strUrl.length() == 0))
@@ -98,25 +119,31 @@ void CGeoLocation::callGeoCallback(const CGeoNotification& oNotify, const char* 
             strBody += "&error_code=" + convertToStringA(12);//RhoRuby.ERR_GEOLOCATION;
         }
         if (rho_geo_is_available()) {
-            strBody += "&available=1&known_position=" + convertToStringA(rho_geo_known_position());
-            strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
-            strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
-            strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
-            strBody += convertToStringA(rho_geo_location_string());
+        	const char* fullString = rho_geo_location_string();
+	        if (fullString) {
+	        	strBody += fullString;
+	        } else {
+	            strBody += "&available=1&known_position=" + convertToStringA(rho_geo_known_position());
+	            strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
+	            strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
+	            strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
+	        }
         } else {
             strBody += "&available=0&known_position=0&latitude=0.0&longitude=0.0&accuracy=0.0";
         }
     } else {
         strBody += "&status=ok";
         strBody += "&available=" + convertToStringA( (rho_geo_is_available() ? 1 : 0) );
-        strBody += "&known_position=" + convertToStringA(rho_geo_known_position());
-        strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
-        strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
-        strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
-        
-        //String fullString = (String) rho_geo_location_string();
-        //RAWTRACE1("full callback body: %s", fullString.c_str());
-        //strBody.append(fullString);
+        const char* fullString = rho_geo_location_string();
+        if (fullString)
+        {
+        	strBody += fullString;
+        } else {
+	        strBody += "&known_position=" + convertToStringA(rho_geo_known_position());
+	        strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
+	        strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
+	        strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
+        }
     }
 
     if ( oNotify.m_strParams.length() > 0 )
@@ -129,27 +156,6 @@ void CGeoLocation::callGeoCallback(const CGeoNotification& oNotify, const char* 
     //{
     //    getNet().pushData( strFullUrl, strBody, null );
     //}
-}
-
-void CGeoLocation::callGeoCallback(const char* pszError, boolean bRunInThread)
-{
-    synchronized(m_mxNotify)
-    {
-        RAWTRACE4("blabla Call geo callback: %s, %s, status=%s, runInThread=%d.",
-                     m_Notify.m_strUrl.c_str(), m_Notify.m_strParams.c_str(), pszError?pszError:"ok", (int)bRunInThread);
-        callGeoCallback(m_Notify, pszError, bRunInThread);
-        if(pszError && !strcmp(pszError, "stop")) {
-            RAWTRACE("Reset geo notification callback to default.");
-            m_Notify = CGeoNotification();
-        }
-        RAWTRACE4("blabla Call geo view callback: %s, %s, status=%s, runInThread=%d.",
-                     m_ViewNotify.m_strUrl.c_str(), m_ViewNotify.m_strParams.c_str(), pszError?pszError:"ok", (int)bRunInThread);
-        callGeoCallback(m_ViewNotify, pszError, bRunInThread);
-        if (pszError) {
-            RAWTRACE("Reset geo view notification callback to default.");
-            m_ViewNotify = CGeoNotification();
-        }
-    }
 }
 
 void CGeoLocation::setGeoCallback(const char *url, const char* params, int timeout_sec, boolean bView)

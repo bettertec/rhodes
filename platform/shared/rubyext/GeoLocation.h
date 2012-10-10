@@ -96,7 +96,7 @@ extern "C" {
 double rho_geo_latitude();
 double rho_geo_longitude();
 float rho_geo_accuracy();
-char* rho_geo_location_string();
+const char* rho_geo_location_string();
 
 
 void rho_geo_set_notification( const char *url, char* params, int timeout_sec);

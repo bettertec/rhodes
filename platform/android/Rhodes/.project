@@ -3,6 +3,7 @@
 	<name>Rhodes</name>
 	<comment></comment>
 	<projects>
+		<project>CustomerApp</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
@@ -107,7 +108,7 @@
 		<link>
 			<name>Motorola-Extensions</name>
 			<type>2</type>
-			<location>/Users/lexis_tikh/rhomobile/Motorola-Extensions</location>
+			<location>C:/Users/lexis_tikh/rhomobile/Motorola-Extensions</location>
 		</link>
 		<link>
 			<name>extensions</name>

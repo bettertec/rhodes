@@ -5,13 +5,13 @@
 #include "app_build_configs.h"
 
 static const char* keys[] = { ""
-,"name"
 ,"android_title"
+,"name"
 };
 
 static const char* values[] = { ""
-,"BetterTaxi"
 ,"0"
+,"BetterTaxi"
 };
 
 #define APP_BUILD_CONFIG_COUNT 3

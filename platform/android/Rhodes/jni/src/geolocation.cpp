@@ -55,19 +55,36 @@ RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_geolocation_GeoLocation_geoCal
     rho_geo_callcallback_stop();
 }
 
-RHO_GLOBAL char* rho_geo_location_string()
+static std::string return_string;
+
+RHO_GLOBAL const char* rho_geo_location_string()
 {
+	RAWTRACE("Call rho_geo_location_string");
+	
     JNIEnv *env = jnienv();
     static jclass cls = getJNIClass(RHODES_JAVA_CLASS_GEO_LOCATION);
-    if (!cls) return 0;
-    static jmethodID mid = getJNIClassStaticMethod(env, cls, "getLocationString", "()Ljava/lang/String");
-    if (!mid) return 0;
+    if (!cls) return "no class";
+    static jmethodID mid = getJNIClassStaticMethod(env, cls, "getLocationString", "()Ljava/lang/String;");
+    if (!mid) return "no method";
     jstring jstr = (jstring) env->CallStaticObjectMethod(cls, mid);
-    char* buf = (char*) env->GetStringUTFChars(jstr,0);
+    
+    RAWTRACE("got jstring");
+    
+    if (jstr) {
+    	return_string = rho_cast<std::string>(env, jstr);
+    	RAWTRACE("got return_string");
+    	env->DeleteLocalRef(jstr);
+    	RAWTRACE(return_string.c_str());
+    	return return_string.c_str();
+    }
+    
+    return NULL;
+    
+    //char* buf = (char*) env->GetStringUTFChars(jstr,0);
     //VALUE result = rho_ruby_create_string(buf);
     //env->ReleaseStringUTFChars(jstr, buf);
 	//env->DeleteLocalRef(jstr);
-    return buf;
+    //return buf;
     //return env->CallStaticObjectMethod(cls, mid);
 }
 
@@ -129,16 +146,6 @@ RHO_GLOBAL int rho_geo_is_available()
     static jmethodID mid = getJNIClassStaticMethod(env, cls, "isAvailable", "()Z");
     if (!mid) return 0;
     return env->CallStaticBooleanMethod(cls, mid);
-}
-
-RHO_GLOBAL int rho_geo_number_available()
-{
-    JNIEnv *env = jnienv();
-    static jclass cls = getJNIClass(RHODES_JAVA_CLASS_GEO_LOCATION);
-    if (!cls) return 0;
-    static jmethodID mid = getJNIClassStaticMethod(env, cls, "numberAvailable", "()I");
-    if (!mid) return 0;
-    return env->CallStaticIntMethod(cls, mid);
 }
 
 RHO_GLOBAL void rho_geoimpl_turngpsoff()

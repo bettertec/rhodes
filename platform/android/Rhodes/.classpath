@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
+	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="src" path="gen"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jre7"/>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry kind="lib" path="C:/Program Files (x86)/Android/android-sdk/platforms/android-16/android.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files (x86)/Android/android-sdk/add-ons/addon-google_apis-google-16/libs/maps.jar"/>
+	<classpathentry kind="lib" path="C:/Program Files (x86)/Android/android-sdk/add-ons/addon-google_apis-google-16/libs/usb.jar"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>

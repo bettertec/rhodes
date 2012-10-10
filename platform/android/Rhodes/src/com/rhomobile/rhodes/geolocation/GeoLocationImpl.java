@@ -305,8 +305,7 @@ public class GeoLocationImpl {
 		unregisterListeners(null);
 	}
 
-	//synchronized boolean isAvailable() {
-	synchronized int isAvailable() {
+	synchronized boolean isAvailable() {
 		Iterator<RhoLocationListener> it;
 		int available = 0;
 		synchronized (mListeners) {
@@ -316,8 +315,7 @@ public class GeoLocationImpl {
 					available++;
 			}
 		}
-		//return available > 0;
-		return available;
+		return available > 0;
 	}
 	
 	synchronized Location getLocation() {
