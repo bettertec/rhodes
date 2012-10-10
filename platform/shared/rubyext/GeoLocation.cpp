@@ -102,7 +102,6 @@ void CGeoLocation::callGeoCallback(const CGeoNotification& oNotify, const char* 
             strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
             strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
             strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
-            strBody += convertToStringA(rho_geo_location_string());
         } else {
             strBody += "&available=0&known_position=0&latitude=0.0&longitude=0.0&accuracy=0.0";
         }
@@ -114,10 +113,10 @@ void CGeoLocation::callGeoCallback(const CGeoNotification& oNotify, const char* 
         strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
         strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
         
-        //String fullString = (String) rho_geo_location_string();
-        //RAWTRACE1("full callback body: %s", fullString.c_str());
-        //strBody.append(fullString);
     }
+    if (rho_geo_is_available())
+        strBody += "" + convertToStringA(rho_geo_location_string());
+    
 
     if ( oNotify.m_strParams.length() > 0 )
         strBody += "&" + oNotify.m_strParams;

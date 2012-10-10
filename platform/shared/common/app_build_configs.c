@@ -6,13 +6,15 @@
 
 static const char* keys[] = { ""
 ,"name"
+,"android_title"
 };
 
 static const char* values[] = { ""
 ,"BetterTaxi"
+,"0"
 };
 
-#define APP_BUILD_CONFIG_COUNT 2
+#define APP_BUILD_CONFIG_COUNT 3
 
 const char* get_app_build_config_item(const char* key) {
   int i;
