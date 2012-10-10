@@ -26,11 +26,15 @@
 package com.rhomobile.rhodes.geolocation;
 
 import android.location.Location;
+import android.location.LocationProvider;
 
 import com.rhomobile.rhodes.Capabilities;
 import com.rhomobile.rhodes.Logger;
 import com.rhomobile.rhodes.RhoConf;
 import com.rhomobile.rhodes.util.PerformOnUiThread;
+
+import java.util.Iterator;
+import java.util.List;
 
 public class GeoLocation {
 
@@ -75,7 +79,9 @@ public class GeoLocation {
 			geoCallback();
 		}
 		else {
-			Logger.T(TAG, "onGeoCallback() SKIP");
+			String myMsg = "onGeoCallback() SKIP - because ourIsEnable: " + ourIsEnable + " and ourIsErrorState " + ourIsErrorState;
+			//Logger.T(TAG, "onGeoCallback() SKIP");
+			Logger.T(TAG, myMsg);
 		}
 	}
 	
@@ -139,15 +145,71 @@ public class GeoLocation {
 			boolean result = false;
 			if (locImpl != null) {
 				checkState();
-				result = getImpl().isAvailable();
+				result = getImpl().isAvailable() > 0;
 			}
 			Logger.T(TAG, "Geo location service is " + (result ? "" : "not ") + "available");
+			Logger.T(TAG, "Geo location service number is " + getImpl().isAvailable());
+			Logger.T(TAG, "full string: " + getLocationString());
 			return result;
 		}
 		catch (Exception e) {
             Logger.E(TAG, e);
 		}
 		return false;
+	}
+
+	public static int numberAvailable() {
+		Logger.T(TAG, "numberAvailable...");
+		try {
+			int result = 0;
+			if (locImpl != null) {
+				checkState();
+				result = getImpl().isAvailable();
+			}
+			Logger.T(TAG, "Geo location service number is " + result);
+			Logger.T(TAG, "full string: " + getLocationString());
+			return result;
+		}
+		catch (Exception e) {
+            Logger.E(TAG, e);
+		}
+		return 0;
+	}
+	
+	public static String getLocationString() {
+		List<String> currentProviders = getImpl().locationManager.getProviders(true);
+		
+		String strBody = "";
+
+		Iterator<String> it = currentProviders.iterator();
+		while (it.hasNext()) {
+			String lpString = it.next();
+			Logger.T(TAG, "looking at provider: " + lpString);
+			Location l = getImpl().locationManager.getLastKnownLocation(lpString);
+			strBody += "&[" + lpString + "][latitude]=" + l.getLatitude();
+			strBody += "&[" + lpString + "][longitude]=" + l.getLongitude();
+			strBody += "&[" + lpString + "][accuracy]=" + l.getAccuracy();
+		}
+		return strBody;
+		/*Location loc = getImpl().getLocation(provider);
+		synchronized (GeoLocation.class) {
+			if (loc != null) {				
+            	String strBody = "&geoProvider[" + loc.getProvider() + "][available]=1";
+            	strBody += "&geoProvider[" + loc.getProvider() + "][known_position]=true";
+            	strBody += "&geoProvider[" + loc.getProvider() + "][latitude]=" + loc.getLatitude();
+            	strBody += "&geoProvider[" + loc.getProvider() + "][longitude]=" + loc.getLongitude();
+            	strBody += "&geoProvider[" + loc.getProvider() + "][accuracy]=" + loc.getAccuracy();
+    			return strBody;
+			}
+			else {
+				String strBody = "&geoProvider[NA][available]=1";
+            	strBody += "&geoProvider[NA][known_position]=true";
+            	strBody += "&geoProvider[NA][latitude]=0";
+            	strBody += "&geoProvider[NA][longitude]=0";
+            	strBody += "&geoProvider[NA][accuracy]=0";
+    			return strBody;
+			}
+		}*/
 	}
 	
 	public static double getLatitude() {
@@ -194,6 +256,8 @@ public class GeoLocation {
 		try {
 			checkState();
 			Logger.T(TAG, "isKnownPosition");
+			String myMsg = "position is known: " + ourIsKnownPosition;
+			Logger.T(TAG, myMsg);
 			return ourIsKnownPosition;
 		}
 		catch (Exception e) {
