@@ -39,6 +39,7 @@ extern "C" {
 int rho_geo_known_position();
 void rho_geoimpl_settimeout(int nTimeoutSec);
 int rho_geo_is_available();
+int rho_geo_number_available();
 }
 
 namespace rho {
@@ -101,6 +102,7 @@ void CGeoLocation::callGeoCallback(const CGeoNotification& oNotify, const char* 
             strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
             strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
             strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
+            strBody += convertToStringA(rho_geo_location_string());
         } else {
             strBody += "&available=0&known_position=0&latitude=0.0&longitude=0.0&accuracy=0.0";
         }
@@ -111,12 +113,17 @@ void CGeoLocation::callGeoCallback(const CGeoNotification& oNotify, const char* 
         strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
         strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
         strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
+        
+        //String fullString = (String) rho_geo_location_string();
+        //RAWTRACE1("full callback body: %s", fullString.c_str());
+        //strBody.append(fullString);
     }
 
     if ( oNotify.m_strParams.length() > 0 )
         strBody += "&" + oNotify.m_strParams;
 
     //if ( bRunInThread )
+   		RAWTRACE1("full callback body: %s", strBody.c_str());
         RHODESAPP().runCallbackInThread(strFullUrl, strBody);
     //else
     //{
@@ -128,14 +135,14 @@ void CGeoLocation::callGeoCallback(const char* pszError, boolean bRunInThread)
 {
     synchronized(m_mxNotify)
     {
-        RAWTRACE4("Call geo callback: %s, %s, status=%s, runInThread=%d.",
+        RAWTRACE4("blabla Call geo callback: %s, %s, status=%s, runInThread=%d.",
                      m_Notify.m_strUrl.c_str(), m_Notify.m_strParams.c_str(), pszError?pszError:"ok", (int)bRunInThread);
         callGeoCallback(m_Notify, pszError, bRunInThread);
         if(pszError && !strcmp(pszError, "stop")) {
             RAWTRACE("Reset geo notification callback to default.");
             m_Notify = CGeoNotification();
         }
-        RAWTRACE4("Call geo view callback: %s, %s, status=%s, runInThread=%d.",
+        RAWTRACE4("blabla Call geo view callback: %s, %s, status=%s, runInThread=%d.",
                      m_ViewNotify.m_strUrl.c_str(), m_ViewNotify.m_strParams.c_str(), pszError?pszError:"ok", (int)bRunInThread);
         callGeoCallback(m_ViewNotify, pszError, bRunInThread);
         if (pszError) {

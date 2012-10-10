@@ -47,7 +47,7 @@ public class GeoLocationImpl {
 	
 	private static final int UPDATE_PERIOD_IN_MILLISECONDS = 250;
 	
-	private LocationManager locationManager = null;
+	public LocationManager locationManager = null;
 	private volatile Location lastLocation = null;
 	
 	private List<RhoLocationListener> mListeners = new LinkedList<RhoLocationListener>();
@@ -208,6 +208,8 @@ public class GeoLocationImpl {
 	}
 	
 	private void checkProviderEnabled(RhoLocationListener listener) {
+		Logger.T(TAG, "Provider is enabled: " + listener.getProviderName());
+		registerListeners();
 	}
 	
 	private void checkProviderDisabled(RhoLocationListener listener) {
@@ -234,7 +236,7 @@ public class GeoLocationImpl {
 			// If we've received fix from GPS, stop updates from all other providers
 			// as we don't need it anymore
 			if (LocationManager.GPS_PROVIDER.equals(location.getProvider())) {
-					unregisterListeners(LocationManager.GPS_PROVIDER);
+					//unregisterListeners(LocationManager.GPS_PROVIDER);
 			}
 			
 			LocationManager man = locationManager;
@@ -303,7 +305,8 @@ public class GeoLocationImpl {
 		unregisterListeners(null);
 	}
 
-	synchronized boolean isAvailable() {
+	//synchronized boolean isAvailable() {
+	synchronized int isAvailable() {
 		Iterator<RhoLocationListener> it;
 		int available = 0;
 		synchronized (mListeners) {
@@ -313,23 +316,45 @@ public class GeoLocationImpl {
 					available++;
 			}
 		}
-		return available > 0;
+		//return available > 0;
+		return available;
 	}
 	
 	synchronized Location getLocation() {
 		return lastLocation;
 	}
 	
+	synchronized Location getLocation(int provider) {
+		return (locationManager.getLastKnownLocation(mListeners.get(provider).providerName));
+		//mListeners.get(provider).manager.getLastKnownLocation(mListeners.get(provider).providerName);
+	}
+	
 	synchronized double getLatitude() {
 		return lastLocation != null ? lastLocation.getLatitude() : 0;
+	}
+	
+	synchronized double getLatitude(int provider) {
+		return (locationManager.getLastKnownLocation(mListeners.get(provider).providerName).getLatitude());
 	}
 
 	synchronized double getLongitude() {
 		return lastLocation != null ? lastLocation.getLongitude() : 0;
 	}
+
+	synchronized double getLongitude(int provider) {
+		return (locationManager.getLastKnownLocation(mListeners.get(provider).providerName).getLongitude());
+	}
 	
 	synchronized float getAccuracy() {
 		return (lastLocation != null && lastLocation.hasAccuracy()) ? lastLocation.getAccuracy() : 0;
+	}
+	
+	synchronized float getAccuracy(int provider) {
+		return (locationManager.getLastKnownLocation(mListeners.get(provider).providerName).getAccuracy());
+	}
+	
+	synchronized String getProviderName(int provider) {
+		return mListeners.get(provider).providerName;
 	}
 
 	synchronized long getTime() {
@@ -346,6 +371,16 @@ public class GeoLocationImpl {
 
 	synchronized boolean isKnownPosition() {
 		return lastLocation != null;
+	}
+
+	synchronized boolean isKnownPosition(int provider) {
+		Location myLoc = locationManager.getLastKnownLocation(mListeners.get(provider).providerName);
+		if (myLoc != null) {
+			Logger.T(TAG, "GeoLocation: isKnownPosition is " + myLoc.toString());
+			return true;
+		} else {
+			return false;
+		}
 	}
 	
 

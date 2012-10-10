@@ -25,6 +25,7 @@
 *------------------------------------------------------------------------*/
 
 #include "rhodes/JNIRhodes.h"
+#include "ruby/ext/rho/rhoruby.h"
 
 #include "rhodes/jni/com_rhomobile_rhodes_geolocation_GeoLocationImpl.h"
 
@@ -54,6 +55,22 @@ RHO_GLOBAL void JNICALL Java_com_rhomobile_rhodes_geolocation_GeoLocation_geoCal
     rho_geo_callcallback_stop();
 }
 
+RHO_GLOBAL char* rho_geo_location_string()
+{
+    JNIEnv *env = jnienv();
+    static jclass cls = getJNIClass(RHODES_JAVA_CLASS_GEO_LOCATION);
+    if (!cls) return 0;
+    static jmethodID mid = getJNIClassStaticMethod(env, cls, "getLocationString", "()Ljava/lang/String");
+    if (!mid) return 0;
+    jstring jstr = (jstring) env->CallStaticObjectMethod(cls, mid);
+    char* buf = (char*) env->GetStringUTFChars(jstr,0);
+    //VALUE result = rho_ruby_create_string(buf);
+    //env->ReleaseStringUTFChars(jstr, buf);
+	//env->DeleteLocalRef(jstr);
+    return buf;
+    //return env->CallStaticObjectMethod(cls, mid);
+}
+
 RHO_GLOBAL double rho_geo_latitude()
 {
     JNIEnv *env = jnienv();
@@ -81,7 +98,7 @@ RHO_GLOBAL float rho_geo_accuracy()
     if (!cls) return 0;
     static jmethodID mid = getJNIClassStaticMethod(env, cls, "getAccuracy", "()F");
     if (!mid) return 0;
-    return env->CallStaticFloatMethod(cls, mid);
+   	return env->CallStaticFloatMethod(cls, mid);
 }
 
 RHO_GLOBAL int rho_geo_known_position()
@@ -111,8 +128,17 @@ RHO_GLOBAL int rho_geo_is_available()
     if (!cls) return 0;
     static jmethodID mid = getJNIClassStaticMethod(env, cls, "isAvailable", "()Z");
     if (!mid) return 0;
-
     return env->CallStaticBooleanMethod(cls, mid);
+}
+
+RHO_GLOBAL int rho_geo_number_available()
+{
+    JNIEnv *env = jnienv();
+    static jclass cls = getJNIClass(RHODES_JAVA_CLASS_GEO_LOCATION);
+    if (!cls) return 0;
+    static jmethodID mid = getJNIClassStaticMethod(env, cls, "numberAvailable", "()I");
+    if (!mid) return 0;
+    return env->CallStaticIntMethod(cls, mid);
 }
 
 RHO_GLOBAL void rho_geoimpl_turngpsoff()
