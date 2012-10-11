@@ -177,9 +177,6 @@ public class GeoLocation {
 			strBody += "&" + lpString + "[accuracy]=" + l.getAccuracy();
 			strBody += "&" + lpString + "[time]=" + new java.util.Date(l.getTime()).toString();
 		}
-
-		// test if any data was written
-		strBody += "&known_position=" + (strBody == "" ? 0 : 1);
 		return strBody;
 	}
 	
