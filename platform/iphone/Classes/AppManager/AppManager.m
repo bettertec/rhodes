@@ -53,6 +53,8 @@
 static bool UnzipApplication(const char* appRoot, const void* zipbuf, unsigned int ziplen);
 //const char* RhoGetRootPath();
 
+VALUE rho_sys_has_wifi_network();
+VALUE rho_sys_has_cell_network();
 
 
 BOOL isPathIsSymLink(NSFileManager *fileManager, NSString* path) {
@@ -145,8 +147,8 @@ BOOL isPathIsSymLink(NSFileManager *fileManager, NSString* path) {
 		NSError *error;
 		[fileManager removeItemAtPath:appPath error:&error];
 	}
-    [fileManager createDirectoryAtPath:appPath withIntermediateDirectories: NO attributes:NULL error: NULL];
-
+    [fileManager createDirectoryAtPath:appPath attributes:NULL];
+	
 	static char appRoot[FILENAME_MAX];
 	[appPath getFileSystemRepresentation:appRoot maxLength:sizeof(appRoot)];
 	return UnzipApplication( appRoot, [appData bytes], [appData length]);
@@ -416,7 +418,7 @@ BOOL isPathIsSymLink(NSFileManager *fileManager, NSString* path) {
         }
 	}
     
-	rho_logconf_Init_with_separate_user_path(rho_native_rhopath(), "", rho_native_rhouserpath());
+	rho_logconf_Init_with_separate_user_path(rho_native_rhopath(), rho_native_rhopath(), "", rho_native_rhouserpath());
 	rho_rhodesapp_create_with_separate_user_path(rho_native_rhopath(), rho_native_rhouserpath());
 	RAWLOG_INFO("Rhodes started");
 }
@@ -448,11 +450,49 @@ BOOL isPathIsSymLink(NSFileManager *fileManager, NSString* path) {
 
 - (void)documentInteractionControllerDidEndPreview:(UIDocumentInteractionController *)docController
 {
-    [docController autorelease];
+    //[docController release];
+    //docController = nil;
 }
 
 - (void)openDocInteract:(NSString*)url {
 	[self performSelectorOnMainThread:@selector(openDocInteractCommand:) withObject:url waitUntilDone:NO];	
+}
+
+
+- (void) openURLComand:(NSString*)url {
+    
+    RAWLOG_INFO1("rho_sys_open_url: %s", url);
+	
+	NSString* strUrl = url;//[NSString stringWithUTF8String:url];
+	BOOL res = FALSE;
+    
+    BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:strUrl];
+    if (!fileExists) {
+        NSString *fixed_path = [NSString stringWithUTF8String:rho_rhodesapp_getapprootpath()];
+        fixed_path = [fixed_path stringByAppendingString:strUrl];
+        fileExists = [[NSFileManager defaultManager] fileExistsAtPath:fixed_path];
+        if (fileExists) {
+            strUrl = fixed_path;
+        }
+    }
+    if (fileExists) {
+        res = TRUE;
+        [[AppManager instance] openDocInteract:strUrl];
+    }
+    else {
+        if ([[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:strUrl]]) {
+            res = [[UIApplication sharedApplication] openURL:[NSURL URLWithString:strUrl]];
+        }
+    }
+	if ( res)
+		RAWLOG_INFO("rho_sys_open_url suceeded.");
+	else
+		RAWLOG_INFO("rho_sys_open_url failed.");
+}
+
+
+- (void) openURL:(NSString*)url {
+    [self performSelectorOnMainThread:@selector(openURLComand:) withObject:[url retain] waitUntilDone:NO];
 }
 
 
@@ -508,6 +548,11 @@ const char* rho_native_rhopath()
 	}
 	
 	return root;
+}
+
+const char* rho_native_reruntimepath()
+{
+    return rho_native_rhopath();
 }
 
 const char* rho_native_rhouserpath() 
@@ -602,33 +647,7 @@ void rho_sys_app_uninstall(const char *appname) {
 
 void rho_sys_open_url(const char* url) 
 {
-    RAWLOG_INFO1("rho_sys_open_url: %s", url);	
-	
-	NSString* strUrl = [NSString stringWithUTF8String:url];
-	BOOL res = FALSE;
-
-    BOOL fileExists = [[NSFileManager defaultManager] fileExistsAtPath:strUrl];
-    if (!fileExists) {
-        NSString *fixed_path = [NSString stringWithUTF8String:rho_rhodesapp_getapprootpath()];
-        fixed_path = [fixed_path stringByAppendingString:strUrl];
-        fileExists = [[NSFileManager defaultManager] fileExistsAtPath:fixed_path];
-        if (fileExists) {
-            strUrl = fixed_path;
-        }
-    }
-    if (fileExists) {
-        res = TRUE;
-        [[AppManager instance] openDocInteract:strUrl];
-    }
-    else {
-        if ([[UIApplication sharedApplication] canOpenURL:[NSURL URLWithString:strUrl]]) {
-            res = [[UIApplication sharedApplication] openURL:[NSURL URLWithString:strUrl]];
-        }
-    }
-	if ( res)
-		RAWLOG_INFO("rho_sys_open_url suceeded.");	
-	else
-		RAWLOG_INFO("rho_sys_open_url failed.");	
+    [[AppManager instance] openURL:[NSString stringWithUTF8String:url]];
 }
 
 void rho_sys_app_install(const char *url) {
@@ -683,6 +702,7 @@ static const double RHO_IPHONE_PPI = 163.0;
 static const double RHO_IPHONE4_PPI = 326.0;
 // http://www.apple.com/ipad/specs/
 static const double RHO_IPAD_PPI = 132.0;
+static const double RHO_NEW_IPAD_PPI = 264.0;
 
 static float get_scale() {
     float scales = 1;//[[UIScreen mainScreen] scale];
@@ -734,6 +754,10 @@ int rho_sysimpl_get_property(char* szPropName, VALUE* resValue)
     }
     else if (strcasecmp("has_network", szPropName) == 0)
         {*resValue = rho_sys_has_network(); return 1; }
+    else if (strcasecmp("has_wifi_network", szPropName) == 0)
+    {*resValue = rho_sys_has_wifi_network(); return 1; }
+    else if (strcasecmp("has_cell_network", szPropName) == 0)
+    {*resValue = rho_sys_has_cell_network(); return 1; }
     else if (strcasecmp("has_camera", szPropName) == 0) {
         int has_camera = [UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera];
         *resValue = rho_ruby_create_boolean(has_camera);
@@ -743,7 +767,12 @@ int rho_sysimpl_get_property(char* szPropName, VALUE* resValue)
              strcasecmp("ppi_y", szPropName) == 0) {
 #ifdef __IPHONE_3_2
         if (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad) {
-            *resValue = rho_ruby_create_double(RHO_IPAD_PPI);
+            if (get_scale() > 1.2) {
+                *resValue = rho_ruby_create_double(RHO_NEW_IPAD_PPI);
+            }
+            else {
+                *resValue = rho_ruby_create_double(RHO_IPAD_PPI);
+            }
             return 1;
         }
 #endif

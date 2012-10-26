@@ -2,33 +2,36 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>customer</string>
-			</array>
-			<key>CFBundleURLName</key>
-			<string>com.bettertaxi.customerPhone</string>
-		</dict>
-	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>BetterTaxi</string>
+	<string>Rhodes</string>
 	<key>CFBundleExecutable</key>
 	<string>${EXECUTABLE_NAME}</string>
 	<key>CFBundleIconFile</key>
 	<string>icon.png</string>
 	<key>CFBundleIconFiles</key>
 	<array>
-		<string>icon57.png</string>
-		<string>icon72.png</string>
-		<string>icon114.png</string>
+		<string>57x57.png</string>
+		<string>72x72.png</string>
+		<string>114x114.png</string>
+		<string>144x144.png</string>
 	</array>
+	<key>CFBundleIcons</key>
+	<dict>
+		<key>CFBundlePrimaryIcon</key>
+		<dict>
+			<key>CFBundleIconFiles</key>
+			<array>
+				<string>57x57.png</string>
+				<string>72x72.png</string>
+				<string>114x114.png</string>
+				<string>144x144.png</string>
+			</array>
+		</dict>
+	</dict>
 	<key>CFBundleIdentifier</key>
-	<string>com.bettertaxi.customerphone</string>
+	<string>com.rhomobile.rhosyncclient</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
@@ -37,12 +40,19 @@
 	<string>APPL</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.rhomobile.rhosyncclient</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>rhodes</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
-<<<<<<< HEAD
-	<string>1.0.7</string>
-=======
 	<string>3.5.0</string>
->>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UILaunchImageFile</key>
@@ -50,14 +60,10 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UIRequiredDeviceCapabilities</key>
-	<dict>
-		<key>armv7</key>
-		<true/>
-	</dict>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
 </dict>
 </plist>

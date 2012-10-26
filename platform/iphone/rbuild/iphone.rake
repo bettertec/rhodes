@@ -129,7 +129,7 @@ def set_app_url_scheme(newname)
 end
 
 BAKUP_FILES = ['rhorunner.xcodeproj', 'Entitlements.plist', 'icon.png', 'icon114.png', 'icon57.png', 'icon72.png', 'Info.plist']
-CLEAR_FILES = ['Default.png', 'Default@2x.png', 'Default-Portrait.png', 'Default-PortraitUpsideDown.png', 'Default-Landscape.png', 'Default-LadscapeLeft.png', 'Default-LandscapeRight.png']
+CLEAR_FILES = ['Default.png', 'Default@2x.png', 'Default-Portrait.png', 'Default-PortraitUpsideDown.png', 'Default-Landscape.png', 'Default-LadscapeLeft.png', 'Default-LandscapeRight.png', 'Default-568h@2x.png']
 
 def make_project_bakup
      BAKUP_FILES.each do |f|
@@ -342,7 +342,7 @@ def set_app_icon(make_bak)
   end
 end
 
-LOADINGIMAGES = ['loading', 'loading@2x', 'loading-Portrait', 'loading-PortraitUpsideDown', 'loading-Landscape', 'loading-LadscapeLeft', 'loading-LandscapeRight']
+LOADINGIMAGES = ['loading', 'loading@2x', 'loading-Portrait', 'loading-PortraitUpsideDown', 'loading-Landscape', 'loading-LadscapeLeft', 'loading-LandscapeRight', 'loading-568h@2x']
 
 def restore_default_images
   puts "restore_default_images"
@@ -495,18 +495,15 @@ namespace "config" do
     $excludelib = ['**/builtinME.rb','**/ServeME.rb','**/dateME.rb','**/rationalME.rb']
     $tmpdir =  $bindir +"/tmp"
 
-    $devroot = '/Developer' if $devroot.nil?
-    $iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim') if $iphonesim.nil?
-
-
+    $devroot = '/Applications/Xcode.app/Contents/Developer' if $devroot.nil?
+    $iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim_43') if $iphonesim.nil?
     $xcodebuild = $devroot + "/usr/bin/xcodebuild"
-    
     if !File.exists? $xcodebuild
-        $xcodebuild = "/Applications/Xcode.app/Contents/Developer" + "/usr/bin/xcodebuild"
-        $devroot = '/Applications/Xcode.app/Contents/Developer'
-        $iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim_43')
+        $devroot = '/Developer'
+        $xcodebuild = $devroot + "/usr/bin/xcodebuild"
+        $iphonesim = File.join($startdir, 'res/build-tools/iphonesim/build/Release/iphonesim')
     end
-    
+
     if !File.exists? $xcodebuild
         puts 'ERROR: can not found XCode command line tools'
         puts 'Install XCode to default location' 

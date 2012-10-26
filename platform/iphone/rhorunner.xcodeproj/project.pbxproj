@@ -26,6 +26,13 @@
 		5C53337B0FC1B20000F268F0 /* NetRequestImpl.m in Sources */ = {isa = PBXBuildFile; fileRef = 5C5333790FC1B20000F268F0 /* NetRequestImpl.m */; };
 		5C59AB2912DDA1B800ED4A1E /* RhoCryptImpl.mm in Sources */ = {isa = PBXBuildFile; fileRef = 5C59AB2812DDA1B800ED4A1E /* RhoCryptImpl.mm */; };
 		5C59AB4212DDA22E00ED4A1E /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C59AB4112DDA22E00ED4A1E /* Security.framework */; };
+		7958252F163AC61B009ED463 /* 57x57.png in Resources */ = {isa = PBXBuildFile; fileRef = 7958252E163AC61B009ED463 /* 57x57.png */; };
+		79582531163AC629009ED463 /* 114x114.png in Resources */ = {isa = PBXBuildFile; fileRef = 79582530163AC629009ED463 /* 114x114.png */; };
+		79582537163AC654009ED463 /* Default-568h@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 79582536163AC654009ED463 /* Default-568h@2x.png */; };
+		79582539163AC672009ED463 /* 72x72.png in Resources */ = {isa = PBXBuildFile; fileRef = 79582538163AC672009ED463 /* 72x72.png */; };
+		7958253B163AC67D009ED463 /* 144x144.png in Resources */ = {isa = PBXBuildFile; fileRef = 7958253A163AC67D009ED463 /* 144x144.png */; };
+		7958253D163AC68C009ED463 /* Default-Portrait~ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = 7958253C163AC68C009ED463 /* Default-Portrait~ipad.png */; };
+		7958253F163AC6BB009ED463 /* Default-Portrait@2x~ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = 7958253E163AC6BB009ED463 /* Default-Portrait@2x~ipad.png */; };
 		BD38E6DC115CFF14001CE05C /* WebView.m in Sources */ = {isa = PBXBuildFile; fileRef = BD38E6DB115CFF14001CE05C /* WebView.m */; };
 		BD38E755115D1AAC001CE05C /* TabbedMainView.m in Sources */ = {isa = PBXBuildFile; fileRef = BD38E754115D1AAC001CE05C /* TabbedMainView.m */; };
 		BD486F59124FB66600F8A93F /* Event.m in Sources */ = {isa = PBXBuildFile; fileRef = BD486F58124FB66600F8A93F /* Event.m */; };
@@ -54,12 +61,9 @@
 		BDFBD9A410B1B9E500BAAFAB /* forward_btn.png in Resources */ = {isa = PBXBuildFile; fileRef = BDFBD9A210B1B9E500BAAFAB /* forward_btn.png */; };
 		BDFBD9A510B1B9E500BAAFAB /* home_btn.png in Resources */ = {isa = PBXBuildFile; fileRef = BDFBD9A310B1B9E500BAAFAB /* home_btn.png */; };
 		BDFBD9A710B1BA2000BAAFAB /* icon.png in Resources */ = {isa = PBXBuildFile; fileRef = BDFBD9A610B1BA2000BAAFAB /* icon.png */; };
-<<<<<<< HEAD
-=======
 		C5D0D0C1153F279A00B8BF21 /* InitMemoryInfoCollector.mm in Sources */ = {isa = PBXBuildFile; fileRef = C5D0D0C0153F279A00B8BF21 /* InitMemoryInfoCollector.mm */; };
 		C5D90EF815F4F58D005F7C86 /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = C5D90EF715F4F58D005F7C86 /* Reachability.m */; };
 		C5D90EFB15F4FC92005F7C86 /* NetworkStatusMonitor.mm in Sources */ = {isa = PBXBuildFile; fileRef = C5D90EFA15F4FC92005F7C86 /* NetworkStatusMonitor.mm */; };
->>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 		F5128ADD1069752F002F00E5 /* MapAnnotation.m in Sources */ = {isa = PBXBuildFile; fileRef = F5128ADC1069752F002F00E5 /* MapAnnotation.m */; };
 		F5128C2C106C1FF3002F00E5 /* GoogleGeocoder.m in Sources */ = {isa = PBXBuildFile; fileRef = F5128C2B106C1FF3002F00E5 /* GoogleGeocoder.m */; };
 		F51668E00FFD5F740079F023 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F51668DF0FFD5F740079F023 /* AudioToolbox.framework */; };
@@ -76,6 +80,7 @@
 		F5B8FAD40F44EA7B00C9AF85 /* PickImageDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = F5B8FAD30F44EA7B00C9AF85 /* PickImageDelegate.m */; };
 		F5F06668102CB134006CFD39 /* ParamsWrapper.m in Sources */ = {isa = PBXBuildFile; fileRef = F5F06667102CB134006CFD39 /* ParamsWrapper.m */; };
 		F5FD0944106151C200B7B8ED /* MapViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = F5FD0943106151C200B7B8ED /* MapViewController.m */; };
+		FA14CECD150130DB00734801 /* DateTimePickerViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FA14CECC150130DB00734801 /* DateTimePickerViewController.m */; };
 		FA291E9811FF2EF70096AC39 /* SignatureDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FA291E9511FF2EF70096AC39 /* SignatureDelegate.m */; };
 		FA291E9911FF2EF70096AC39 /* SignatureViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FA291E9711FF2EF70096AC39 /* SignatureViewController.m */; };
 		FA3C79AE136ED523002302E5 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FA3C79AD136ED523002302E5 /* CoreVideo.framework */; };
@@ -100,6 +105,7 @@
 		FACA4C7B1270AC0900777CFF /* SplitViewDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FACA4C771270AC0900777CFF /* SplitViewDelegate.m */; };
 		FACC20CA123A60F40088A447 /* Bluetooth.m in Sources */ = {isa = PBXBuildFile; fileRef = FACC20C9123A60F40088A447 /* Bluetooth.m */; };
 		FACC2100123A759A0088A447 /* GameKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FACC20FF123A759A0088A447 /* GameKit.framework */; };
+		FAD42C58152CE61A000F906A /* libMotorolaLicence.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FAD42C57152CE61A000F906A /* libMotorolaLicence.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -205,6 +211,16 @@
 		5C59AB2812DDA1B800ED4A1E /* RhoCryptImpl.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; name = RhoCryptImpl.mm; path = ../shared/common/iphone/RhoCryptImpl.mm; sourceTree = SOURCE_ROOT; };
 		5C59AB4112DDA22E00ED4A1E /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		5C7162920F8B7EEC0096B6AA /* RhoLib.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RhoLib.xcodeproj; path = RhoLib/RhoLib.xcodeproj; sourceTree = "<group>"; };
+		7958252E163AC61B009ED463 /* 57x57.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 57x57.png; sourceTree = "<group>"; };
+		79582530163AC629009ED463 /* 114x114.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 114x114.png; sourceTree = "<group>"; };
+		79582532163AC638009ED463 /* Default.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Default.png; sourceTree = "<group>"; };
+		79582534163AC647009ED463 /* Default@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default@2x.png"; sourceTree = "<group>"; };
+		79582536163AC654009ED463 /* Default-568h@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-568h@2x.png"; sourceTree = "<group>"; };
+		79582538163AC672009ED463 /* 72x72.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 72x72.png; sourceTree = "<group>"; };
+		7958253A163AC67D009ED463 /* 144x144.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = 144x144.png; sourceTree = "<group>"; };
+		7958253C163AC68C009ED463 /* Default-Portrait~ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-Portrait~ipad.png"; sourceTree = "<group>"; };
+		7958253E163AC6BB009ED463 /* Default-Portrait@2x~ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-Portrait@2x~ipad.png"; sourceTree = "<group>"; };
+		79582540163AC6E7009ED463 /* Default-Landscape~ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Default-Landscape~ipad.png"; sourceTree = "<group>"; };
 		BD2C94A610AE052A008D4692 /* curl.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = curl.xcodeproj; path = curl/curl.xcodeproj; sourceTree = SOURCE_ROOT; };
 		BD38E6DB115CFF14001CE05C /* WebView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WebView.m; sourceTree = "<group>"; };
 		BD38E753115D1AAC001CE05C /* TabbedMainView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TabbedMainView.h; sourceTree = "<group>"; };
@@ -241,15 +257,12 @@
 		BDFBD9A210B1B9E500BAAFAB /* forward_btn.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = forward_btn.png; sourceTree = "<group>"; };
 		BDFBD9A310B1B9E500BAAFAB /* home_btn.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = home_btn.png; sourceTree = "<group>"; };
 		BDFBD9A610B1BA2000BAAFAB /* icon.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = icon.png; sourceTree = SOURCE_ROOT; };
-<<<<<<< HEAD
-=======
 		C5D0D0BF153F279300B8BF21 /* InitMemoryInfoCollector.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = InitMemoryInfoCollector.h; sourceTree = "<group>"; };
 		C5D0D0C0153F279A00B8BF21 /* InitMemoryInfoCollector.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = InitMemoryInfoCollector.mm; sourceTree = "<group>"; };
 		C5D90EF615F4F58D005F7C86 /* Reachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
 		C5D90EF715F4F58D005F7C86 /* Reachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
 		C5D90EF915F4FC92005F7C86 /* NetworkStatusMonitor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NetworkStatusMonitor.h; sourceTree = "<group>"; };
 		C5D90EFA15F4FC92005F7C86 /* NetworkStatusMonitor.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = NetworkStatusMonitor.mm; sourceTree = "<group>"; };
->>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 		F5128ADB1069752F002F00E5 /* MapAnnotation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MapAnnotation.h; path = MapView/MapAnnotation.h; sourceTree = "<group>"; };
 		F5128ADC1069752F002F00E5 /* MapAnnotation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MapAnnotation.m; path = MapView/MapAnnotation.m; sourceTree = "<group>"; };
 		F5128C2A106C1FF3002F00E5 /* GoogleGeocoder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = GoogleGeocoder.h; path = Classes/MapView/GoogleGeocoder.h; sourceTree = SOURCE_ROOT; };
@@ -281,6 +294,8 @@
 		F5F06667102CB134006CFD39 /* ParamsWrapper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ParamsWrapper.m; sourceTree = "<group>"; };
 		F5FD0942106151C200B7B8ED /* MapViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MapViewController.h; path = MapView/MapViewController.h; sourceTree = "<group>"; };
 		F5FD0943106151C200B7B8ED /* MapViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MapViewController.m; path = MapView/MapViewController.m; sourceTree = "<group>"; };
+		FA14CECB150130DB00734801 /* DateTimePickerViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DateTimePickerViewController.h; sourceTree = "<group>"; };
+		FA14CECC150130DB00734801 /* DateTimePickerViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DateTimePickerViewController.m; sourceTree = "<group>"; };
 		FA291E9411FF2EF70096AC39 /* SignatureDelegate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SignatureDelegate.h; path = Signature/SignatureDelegate.h; sourceTree = "<group>"; };
 		FA291E9511FF2EF70096AC39 /* SignatureDelegate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SignatureDelegate.m; path = Signature/SignatureDelegate.m; sourceTree = "<group>"; };
 		FA291E9611FF2EF70096AC39 /* SignatureViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SignatureViewController.h; path = Signature/SignatureViewController.h; sourceTree = "<group>"; };
@@ -318,6 +333,7 @@
 		FACC20C8123A60F40088A447 /* Bluetooth.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = Bluetooth.h; path = Bluetooth/Bluetooth.h; sourceTree = "<group>"; };
 		FACC20C9123A60F40088A447 /* Bluetooth.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = Bluetooth.m; path = Bluetooth/Bluetooth.m; sourceTree = "<group>"; };
 		FACC20FF123A759A0088A447 /* GameKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GameKit.framework; path = System/Library/Frameworks/GameKit.framework; sourceTree = SDKROOT; };
+		FAD42C57152CE61A000F906A /* libMotorolaLicence.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libMotorolaLicence.a; path = ../../res/libs/motorolalicence/iphone/libMotorolaLicence.a; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -351,6 +367,7 @@
 				5C59AB4212DDA22E00ED4A1E /* Security.framework in Frameworks */,
 				FA522FE112E49D6F00AB55CC /* QuartzCore.framework in Frameworks */,
 				FA52309412E55CA700AB55CC /* EventKit.framework in Frameworks */,
+				FAD42C58152CE61A000F906A /* libMotorolaLicence.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -410,6 +427,16 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				79582540163AC6E7009ED463 /* Default-Landscape~ipad.png */,
+				7958253E163AC6BB009ED463 /* Default-Portrait@2x~ipad.png */,
+				7958253C163AC68C009ED463 /* Default-Portrait~ipad.png */,
+				7958253A163AC67D009ED463 /* 144x144.png */,
+				79582538163AC672009ED463 /* 72x72.png */,
+				79582536163AC654009ED463 /* Default-568h@2x.png */,
+				79582534163AC647009ED463 /* Default@2x.png */,
+				79582532163AC638009ED463 /* Default.png */,
+				79582530163AC629009ED463 /* 114x114.png */,
+				7958252E163AC61B009ED463 /* 57x57.png */,
 				FA3C79E1136ED8BB002302E5 /* CoreMedia.framework */,
 				FA3C79AD136ED523002302E5 /* CoreVideo.framework */,
 				FA4D3F8C136B0A98009D6E63 /* libiconv.dylib */,
@@ -427,6 +454,7 @@
 				BD72CCE4112D629F003B7D27 /* Info.plist */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
 				19C28FACFE9D520D11CA2CBB /* Products */,
+				FAD42C57152CE61A000F906A /* libMotorolaLicence.a */,
 				46AD7DB21117AFB9009A974A /* MapKit.framework */,
 				46AD7DB61117AFBF009A974A /* CFNetwork.framework */,
 				FACC20FF123A759A0088A447 /* GameKit.framework */,
@@ -473,6 +501,8 @@
 				46B005F51033690F00D0C2F4 /* DateTime.h */,
 				46B005F61033690F00D0C2F4 /* DateTime.m */,
 				BD97ACA611610666006960F9 /* DateTimePicker.m */,
+				FA14CECB150130DB00734801 /* DateTimePickerViewController.h */,
+				FA14CECC150130DB00734801 /* DateTimePickerViewController.m */,
 			);
 			name = DateTimePicker;
 			sourceTree = "<group>";
@@ -624,6 +654,8 @@
 		F547F3D10F9CEB05007C2CD2 /* Log */ = {
 			isa = PBXGroup;
 			children = (
+				C5D0D0C0153F279A00B8BF21 /* InitMemoryInfoCollector.mm */,
+				C5D0D0BF153F279300B8BF21 /* InitMemoryInfoCollector.h */,
 				F52181120F96B13500B7F974 /* LogViewController.m */,
 				F52181110F96B13500B7F974 /* LogViewController.h */,
 				F547F2860F9945D2007C2CD2 /* LogOptionsController.h */,
@@ -898,6 +930,13 @@
 				FA52317B12E7511700AB55CC /* esri.png in Resources */,
 				FA52317C12E7511700AB55CC /* esri@2x.png in Resources */,
 				FA52330112E9204300AB55CC /* BluePushpin@2x.png in Resources */,
+				7958252F163AC61B009ED463 /* 57x57.png in Resources */,
+				79582531163AC629009ED463 /* 114x114.png in Resources */,
+				79582537163AC654009ED463 /* Default-568h@2x.png in Resources */,
+				79582539163AC672009ED463 /* 72x72.png in Resources */,
+				7958253B163AC67D009ED463 /* 144x144.png in Resources */,
+				7958253D163AC68C009ED463 /* Default-Portrait~ipad.png in Resources */,
+				7958253F163AC6BB009ED463 /* Default-Portrait@2x~ipad.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -969,7 +1008,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "RHO_SOURCE_DIR=${SRCROOT}\nRHO_TARGET_DIR=${TARGET_BUILD_DIR}/${TARGET_NAME}.app\necho \"Create dir $RHO_TARGET_DIR\"\nmkdir -p ${RHO_TARGET_DIR}\n\nif [ -e ${RHO_SOURCE_DIR}/Default.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default@2x.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default@2x.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default@2x.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-Portrait.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-Portrait.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-Portrait.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-PortraitUpsideDown.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-PortraitUpsideDown.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-PortraitUpsideDown.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-Landscape.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-Landscape.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-Landscape.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-LandscapeLeft.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeLeft.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeLeft.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-LandscapeRight.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeRight.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeRight.png ${RHO_TARGET_DIR}\nfi";
+			shellScript = "RHO_SOURCE_DIR=${SRCROOT}\nRHO_TARGET_DIR=${TARGET_BUILD_DIR}/${TARGET_NAME}.app\necho \"Create dir $RHO_TARGET_DIR\"\nmkdir -p ${RHO_TARGET_DIR}\n\nif [ -e ${RHO_SOURCE_DIR}/Default.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default@2x.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default@2x.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default@2x.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-Portrait.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-Portrait.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-Portrait.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-PortraitUpsideDown.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-PortraitUpsideDown.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-PortraitUpsideDown.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-Landscape.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-Landscape.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-Landscape.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-LandscapeLeft.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeLeft.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeLeft.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-LandscapeRight.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeRight.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-LandscapeRight.png ${RHO_TARGET_DIR}\nfi\n\nif [ -e ${RHO_SOURCE_DIR}/Default-568h@2x.png ]; then\necho \"cp -Rf ${RHO_SOURCE_DIR}/Default-568h@2x.png ${RHO_TARGET_DIR}\"\ncp -Rf ${RHO_SOURCE_DIR}/Default-568h@2x.png ${RHO_TARGET_DIR}\nfi";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -1025,13 +1064,10 @@
 				FA522E8112DEA7B300AB55CC /* RhoNativeViewManager.mm in Sources */,
 				FA52300D12E4BBC700AB55CC /* MapViewManager.m in Sources */,
 				FAC6EE6D143B3AF100B8E352 /* RhoMapViewController.m in Sources */,
-<<<<<<< HEAD
-=======
 				FA14CECD150130DB00734801 /* DateTimePickerViewController.m in Sources */,
 				C5D0D0C1153F279A00B8BF21 /* InitMemoryInfoCollector.mm in Sources */,
 				C5D90EF815F4F58D005F7C86 /* Reachability.m in Sources */,
 				C5D90EFB15F4FC92005F7C86 /* NetworkStatusMonitor.mm in Sources */,
->>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1082,11 +1118,12 @@
 				GCC_PREFIX_HEADER = rhorunner_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = "DEBUG=1";
 				INFOPLIST_FILE = Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
 					"$(SRCROOT)/build/Debug-iphonesimulator",
+					"\"$(SRCROOT)/../../res/libs/motorolalicence/iphone\"",
 				);
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = "";
@@ -1117,11 +1154,12 @@
 				GCC_PREFIX_HEADER = rhorunner_Prefix.pch;
 				GCC_PREPROCESSOR_DEFINITIONS = "";
 				INFOPLIST_FILE = Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
 					"$(SRCROOT)/build/Release-iphoneos",
+					"\"$(SRCROOT)/../../res/libs/motorolalicence/iphone\"",
 				);
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = "";
@@ -1192,12 +1230,13 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = rhorunner_Prefix.pch;
 				INFOPLIST_FILE = Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 4.3;
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(SRCROOT)",
 					"$(SRCROOT)/build/Debug-iphonesimulator",
 					"$(SRCROOT)/openssl/build",
+					"\"$(SRCROOT)/../../res/libs/motorolalicence/iphone\"",
 				);
 				ONLY_ACTIVE_ARCH = NO;
 				OTHER_CFLAGS = "";

@@ -83,6 +83,46 @@ CGeoLocation::CGeoLocation()
     m_nGeoPingTimeoutSec = 0;
 }
 
+void CGeoLocation::callGeoCallback(const CGeoNotification& oNotify, const char* pszError, boolean bRunInThread)
+{
+    if ((oNotify.m_strUrl.length() == 0))
+        return;
+
+    String strFullUrl = getNet().resolveUrl(oNotify.m_strUrl);
+    String strBody = "rho_callback=1";
+    if (pszError) {
+        strBody += "&status=";
+        strBody += pszError;
+        if (!strcmp(pszError, "error")) {
+            strBody += "&error_code=" + convertToStringA(12);//RhoRuby.ERR_GEOLOCATION;
+        }
+        if (rho_geo_is_available()) {
+            strBody += "&available=1&known_position=" + convertToStringA(rho_geo_known_position());
+            strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
+            strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
+            strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
+        } else {
+            strBody += "&available=0&known_position=0&latitude=0.0&longitude=0.0&accuracy=0.0";
+        }
+    } else {
+        strBody += "&status=ok";
+        strBody += "&available=" + convertToStringA( (rho_geo_is_available() ? 1 : 0) );
+        strBody += "&known_position=" + convertToStringA(rho_geo_known_position());
+        strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
+        strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
+        strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
+    }
+
+    if ( oNotify.m_strParams.length() > 0 )
+        strBody += "&" + oNotify.m_strParams;
+
+    //if ( bRunInThread )
+        RHODESAPP().runCallbackInThread(strFullUrl, strBody);
+    //else
+    //{
+    //    getNet().pushData( strFullUrl, strBody, null );
+    //}
+}
 
 void CGeoLocation::callGeoCallback(const char* pszError, boolean bRunInThread)
 {
@@ -103,54 +143,6 @@ void CGeoLocation::callGeoCallback(const char* pszError, boolean bRunInThread)
             m_ViewNotify = CGeoNotification();
         }
     }
-}
-
-void CGeoLocation::callGeoCallback(const CGeoNotification& oNotify, const char* pszError, boolean bRunInThread)
-{
-    if ((oNotify.m_strUrl.length() == 0))
-        return;
-
-    String strFullUrl = getNet().resolveUrl(oNotify.m_strUrl);
-    String strBody = "rho_callback=1";
-    if (pszError) {
-        strBody += "&status=";
-        strBody += pszError;
-        if (!strcmp(pszError, "error")) {
-            strBody += "&error_code=" + convertToStringA(12);//RhoRuby.ERR_GEOLOCATION;
-        }
-        if (rho_geo_is_available()) {
-            strBody += "&available=1&known_position=" + convertToStringA(rho_geo_known_position());
-            strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
-            strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
-            strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
-        	const char* fullString = rho_geo_location_string();
-	        if (fullString)
-	        	strBody += fullString;
-        } else {
-            strBody += "&available=0&known_position=0&latitude=0.0&longitude=0.0&accuracy=0.0";
-        }
-    } else {
-        strBody += "&status=ok";
-        strBody += "&available=" + convertToStringA( (rho_geo_is_available() ? 1 : 0) );
-	    strBody += "&known_position=" + convertToStringA(rho_geo_known_position());
-	    strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
-	    strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
-	    strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
-        const char* fullString = rho_geo_location_string();
-        if (fullString)
-        	strBody += fullString;
-    }
-
-    if ( oNotify.m_strParams.length() > 0 )
-        strBody += "&" + oNotify.m_strParams;
-
-    //if ( bRunInThread )
-   		RAWTRACE1("full callback body: %s", strBody.c_str());
-        RHODESAPP().runCallbackInThread(strFullUrl, strBody);
-    //else
-    //{
-    //   getNet().pushData( strFullUrl, strBody, null );
-    //}
 }
 
 void CGeoLocation::setGeoCallback(const char *url, const char* params, int timeout_sec, boolean bView)

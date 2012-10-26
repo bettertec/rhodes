@@ -40,11 +40,8 @@
 
 #include "common/app_build_capabilities.h"
 
-<<<<<<< HEAD
-=======
 #include "InitMemoryInfoCollector.h"
 #include "Reachability.h"
->>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 
 
 /*
@@ -141,7 +138,20 @@ static Rhodes *instance = NULL;
     //CGRect sbFrame = [[UIApplication sharedApplication] statusBarFrame];
     //frame.origin.y += sbFrame.size.height;
     //frame.size.height -= sbFrame.size.height;
-    return frame;
+    
+    //CGRect screen_bounds = [[UIScreen mainScreen] bounds];
+
+    CGRect appFrame = [[UIScreen mainScreen] applicationFrame];
+    UIDeviceOrientation orientation = [[UIApplication sharedApplication] statusBarOrientation];
+    if (UIDeviceOrientationLandscapeLeft == orientation ||
+        UIDeviceOrientationLandscapeRight == orientation)
+    {
+        if (appFrame.size.width < appFrame.size.height)
+        {
+            appFrame = CGRectMake(appFrame.origin.y, appFrame.origin.x, appFrame.size.height, appFrame.size.width);
+        }
+    }
+    return appFrame;//frame;
 }
 
 
@@ -359,7 +369,8 @@ static Rhodes *instance = NULL;
                 picker.cameraDevice = UIImagePickerControllerCameraDeviceFront;
             }
             
-            [window addSubview:picker.view];
+            //[window addSubview:picker.view];
+            [[mainView getMainViewController] presentModalViewController:picker animated:NO];
         }
     } @catch(NSException* theException) {
         RAWLOG_ERROR2("startCameraPickerFromViewController failed(%s): %s", [[theException name] UTF8String], [[theException reason] UTF8String] );
@@ -392,9 +403,14 @@ static Rhodes *instance = NULL;
 		rect.origin.y = 0;
 		SignatureViewController* svc = [[SignatureViewController alloc] initWithRect:rect delegate:signatureDelegate];
 		[signatureDelegate setSignatureViewControllerValue:svc];
-		[mainView.view retain];
-		[mainView.view removeFromSuperview];
-		[window addSubview:svc.view];
+        
+        [[mainView getMainViewController] presentModalViewController:svc animated:YES];
+ 
+        
+        
+		//[mainView.view retain];
+		//[mainView.view removeFromSuperview];
+		//[window addSubview:svc.view];
     } @catch(NSException* theException) {
         RAWLOG_ERROR2("startSignatureViewController failed(%s): %s", [[theException name] UTF8String], [[theException reason] UTF8String] );
     }
@@ -431,10 +447,11 @@ static Rhodes *instance = NULL;
 }
 
 
-- (void)choosePicture:(NSString*) url {
+- (void)choosePicture:(RhoCameraSettings*) settings {
     if (!rho_rhodesapp_check_mode())
         return;
-    [pickImageDelegate setPostUrl:url];
+    [pickImageDelegate setPostUrl:settings.callback_url];
+    pickImageDelegate.settings = settings;
     [self startCameraPicker:pickImageDelegate 
                  sourceType:UIImagePickerControllerSourceTypePhotoLibrary];
 }
@@ -449,7 +466,8 @@ static Rhodes *instance = NULL;
         [splashViewController release];
         splashViewController = nil;
 		
-		[window addSubview:mainView.view];
+		//[window addSubview:mainView.view];
+        window.rootViewController = mainView;
 		[window bringSubviewToFront:mainView.view];
     }
 }
@@ -495,7 +513,14 @@ static Rhodes *instance = NULL;
 	}
 	
     mainView = [view retain];
-    [window addSubview:mainView.view];
+    //[window addSubview:mainView.view];
+    
+    //[window setRootViewController:mainView];
+    
+    window.rootViewController = mainView;
+    
+    
+    
 	//[window bringSubviewToFront:mainView.view];
 	
 	if (isVerticalTab) {
@@ -577,7 +602,8 @@ static Rhodes *instance = NULL;
         const char *szRootPath = rho_native_rhopath();
         const char *szUserPath = rho_native_rhouserpath();
         NSLog(@"Init logconf");
-        rho_logconf_Init_with_separate_user_path(szRootPath, "", szUserPath);
+        rho_logconf_Init_with_separate_user_path(szRootPath, szRootPath, "", szUserPath);
+        InitMemoryInfoCollector();
         NSLog(@"Create rhodes app");
         rho_rhodesapp_create_with_separate_user_path(szRootPath, szUserPath);
         app_created = YES;
@@ -617,7 +643,7 @@ static Rhodes *instance = NULL;
     NSLog(@"Init all windows");
     
     
-    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleBlackTranslucent animated:NO];
+    [[UIApplication sharedApplication] setStatusBarStyle:UIStatusBarStyleDefault animated:NO];
     
     window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     window.autoresizingMask = UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
@@ -631,7 +657,8 @@ static Rhodes *instance = NULL;
 	BOOL is_splash_screen_maked = [self showLoadingPagePre];
 	
 	if (!is_splash_screen_maked) {
-		[window addSubview:mainView.view];
+        window.rootViewController = mainView;
+		//[window addSubview:mainView.view];
 	}
 	
     [window makeKeyAndVisible];
@@ -650,7 +677,7 @@ static Rhodes *instance = NULL;
     NSLog(@"Init delegates");
     dateTimePickerDelegate = [[DateTimePickerDelegate alloc] init];
     pickImageDelegate = [[PickImageDelegate alloc] init];
-    signatureDelegate = [[SignatureDelegate alloc] init];
+    signatureDelegate = [SignatureDelegate getSharedInstance];
     nvDelegate = [[NVDelegate alloc] init];
     
 #ifdef APP_BUILD_CAPABILITY_PUSH    
@@ -950,6 +977,22 @@ static Rhodes *instance = NULL;
         */
         //exit(EXIT_SUCCESS);
     }
+    if (!rho_can_app_started_with_current_licence()) {
+		NSLog(@"############################");
+		NSLog(@" ");
+		NSLog(@"ERROR: motorola_license is INVALID !");
+		NSLog(@" ");
+		NSLog(@"############################");
+        //exit(EXIT_SUCCESS);
+        //[self exit_with_errormessage:@"Motorola Licence" message:@"Your licence key is invalid !"];
+            UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"Motorola License" 
+                                                            message:@"Please provide RhoElements license key."
+                                                           delegate:nil 
+                                                  cancelButtonTitle:@"OK" 
+                                                  otherButtonTitles: nil];
+            [alert show];
+            [alert release];
+    }
 	
 	return NO;
 }
@@ -1046,7 +1089,7 @@ static Rhodes *instance = NULL;
     rho_rhodesapp_callUiDestroyedCallback();
     rho_rhodesapp_canstartapp("", ", ");
 	
-	if (rho_conf_getBool("finish_sync_in_background") && (rho_sync_issyncing()==1)) {
+	if (rho_conf_getBool("finish_sync_in_background")/* && (rho_sync_issyncing()==1)*/) {
 		if ([[UIDevice currentDevice] respondsToSelector:@selector(isMultitaskingSupported)]) { 
 			if ([[UIDevice currentDevice] isMultitaskingSupported]) { //Check if device supports mulitasking 
 

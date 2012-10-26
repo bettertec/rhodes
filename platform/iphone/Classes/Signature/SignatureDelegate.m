@@ -28,16 +28,29 @@
 #import "SignatureDelegate.h"
 #import "AppManager.h"
 #import "common/RhodesApp.h"
+#import "logging/RhoLog.h"
 #include "ruby/ext/rho/rhoruby.h"
+
+SignatureDelegate* ourSD = nil;
 
 
 @implementation SignatureDelegate
+
++(id) getSharedInstance
+{
+    if (ourSD == nil) {
+        ourSD = [[SignatureDelegate alloc] init];
+    }
+    return ourSD;
+}
+
 
 -(id) init
 {
     if (self = [super init])
     {
         signatureViewController = nil;
+        signatureInlineView = nil;
         parentView = nil;
         prevView = nil;
         imageFormat = nil;
@@ -118,29 +131,28 @@
 } 
 
 -(void)doDone:(UIImage*)image {
-	
+	[[[[Rhodes sharedInstance] mainView] getMainViewController] dismissModalViewControllerAnimated:YES]; 
     [self useImage:image]; 
-    [signatureViewController.view removeFromSuperview];
+    //[signatureViewController.view removeFromSuperview];
     [signatureViewController release];
     signatureViewController = nil;
-	[parentView addSubview:prevView];
-	[prevView release];
-    prevView = nil;
+	//[parentView addSubview:prevView];
+	//[prevView release];
+    //prevView = nil;
 	[image release];
 }
 
 -(void)doCancel {
+	[[[[Rhodes sharedInstance] mainView] getMainViewController] dismissModalViewControllerAnimated:YES]; 
     rho_rhodesapp_callSignatureCallback([postUrl UTF8String], "", "", 1);
-    [signatureViewController.view removeFromSuperview];
+    //[signatureViewController.view removeFromSuperview];
     [signatureViewController release];
     signatureViewController = nil;
-	[parentView addSubview:prevView];
-	[prevView release];
+	//[parentView addSubview:prevView];
+	//[prevView release];
     prevView = nil;
 }
 
-<<<<<<< HEAD
-=======
 -(void)hideSignatureInlineViewCommand
 {
     if (signatureInlineView != nil) {
@@ -218,7 +230,6 @@
 {
     [self performSelectorOnMainThread:@selector(captureInlineSignatureCommand) withObject:nil waitUntilDone:NO];
 }
->>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 
 
 @end
@@ -248,11 +259,11 @@ void rho_signature_take(char* callback_url, rho_param* p) {
     if (!image_format)
         image_format = "png";
     if (!penColor)
-        penColor = "0xFF66009A";
+        penColor = "4284874906";
     if (!penWidth)
         penWidth = "3";
     if (!bgColor)
-        bgColor = "0xFFFFFFFF";
+        bgColor = "4294967295";
     
     
     
@@ -264,24 +275,134 @@ void rho_signature_take(char* callback_url, rho_param* p) {
 	Rhodes* rho = [Rhodes sharedInstance];
 	SignatureDelegate* deleg = rho.signatureDelegate; 
 	[deleg setImageFormat:iformat];
-    [deleg setPenColor:(unsigned int)[ns_penColor longLongValue]];
+    [deleg setPenColor:((unsigned int)[ns_penColor longLongValue] | 0xFF000000)];
     [deleg setPenWidth:[ns_penWidth floatValue]];
-    [deleg setBgColor:(unsigned int)[ns_bgColor longLongValue]];
+    [deleg setBgColor:((unsigned int)[ns_bgColor longLongValue] | 0xFF000000)];
     [[Rhodes sharedInstance] performSelectorOnMainThread:@selector(takeSignature:)
                                               withObject:url waitUntilDone:NO];
 }
 
+
 void rho_signature_visible(bool b, rho_param* p)
 {
-    //TODO: rho_signature_visible
+    // check for RhoElements :
+    if (!rho_is_rho_elements_extension_can_be_used()) {
+        RAWLOG_ERROR("Rho::SignatureCapture.visible() is unavailable without RhoElements ! For more information go to http://www.motorolasolutions.com/rhoelements");
+        return;
+    }
+    
+    
+    if (!b) {
+        SignatureDelegate* deleg = [SignatureDelegate getSharedInstance]; 
+        [deleg hideSignatureInlineView]; 
+        return;
+    }
+    
+    
+    char* image_format = 0;
+    char* penColor = 0;
+    char* penWidth = 0;
+    char* bgColor = 0;
+    char* left = 0;
+    char* top = 0;
+    char* width = 0;
+    char* height = 0;
+    
+    if (p)
+    {
+        rho_param* pFF = rho_param_hash_get(p, "imageFormat");
+        if ( pFF )
+            image_format = pFF->v.string;
+        pFF = rho_param_hash_get(p, "penColor");
+        if ( pFF )
+            penColor = pFF->v.string;
+        pFF = rho_param_hash_get(p, "penWidth");
+        if ( pFF )
+            penWidth = pFF->v.string;
+        pFF = rho_param_hash_get(p, "bgColor");
+        if ( pFF )
+            bgColor = pFF->v.string;
+        pFF = rho_param_hash_get(p, "left");
+        if ( pFF )
+            left = pFF->v.string;
+        pFF = rho_param_hash_get(p, "top");
+        if ( pFF )
+            top = pFF->v.string;
+        pFF = rho_param_hash_get(p, "width");
+        if ( pFF )
+            width = pFF->v.string;
+        pFF = rho_param_hash_get(p, "height");
+        if ( pFF )
+            height = pFF->v.string;
+    }
+
+    if (!image_format)
+        image_format = "png";
+    if (!penColor)
+        penColor = "4284874906";
+    if (!penWidth)
+        penWidth = "3";
+    if (!bgColor)
+        bgColor = "4294967295";
+    if (!left)
+        left = "0";
+    if (!top)
+        top = "0";
+    if (!width)
+        width = "100";
+    if (!height)
+        height = "100";
+    
+    NSString *iformat = [NSString stringWithUTF8String:image_format];
+    NSString* ns_penColor = [NSString stringWithUTF8String:penColor];
+    NSString* ns_penWidth = [NSString stringWithUTF8String:penWidth];
+    NSString* ns_bgColor = [NSString stringWithUTF8String:bgColor];
+    NSString* ns_left = [NSString stringWithUTF8String:left];
+    NSString* ns_top = [NSString stringWithUTF8String:top];
+    NSString* ns_width = [NSString stringWithUTF8String:width];
+    NSString* ns_height = [NSString stringWithUTF8String:height];
+    
+    SignatureViewProperties* props = [[SignatureViewProperties alloc] init];
+
+    props.penColor = (unsigned int)[ns_penColor longLongValue];
+    props.penWidth = (float)[ns_penWidth floatValue];
+    props.bgColor = (unsigned int)[ns_bgColor longLongValue];
+    props.left = (int)[ns_left longLongValue];
+    props.top = (int)[ns_top longLongValue];
+    props.width = (int)[ns_width longLongValue];
+    props.height = (int)[ns_height longLongValue];
+    
+	SignatureDelegate* deleg = [SignatureDelegate getSharedInstance]; 
+
+    [deleg setImageFormat:iformat];
+
+    [deleg showSignatureInlineView:props];
+    
 }
 
 void rho_signature_capture(const char* callback_url) 
 {
-    //TODO: rho_signature_capture
+    // check for RhoElements :
+    if (!rho_is_rho_elements_extension_can_be_used()) {
+        RAWLOG_ERROR("Rho::SignatureCapture.capture() is unavailable without RhoElements ! For more information go to http://www.motorolasolutions.com/rhoelements");
+        return;
+    }
+    
+	SignatureDelegate* deleg = [SignatureDelegate getSharedInstance]; 
+    
+    [deleg setPostUrl:[NSString stringWithUTF8String:callback_url]];
+        
+    [deleg captureInlineSignature];
 }
 
 void rho_signature_clear() 
 {
-    //TODO: rho_signature_clear
+    // check for RhoElements :
+    if (!rho_is_rho_elements_extension_can_be_used()) {
+        RAWLOG_ERROR("Rho::SignatureCapture.clear() is unavailable without RhoElements ! For more information go to http://www.motorolasolutions.com/rhoelements");
+        return;
+    }
+	SignatureDelegate* deleg = [SignatureDelegate getSharedInstance]; 
+    [deleg clearSignatureInlineView];
+    
 }

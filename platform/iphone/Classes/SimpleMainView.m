@@ -36,14 +36,11 @@
 
 #include "NativeBar.h"
 
-<<<<<<< HEAD
-=======
 #import "SignatureDelegate.h"
 
 #include "statistic/RhoProfiler.h"
 
 
->>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 #undef DEFAULT_LOGCATEGORY
 #define DEFAULT_LOGCATEGORY "SimpleMainView"
 
@@ -650,13 +647,6 @@ static BOOL makeHiddenUntilLoadContent = YES;
 	self.webView.backgroundColor = bc;
 	self.view.backgroundColor = bc;
 	
-<<<<<<< HEAD
-	NSString* data = [NSString stringWithFormat:@"<body bgcolor=\"#%6$X\"></body>", bkg_color]; 
-	
-	self.webView.hidden = YES;
-	
-	[self loadHTMLString:data];
-=======
 	//NSString* datas = [NSString stringWithFormat:@"<body bgcolor=\"#%6X\"></body>", bkg_color];
 	NSString* datas = [NSString stringWithFormat:@"<body><script type=\"text/javascript\">document.body.style.backgroundColor = \"#%6X\";</script></body>", bkg_color];
     
@@ -666,7 +656,6 @@ static BOOL makeHiddenUntilLoadContent = YES;
     [self.webView stringByEvaluatingJavaScriptFromString:jscode];
 
 	//self.webView.hidden = YES;
->>>>>>> f476dbe3c81c6553e69d8fe8ae662ffa23191365
 }
 
 
@@ -684,6 +673,7 @@ static BOOL makeHiddenUntilLoadContent = YES;
 	//[webView setNeedsDisplay];
 	//}
 	//else {
+        [[SignatureDelegate getSharedInstance] hideSignatureInlineView];
 		[webView goBack];
 	//}
 }
@@ -741,6 +731,9 @@ static BOOL makeHiddenUntilLoadContent = YES;
 	[self restoreWebView];
 }
 
+-(UIViewController*)getMainViewController {
+    return self;
+}
 
 
 - (NSString*)processForNativeView:(NSString*)url {
@@ -1030,6 +1023,7 @@ static BOOL makeHiddenUntilLoadContent = YES;
         NSMutableURLRequest *r = (NSMutableURLRequest*)request;
         [r addValue:c forHTTPHeaderField:@"Cookie"];
     }
+    [[SignatureDelegate getSharedInstance] hideSignatureInlineView];
     return YES;
 }
 

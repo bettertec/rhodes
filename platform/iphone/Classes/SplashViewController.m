@@ -145,7 +145,10 @@
 	splashView.autoresizingMask = UIViewAutoresizingFlexibleLeftMargin | UIViewAutoresizingFlexibleTopMargin | UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth;
 	splashView.autoresizesSubviews = YES;
 	self.view = splashView;
-    [parentView addSubview:splashView];
+    
+    //[parentView addSubview:splashView];
+    ((UIWindow*)parentView).rootViewController = self;
+    
     return self;
 }
 
@@ -192,6 +195,7 @@
 	NSString *pngDefaultLandscapePath = [NSString stringWithFormat:@"%@/Default-Landscape.png", resourcePath];
 	NSString *pngDefaultLandscapeLeftPath = [NSString stringWithFormat:@"%@/Default-LandscapeLeft.png", resourcePath];
 	NSString *pngDefaultLandscapeRightPath = [NSString stringWithFormat:@"%@/Default-LandscapeRight.png", resourcePath];
+	NSString *pngDefaultiPhone5 = [NSString stringWithFormat:@"%@/Default-568h@2x.png", resourcePath];
 
 	CGRect win_frame = [[[UIApplication sharedApplication] keyWindow] bounds];
 	
@@ -258,6 +262,10 @@
 			if ([fileManager fileExistsAtPath:pngDefault2xPath]) {
 				result = pngDefault2xPath;
 			}
+            // check for iPhone5 screen
+            if (frame.size.height*scales > 1000) {
+                result = pngDefaultiPhone5;
+            }
 		}
 	}
 	if (result == nil) {
@@ -299,6 +307,7 @@
 	NSString *pngDefaultLandscapePath = [NSString stringWithFormat:@"%@/Default-Landscape.png", resourcePath];
 	NSString *pngDefaultLandscapeLeftPath = [NSString stringWithFormat:@"%@/Default-LandscapeLeft.png", resourcePath];
 	NSString *pngDefaultLandscapeRightPath = [NSString stringWithFormat:@"%@/Default-LandscapeRight.png", resourcePath];
+	NSString *pngDefaultiPhone5 = [NSString stringWithFormat:@"%@/Default-568h@2x.png", resourcePath];
 	
 	return (
 			//([fileManager fileExistsAtPath:pngLoadingPath]) ||
@@ -308,6 +317,7 @@
 			([fileManager fileExistsAtPath:pngDefaultPortraitUpsideDownPath]) ||
 			([fileManager fileExistsAtPath:pngDefaultLandscapeLeftPath]) ||
 			([fileManager fileExistsAtPath:pngDefaultLandscapeRightPath]) ||
+			([fileManager fileExistsAtPath:pngDefaultiPhone5]) ||
 			([fileManager fileExistsAtPath:pngDefaultLandscapePath])
 	);
 

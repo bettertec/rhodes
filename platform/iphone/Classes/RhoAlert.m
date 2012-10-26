@@ -1,28 +1,28 @@
 /*------------------------------------------------------------------------
-* (The MIT License)
-* 
-* Copyright (c) 2008-2011 Rhomobile, Inc.
-* 
-* Permission is hereby granted, free of charge, to any person obtaining a copy
-* of this software and associated documentation files (the "Software"), to deal
-* in the Software without restriction, including without limitation the rights
-* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-* copies of the Software, and to permit persons to whom the Software is
-* furnished to do so, subject to the following conditions:
-* 
-* The above copyright notice and this permission notice shall be included in
-* all copies or substantial portions of the Software.
-* 
-* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-* THE SOFTWARE.
-* 
-* http://rhomobile.com
-*------------------------------------------------------------------------*/
+ * (The MIT License)
+ *
+ * Copyright (c) 2008-2011 Rhomobile, Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ * http://rhomobile.com
+ *------------------------------------------------------------------------*/
 
 #import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioToolbox.h>
@@ -36,6 +36,7 @@
 #define DEFAULT_LOGCATEGORY "Alert"
 
 static UIAlertView *currentAlert = nil;
+static UITextField *currentTextInput = nil;
 static BOOL is_current_alert_status = NO;
 
 @interface RhoAlertShowPopupTask : NSObject<UIAlertViewDelegate> {
@@ -50,7 +51,7 @@ static BOOL is_current_alert_status = NO;
 - (void)dealloc;
 - (void)run:(NSValue*)v;
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex;
-    
+
 @end
 
 @implementation RhoAlertShowPopupTask
@@ -72,6 +73,11 @@ static BOOL is_current_alert_status = NO;
 - (void)run:(NSValue*)v {
     NSString *title = @"Alert";
     NSString *message = nil;
+    
+    //add for loading-ind
+    BOOL loadingIndicator = false;
+    BOOL addInput = false;
+    NSString *inputPlaceholder = @"";
     
 	is_current_alert_status = NO;
 	
@@ -99,6 +105,18 @@ static BOOL is_current_alert_status = NO;
                     continue;
                 }
                 message = [NSString stringWithUTF8String:value->v.string];
+            }
+            //added for loading-ind
+            else if (strcasecmp(name, "loading") == 0) {
+                loadingIndicator = true;
+                RAWLOG_ERROR("It is Loading!");
+            }
+            // added for native input
+            else if(strcasecmp(name, "input") == 0){
+                addInput = true;
+            }
+            else if(strcasecmp(name, "inputPlaceholder") == 0){
+                inputPlaceholder = [NSString stringWithUTF8String:value->v.string];
             }
             else if (strcasecmp(name, "callback") == 0) {
                 if (value->type != RHO_PARAM_STRING) {
@@ -156,7 +174,7 @@ static BOOL is_current_alert_status = NO;
 				is_current_alert_status = YES;
             }
 			
-
+            
         }
     }
     rho_param_free(p);
@@ -165,13 +183,19 @@ static BOOL is_current_alert_status = NO;
 		currentAlert.message = message;
 		return;
 	}
+    
+    if(addInput){
+        message = [message stringByAppendingString:@"\n\n\n"];
+    }else if(loadingIndicator){
+        message = @"\n\n";//[message stringByAppendingString:@"\n\n"];
+    }
 	
     UIAlertView *alert = [[[UIAlertView alloc]
-                  initWithTitle:title
-                  message:message
-                  delegate:self
-                  cancelButtonTitle:nil
-                  otherButtonTitles:nil] autorelease];
+                           initWithTitle:title
+                           message:message
+                           delegate:self
+                           cancelButtonTitle:nil
+                           otherButtonTitles:nil] autorelease];
     
     for (int i = 0, lim = [buttons count]; i < lim; ++i) {
         NSArray *btn = [buttons objectAtIndex:i];
@@ -179,14 +203,45 @@ static BOOL is_current_alert_status = NO;
         [alert addButtonWithTitle:title];
     }
     
+    if(loadingIndicator == true){
+        UIActivityIndicatorView *loading = [[UIActivityIndicatorView alloc]
+                                            initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
+        loading.frame=CGRectMake(120, 50, 36, 36);
+        [alert addSubview:loading];
+        [loading startAnimating];
+        RAWLOG_ERROR("Added Loading-ind");
+    }
+    if(addInput == true){
+
+        currentTextInput = [[[UITextField alloc] initWithFrame:CGRectMake(16,100,252,30)] autorelease];
+        currentTextInput.layer.cornerRadius = 5;
+        currentTextInput.clipsToBounds = YES;
+        currentTextInput.font = [UIFont systemFontOfSize:18];
+        currentTextInput.backgroundColor = [UIColor whiteColor];
+        currentTextInput.keyboardAppearance = UIKeyboardAppearanceAlert;
+        currentTextInput.placeholder = inputPlaceholder;
+        currentTextInput.contentVerticalAlignment = UIControlContentVerticalAlignmentCenter;
+        [currentTextInput becomeFirstResponder];
+        [currentTextInput.layer setBorderWidth:1.0];
+        [currentTextInput.layer setBorderColor:[[UIColor blackColor] CGColor]];
+        
+        UIView *paddingView = [[[UIView alloc] initWithFrame:CGRectMake(0, 0, 5, 20)] autorelease];
+        currentTextInput.leftView = paddingView;
+        currentTextInput.leftViewMode = UITextFieldViewModeAlways;
+        
+        [alert addSubview:currentTextInput];
+
+    }
+    [alert setTransform:CGAffineTransformMakeTranslation(0,19)];
     [alert show];
     currentAlert = alert;
+
 }
 
 - (void)alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
     currentAlert = nil;
 	is_current_alert_status = NO;
-
+    
     if (!callback)
         return;
     
@@ -196,6 +251,10 @@ static BOOL is_current_alert_status = NO;
     NSArray *btn = [buttons objectAtIndex:buttonIndex];
     NSString *itemId = [[btn objectAtIndex:0] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
     NSString *itemTitle = [[btn objectAtIndex:1] stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+    if(currentTextInput){
+        itemTitle = [currentTextInput text];
+        currentTextInput = nil;
+    }
     
     rho_rhodesapp_callPopupCallback([callback UTF8String], [itemId UTF8String], [itemTitle UTF8String]);
     [self release];
@@ -273,13 +332,13 @@ void alert_show_status(const char* szTitle, const char* szMessage, const char* s
 	
 	rho_param* p_title_key = rho_param_str("title");
 	rho_param* p_title_value = rho_param_str(szTitle);
-
+    
 	rho_param* p_message_key = rho_param_str("message");
 	rho_param* p_message_value = rho_param_str(szMessage);
 	
 	rho_param* p_buttons_key = rho_param_str("buttons");
 	rho_param* p_buttons_value = rho_param_array(1);
-
+    
 	rho_param* p_status_key = rho_param_str("status_type");
 	rho_param* p_status_value = rho_param_str("true");
 	
@@ -295,7 +354,7 @@ void alert_show_status(const char* szTitle, const char* szMessage, const char* s
 	
 	p->v.hash->name[2] = p_buttons_key->v.string;
 	p->v.hash->value[2] = p_buttons_value;
-
+    
 	p->v.hash->name[3] = p_status_key->v.string;
 	p->v.hash->value[3] = p_status_value;
 	
@@ -340,5 +399,5 @@ void alert_play_file(char* file_name, char* media_type) {
     }
     
     [RhoAlert playFile:[NSString stringWithUTF8String:file_name]
-            mediaType:media_type?[NSString stringWithUTF8String:media_type]:NULL];
+             mediaType:media_type?[NSString stringWithUTF8String:media_type]:NULL];
 }

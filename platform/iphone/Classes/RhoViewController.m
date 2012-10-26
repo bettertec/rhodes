@@ -35,4 +35,20 @@
 	return YES;
 }
 
+#ifdef __IPHONE_6_0
+- (BOOL)shouldAutorotate {
+    if ([[Rhodes sharedInstance] isRotationLocked])
+        return NO;
+	return YES;
+}
+
+
+- (NSUInteger)supportedInterfaceOrientations
+{
+     if ([[Rhodes sharedInstance] isRotationLocked])
+         return UIInterfaceOrientationMaskPortrait;
+    return UIInterfaceOrientationMaskAll;
+}
+#endif
+
 @end
