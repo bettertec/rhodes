@@ -62,6 +62,7 @@ load File.join(pwd, 'platform/iphone/rbuild/iphone.rake')
 load File.join(pwd, 'platform/wm/build/wm.rake')
 load File.join(pwd, 'platform/linux/tasks/linux.rake')
 load File.join(pwd, 'platform/wp7/build/wp.rake')
+load File.join(pwd, 'platform/wp8/build/wp.rake')
 load File.join(pwd, 'platform/symbian/build/symbian.rake')
 load File.join(pwd, 'platform/osx/build/osx.rake')
 
@@ -218,6 +219,7 @@ end
 
 def update_rhoprofiler_java_file
     use_profiler = $app_config['profiler'] || ($app_config[$current_platform] && $app_config[$current_platform]['profiler'])
+    use_profiler = use_profiler && use_profiler.to_i() != 0 ? true : false
     
     content = ""
     File.open( File.join( $startdir, "platform/bb/RubyVM/src/com/rho/RhoProfiler.java" ), 'rb' ){ |f| content = f.read() }
@@ -238,6 +240,7 @@ end
 
 def update_rhodefs_header_file
     use_profiler = $app_config['profiler'] || ($app_config[$current_platform] && $app_config[$current_platform]['profiler'])
+    use_profiler = use_profiler && use_profiler.to_i() != 0 ? true : false
     
     content = ""
     File.open( File.join( $startdir, "platform/shared/common/RhoDefs.h" ), 'rb' ){ |f| content = f.read() }
@@ -379,6 +382,20 @@ namespace "config" do
         end
     end
 
+    # add rawsensors extension for rhoelements app
+    if $current_platform == "iphone" || $current_platform == "android"
+        if $app_config["app_type"] == 'rhoelements'
+            if !$app_config['extensions'].index('rhoelementsext')
+                $app_config["extensions"] += ["rawsensors"] unless $app_config['extensions'].index('rawsensors')
+                $app_config["extensions"] += ["audiocapture"] unless $app_config['extensions'].index('audiocapture')
+            end
+        end
+    end
+    if $app_config['extensions'].index('rhoelementsext')
+        $app_config["extensions"].delete("rawsensors")
+        $app_config["extensions"].delete("audiocapture")
+    end
+
     $hidden_app = $app_config["hidden_app"].nil?() ? "0" : $app_config["hidden_app"]
     
     #application build configs
@@ -405,6 +422,14 @@ namespace "config" do
         #$app_config['extensions'].delete('nfc')
         $rhoelements_features += "- NFC extension\n"
     end
+    if $app_config['extensions'].index('rawsensors')
+        #$app_config['extensions'].delete('rawsensors')
+        $rhoelements_features += "- Raw Sensors\n"
+    end
+    if $app_config['extensions'].index('audiocapture')
+        #$app_config['extensions'].delete('audiocapture')
+        $rhoelements_features += "- Audio Capture\n"
+    end
     
     if $current_platform == "wm"
         $rhoelements_features += "- Windows Mobile/Windows CE platform support\n"
@@ -425,6 +450,10 @@ namespace "config" do
 
     if $app_config['extensions'].index('webkit-browser')
         $rhoelements_features += "- Motorola WebKit Browser\n"                
+    end
+
+    if $app_config['extensions'].index('rho-javascript')
+        $rhoelements_features += "- Javascript API for device capabilities\n"                
     end
 
     if File.exist?(File.join($app_path, "license.yml"))
@@ -462,6 +491,15 @@ namespace "config" do
             end
             if $app_config['extensions'].index('nfc')
                 $app_config['extensions'].delete('nfc')
+            end
+            if $app_config['extensions'].index('rawsensors')
+                $app_config['extensions'].delete('rawsensors')
+            end
+            if $app_config['extensions'].index('audiocapture')
+                $app_config['extensions'].delete('audiocapture')
+            end
+            if $app_config['extensions'].index('rho-javascript')
+                $app_config['extensions'].delete('rho-javascript')
             end
             
             if $application_build_configs['encrypt_database'] && $application_build_configs['encrypt_database'].to_s == '1'
@@ -603,8 +641,13 @@ def add_extension(path,dest)
     cp_r f,dest unless f =~ /^ext(\/|(\.yml)?$)/ || f =~ /^app/  || f =~ /^public/
   end  
 
-  cp_r 'app', File.join( File.dirname(dest), "apps/app" ) if File.exist? 'app'
-  cp_r 'public', File.join( File.dirname(dest), "apps/public" ) if File.exist? 'public'
+  if $current_platform == "bb"
+    cp_r 'app', File.join( dest, "apps/app" ) if File.exist? 'app'
+    cp_r 'public', File.join( dest, "apps/public" ) if File.exist? 'public'
+  else
+    cp_r 'app', File.join( File.dirname(dest), "apps/app" ) if File.exist? 'app'
+    cp_r 'public', File.join( File.dirname(dest), "apps/public" ) if File.exist? 'public'
+  end
   
   chdir start
 end
@@ -630,13 +673,10 @@ def init_extensions(startdir, dest)
       end
     end    
     
-    puts '1'
-
     if extpath.nil?
       begin
         $rhodes_extensions = nil
         require extname
-        puts '1-2'
         if $rhodes_extensions
             extpath = $rhodes_extensions[0]
             $app_config["extpaths"] << extpath
@@ -827,7 +867,13 @@ def common_bundle_start(startdir, dest)
   start = pwd
   chdir rhodeslib
 
-  Dir.glob("*").each { |f| cp_r f,dest, :preserve => true }
+  Dir.glob("*").each { |f|
+    if f.to_s == "autocomplete"
+      next
+    end
+          
+    cp_r f,dest, :preserve => true 
+  }
 
   chdir dest
   Dir.glob("**/rhodes-framework.rb").each {|f| rm f}
@@ -884,7 +930,7 @@ def common_bundle_start(startdir, dest)
 
   replace_platform = $config['platform']
   replace_platform = "bb6" if $bb6
-  replace_platform = "wm" if replace_platform == 'win32'
+  #replace_platform = "wm" if replace_platform == 'win32'
 
   [File.join($srcdir,'apps'), ($current_platform == "bb" ? File.join($srcdir,'res') : File.join($srcdir,'lib/res'))].each do |folder|
       chdir folder
@@ -896,7 +942,8 @@ def common_bundle_start(startdir, dest)
       end
       
       Dir.glob("**/*.wm.*").each { |f| rm f }
-	    Dir.glob("**/*.wp7.*").each { |f| rm f }
+	  Dir.glob("**/*.wp7.*").each { |f| rm f }
+	  Dir.glob("**/*.wp8.*").each { |f| rm f }
       Dir.glob("**/*.iphone.*").each { |f| rm f }
       Dir.glob("**/*.bb.*").each { |f| rm f }
       Dir.glob("**/*.bb6.*").each { |f| rm f }
@@ -920,7 +967,7 @@ def process_exclude_folders
 
   exclude_platform = $config['platform']
   exclude_platform = "bb6" if $bb6
-  exclude_platform = "wm" if exclude_platform == 'win32'
+  #exclude_platform = "wm" if exclude_platform == 'win32'
 
   if $app_config["excludedirs"]
       excl += $app_config["excludedirs"]['all'] if $app_config["excludedirs"]['all']

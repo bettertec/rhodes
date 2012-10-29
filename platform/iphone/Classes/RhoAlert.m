@@ -135,6 +135,7 @@ static BOOL is_current_alert_status = NO;
                     
                     NSString *itemId = nil;
                     NSString *itemTitle = nil;
+                    NSString *itemColor = @"default";
                     switch (arrValue->type) {
                         case RHO_PARAM_STRING:
                             itemId = [NSString stringWithUTF8String:arrValue->v.string];
@@ -152,6 +153,8 @@ static BOOL is_current_alert_status = NO;
                                     itemId = [NSString stringWithUTF8String:sValue->v.string];
                                 else if (strcasecmp(sName, "title") == 0)
                                     itemTitle = [NSString stringWithUTF8String:sValue->v.string];
+                                else if (strcasecmp(sName, "color") == 0)
+                                    itemColor = [NSString stringWithUTF8String:sValue->v.string];
                             }
                             break;
                         default:
@@ -164,9 +167,11 @@ static BOOL is_current_alert_status = NO;
                         continue;
                     }
                     
-                    NSMutableArray *btn = [NSMutableArray arrayWithCapacity:2];
+                    NSMutableArray *btn = [NSMutableArray arrayWithCapacity:3];
                     [btn addObject:itemId];
                     [btn addObject:itemTitle];
+                    [btn addObject:itemColor];
+                
                     [buttons addObject:btn];
                 }
             }
@@ -189,7 +194,7 @@ static BOOL is_current_alert_status = NO;
     }else if(loadingIndicator){
         message = @"\n\n";//[message stringByAppendingString:@"\n\n"];
     }
-	
+    
     UIAlertView *alert = [[[UIAlertView alloc]
                            initWithTitle:title
                            message:message
@@ -197,10 +202,21 @@ static BOOL is_current_alert_status = NO;
                            cancelButtonTitle:nil
                            otherButtonTitles:nil] autorelease];
     
+    NSInteger colIndex = -1;
     for (int i = 0, lim = [buttons count]; i < lim; ++i) {
         NSArray *btn = [buttons objectAtIndex:i];
         NSString *title = [btn objectAtIndex:1];
+        NSString *color = [btn objectAtIndex:2];
+        if ([color isEqualToString:@"red"]) {
+            colIndex = i;
+        }
         [alert addButtonWithTitle:title];
+    }
+    
+    // if there is a valid colorindex, change the background color to red
+    if (colIndex != -1) {
+        colIndex = colIndex + [[alert subviews] count] - [buttons count];
+        [[[alert subviews] objectAtIndex:colIndex] setBackgroundColor:[UIColor colorWithRed:.5 green:0.0f blue:0.0f alpha:1.0f]];
     }
     
     if(loadingIndicator == true){

@@ -581,6 +581,15 @@ LRESULT CMainWindow::OnAuthenticationRequest (UINT /*uMsg*/, WPARAM wParam, LPAR
 
 #endif //APP_BUILD_CAPABILITY_WEBKIT_BROWSER
 
+LRESULT CMainWindow::OnWindowMinimized (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+{
+    ProcessActivate( FALSE, MAKEWPARAM(0,1), 0 );
+
+    ::ShowWindow( m_hWnd, SW_MINIMIZE );
+
+    return 0;
+}
+
 LRESULT CMainWindow::OnActivate(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
 {
     int fActive = LOWORD(wParam);
@@ -589,12 +598,18 @@ LRESULT CMainWindow::OnActivate(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOO
     if (lParam) //We get activate from some internal window
     {
 #if defined(_WIN32_WCE) 
-	if (m_bFullScreen && fActive && (getSIPVisibleTop()<0))
-		RhoSetFullScreen(true);
+        if (m_bFullScreen && fActive && (getSIPVisibleTop()<0))
+	        RhoSetFullScreen(true);
 #endif
         return 0;
     }
 
+    ProcessActivate( fActive, wParam, lParam );    
+    return 0;
+}
+
+void CMainWindow::ProcessActivate( BOOL fActive, WPARAM wParam, LPARAM lParam )
+{
 #if defined(_WIN32_WCE) 
 	if (m_bFullScreen)
 		RhoSetFullScreen(fActive!=0);
@@ -604,24 +619,10 @@ LRESULT CMainWindow::OnActivate(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOO
 #if defined(_WIN32_WCE)  && !defined (OS_PLATFORM_MOTCE)
     // Notify shell of our WM_ACTIVATE message
     SHHandleWMActivate(m_hWnd, wParam, lParam, &m_sai, 0);
-
-    //pause_sync(!fActive);
-/* TBD: Commented this out because it was called before http server started 
-        We need to fix this properly
-    if ( fActive )
-        CHttpServer::Instance()->ResumeThread();
-    else
-        CHttpServer::Instance()->FreezeThread();
-*/
-    //activate calls after javascript alerts, so we have viciouse cycle if alert is display in home page
-    //if ( rho::common::CRhodesApp::getInstance() != null )
-    //    RHODESAPP().callAppActiveCallback(fActive!=0);
-
 #endif
 
     if (!fActive)
         rho_geoimpl_turngpsoff();
-    return 0;
 }
 
 LRESULT CMainWindow::OnSetCookieCommand(WORD /*wNotifyCode*/, WORD /*wID*/, HWND hWndCtl, BOOL& /*bHandled*/)
@@ -865,26 +866,57 @@ LRESULT CMainWindow::OnHotKey (UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bH
 
     return 1;
 }
+extern "C" HWND getMainWnd();
+BOOL EnumChildProc(HWND hwnd,LPARAM lParam)
+{
+    if ( getMainWnd() != ::GetParent(hwnd) )
+        return TRUE;
+
+    wchar_t szBuf[200];
+    GetWindowText(hwnd, szBuf, 199);
+    if (!*szBuf)
+        return TRUE;
+
+    DWORD dwStyles = GetWindowLong(hwnd, GWL_STYLE);    
+    //LOG(INFO) + "Child: " + szBuf + "Styles: " + LOGFMT("0x%X") + dwStyles + "Popup: " + (((dwStyles&WS_POPUP) != 0) ? "1" : "0");
+
+	if ( *((HWND*)lParam) != hwnd && (dwStyles&WS_POPUP) != 0 )
+	{
+		HWND* pWnd = (HWND*)lParam;
+		*pWnd = hwnd;
+		return FALSE;
+	}
+
+	return TRUE;
+}
 
 LRESULT CMainWindow::OnSetFocus (UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
 {
-    HWND hBrowserWnd = m_pBrowserEng ? m_pBrowserEng->GetHTMLWND() : NULL;
-
-    if (hBrowserWnd && !::IsIconic(m_hWnd))
+    HWND hWndLostFocus = (HWND)wParam;
+	WCHAR wWindowName[30];
+	if (hWndLostFocus && GetClassName(hWndLostFocus, wWindowName, 30))
 	{
-		HWND hWndLostFocus = (HWND)wParam;
+		//  Allow the following windows to remain having focus, avoids
+		//  the bug where we're unable to select anything from a combo 
+		//  box
+		if (wcscmp(wWindowName, L"PopupWindowClass") == 0)
+	        return 0;
+	}
+
+    //Look for popup window
+    HWND hChildPopUp = hWndLostFocus;
+    EnumWindows( EnumChildProc, (LPARAM)&hChildPopUp);
+    if ( hChildPopUp && hChildPopUp != hWndLostFocus)
+    {
+        ::SetFocus(hChildPopUp);
+        return 0;
+    }
+
+    HWND hBrowserWnd = m_pBrowserEng ? m_pBrowserEng->GetHTMLWND() : NULL;
+    if (hBrowserWnd && ::IsWindowVisible(m_hWnd) ) //!::IsIconic(m_hWnd))
+	{
 		if (hWndLostFocus == hBrowserWnd)
 	        return 0;
-
-		WCHAR wWindowName[30];
-		if (hWndLostFocus && GetClassName(hWndLostFocus, wWindowName, 30))
-		{
-			//  Allow the following windows to remain having focus, avoids
-			//  the bug where we're unable to select anything from a combo 
-			//  box
-			if (wcscmp(wWindowName, L"PopupWindowClass") == 0)
-		        return 0;
-		}
         ::SetFocus(hBrowserWnd);
 	}
 
@@ -1206,6 +1238,13 @@ LRESULT CMainWindow::OnExecuteCommand(UINT /*uMsg*/, WPARAM wParam, LPARAM lPara
 	return 0;
 }	
 
+
+LRESULT CMainWindow::OnLicenseWarning (UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM lParam, BOOL& /*bHandled*/)
+{
+    ::MessageBoxW( m_hWnd, L"Please provide RhoElements license key.", L"Motorola License", MB_ICONERROR | MB_OK);
+
+    return 0;
+}
 
 LRESULT CMainWindow::OnLicenseScreen(UINT /*uMsg*/, WPARAM wParam, LPARAM lParam, BOOL& /*bHandled*/)
 {

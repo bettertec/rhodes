@@ -30,6 +30,12 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Vector;
 
+import com.rhomobile.rhodes.AndroidR;
+import com.rhomobile.rhodes.BaseActivity;
+import com.rhomobile.rhodes.Logger;
+import com.rhomobile.rhodes.RhodesService;
+import com.rhomobile.rhodes.file.RhoFileApi;
+
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -430,7 +436,6 @@ public class PopupActivity extends BaseActivity {
                     buttonTitles.add(itemTitle);
                 }
             }
-        }
 
         Intent intent = new Intent(ctx, PopupActivity.class);
         // intent.addFlags(/*Intent.FLAG_ACTIVITY_NEW_TASK |
@@ -446,6 +451,7 @@ public class PopupActivity extends BaseActivity {
                 inputPlaceholder);
         intent.putExtra(INTENT_EXTRA_PREFIX + ".loading", loadingIndicator);
         ctx.startActivity(intent);
+        }
     }
 
     public static void showStatusDialog(String title, String message,

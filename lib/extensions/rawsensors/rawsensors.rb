@@ -1,4 +1,4 @@
-class RawSensors
+module RawSensors
 
   ACCELEROMETER = 'accelerometer'
   MAGNETOMETER = 'magnetometer'
@@ -11,7 +11,7 @@ class RawSensors
    end 
 
    def self.getSensorData
-       RawSensorsNative.self.getSensorData
+       RawSensorsNative.getSensorData
    end
 
 

@@ -510,6 +510,11 @@ extern "C" void event_delete(const char *eid)
     END_CHECK
 
 }
+
+extern "C" const char* calendar_get_authorization_status(void) {
+	return "Restricted";
+}
+
 #else //!OS_WINCE
 
 extern "C" VALUE event_fetch(VALUE start_date, VALUE end_date)
@@ -529,6 +534,10 @@ extern "C" const char* event_save(VALUE rEvent)
 
 extern "C" void event_delete(const char *eid)
 {
+}
+
+extern "C" const char* calendar_get_authorization_status(void) {
+	return "Restricted";
 }
 
 #endif
