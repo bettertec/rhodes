@@ -26,6 +26,13 @@ extern void rho_webview_navigate_back();
 extern void rho_webview_save(const char* format, const char* path, int tab_index);
 #define save rho_webview_save
 
+<<<<<<< HEAD
+=======
+extern VALUE rho_webview_get_current_url(int tab_index);
+#define get_current_url rho_webview_get_current_url
+
+
+>>>>>>> 0b2712ea6c067773a2bceb6da99852e03c0b1e73
 %}
 
 %typemap(default) int tab_index {
@@ -43,3 +50,7 @@ extern void full_screen_mode(int enable);
 extern void set_cookie(const char* url, const char* cookie);
 extern void navigate_back();
 extern void save(const char* format, const char* path, int tab_index);
+<<<<<<< HEAD
+=======
+extern VALUE get_current_url(int tab_index);
+>>>>>>> 0b2712ea6c067773a2bceb6da99852e03c0b1e73

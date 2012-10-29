@@ -445,8 +445,7 @@ public class RhodesService extends Service {
                             @Override
                             public void run()
                             {
-                                Log.i(TAG, "ActiveApp - process message: " + RhodesApplication.AppState.AppStarted);
-                                handlePushMessage(pushType,extras);
+                                handlePushMessage(pushType, extras);
                             }
                         });
                     break;
@@ -476,8 +475,7 @@ public class RhodesService extends Service {
 			
 			String buttonClicked = intent.getStringExtra("BUTTON_CLICKED");
 			Bundle originalExtras = intent.getBundleExtra(INTENT_EXTRA_PREFIX + "PARENT_EXTRA");
-                         final String pushType = intent.getStringExtra(PushContract.INTENT_PUSH_CLIENT);
-			
+            final String pushType = intent.getStringExtra(PushContract.INTENT_PUSH_CLIENT);
 			Log.d(TAG, "command received from " + source + ": " + buttonClicked);
 			if(buttonClicked.equals("OK")){
 				originalExtras.putString("action", originalExtras.getString("action")+":background_ok");
@@ -1271,6 +1269,7 @@ public class RhodesService extends Service {
         final String alert = extras.getString("alert");
         final String action = extras.getString("action");
         
+
 //        final String from = extras.getString("from");
 //        boolean statusNotification = false;
 //        if (Push.PUSH_NOTIFICATIONS.equals(NOTIFICATION_ALWAYS))
