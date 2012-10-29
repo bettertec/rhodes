@@ -447,6 +447,7 @@ public class PopupActivity extends BaseActivity {
                 inputPlaceholder);
         intent.putExtra(INTENT_EXTRA_PREFIX + ".loading", loadingIndicator);
         ctx.startActivity(intent);
+        //test
     }
 
     public static void showStatusDialog(String title, String message,
