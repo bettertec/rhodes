@@ -170,6 +170,16 @@ To get current application Locale:
 	:::ruby
     LocalizationSimplified::get_cur_locale #get current application locale
 
+To use client with the HTTP proxy you should pass its URL as the first command line argument `-http_proxy_url=http://<login>:<passwod>@<host>:<port>` (Windows Desktop only), add it to rhoconfig.txt, or call the setter method from Ruby code:
+    :::ruby
+    System.set_http_proxy_url(url)
+
+To stop using HTTP proxy (that was set by the command line, rhoconfig.txt or Ruby code) call:
+    :::ruby
+    System.unset_http_proxy()
+
+**NOTE: `System.set_http_proxy_url(url)` and `System.unset_http_proxy()` are implemented only for Windows Mobile, WinCE and Windows Desktop  **
+
 To modify application window position and size:
     :::ruby
     System.set_window_frame(x,y,width,height) #change application window position and size
@@ -760,7 +770,7 @@ For barcode recognition we use Zbar library (iPhone, and Windows Mobile platform
 
 **NOTE: We are very sorry, but we are removed ZBar source code from our project by ZBar license requirements. For build Barcode extension for WM, you should download ZBar sources from http://zbar.sourceforge.net/ and copy to [rhodes root]/lib/extensions/barcode/ext/barcode/shared/zbar/zbar/ folder "include" and "zbar" folders from ZBar sources. Also you should fix ZBar sources for building by Microsoft Visual Studio (move define of inner function variables to begin of functions, etc.). See detailed instructions in your Rhodes installation at /lib/extensions/barcode/ext/barcode/shared/zbar/zbar/README.TXT**
 
-On Android and iOS (not supported on iPhone 2G and iPhone 3G !) now supported real-time barcode recognizing (second parameter is hash with options):
+On Android and iOS (not supported on iPhone 2G and iPhone 3G !) real-time barcode recognition is supported (second parameter is hash with options):
 	:::ruby
 	Barcode.take_barcode(url_for(:action => :take_callback), {})
 
@@ -801,10 +811,14 @@ The following parameters are in the hash.
 
 **NOTE: On Windows Mobile and Windows CE devices only "bmp" is supported as 'imageFormat'.**
 
+**NOTE: On Blackberry devices only "png" is supported as 'imageFormat'.**
+
 After user entered signature (or canceled) provided callback url will be called. Callback parameters will be the following.
 
  * status - 'ok' or 'cancel'
  * signature_uri - path to the image with signature   
+
+**NOTE: To take signature on Blackberry devices press Menu button then select 'Capture'.**
 
 ### Inline signature capture
 **NOTE: As of Rhodes version 3.3.3, the Inline Signature Capture API is removed from Rhodes. This feature is only supported in Motorola RhoMobile Suite. If you wish to use this feature, you will need to [upgrade to RhoMobile Suite](/rhomobile-install). Your application's build.yml will also need to be modified to [indicate the application type is 'Rhoelements'](/rhoelements/rhoelements2-native#enabling-motorola-device-capabilities). Additionally, a [RhoElements license](/rhoelements/licensing) is required.**
@@ -1212,7 +1226,7 @@ This is the same address used by RhoConnect to retrieve authtoken. See [here](/r
 
 **NOTE: WARNING! This e-mail address MUST NOT be the same as origin of google account on phone! This mean that google account registered on your phone/emulator MUST NOT be push-app@gmail.com; it MUST be another one. This is known bug in Android C2DM implementation - if sender and receiver are the same, underlying android service crash and lose message. More details [here](http://groups.google.com/group/android-c2dm/browse_thread/thread/128790789c4e9d6a/67aca1e1764724d4). This is actual not for all Android versions.**
 
-At Android it is possible to set up status bar notifications for PUSH messages. In this case push message is handled by application only after user has opened the notification.
+At Android it is possible to set up status bar notifications for PUSH messages. In this case push notification can be showed at Android status bar after ruby callback. User can activate application by touching this notification.
 There are two modes available for push notifications:
  - <i>always</i> - push notification is shown always
  - <i>background</i> - push notification is shown only if application is backgrounded (not started)
@@ -1221,7 +1235,7 @@ If no push notification mode is specified in build.yml then no notifications are
 	:::yaml
 	android:
 	  push:
-	    notification: background
+	    notifications: background
 
 ### BlackBerry
 <a id="blackberry-push-setup"></a>Notifications to BlackBerry are sent using PAP 2.0 message through a BES/MDS server.
@@ -1360,14 +1374,14 @@ Popup window always close after clicking on any button.
 	* :question - '?' icon
 	* :info - informational icon
 * :buttons - array of buttons for popup window. Each button defined by its id and title. Button can be specified by Hash with :id and :title keys or just String - in this case both id and title will be set to this value.
-* :callback - url to be called when any of the button will be clicked. This callback will be called with @params hash containing three keys: :button_id, :button_title and :button_index.
+* :callback - url to be called when any of the button will be clicked. This callback will be called with @params hash containing three keys: button_id, button_title, and button_index.
 
 Example:
 	:::ruby
 	def on_dismiss_popup
-	  id = @params[:button_id]
-	  title = @params[:button_title]
-	  index = @params[:button_index]
+	  id = @params['button_id']
+	  title = @params['button_title']
+	  index = @params['button_index']
 	  if id == 'Yes'
 	    # Handle 'Yes' button
 	  elsif id == 'No'
@@ -1637,13 +1651,13 @@ See GeoLocation/controller.rb of [system API sample application](http://github.c
 	  apps         #Rho::RhoApplication::get_base_app_path
 	    app        #Rho::RhoApplication::get_app_path('app') - contain models
 	      model1   #Rho::RhoApplication::get_model_path('app','model1')
-	  public       #contains files from application public folder
-	  db           #contains schema and data files
-	    db-files   #contains files stored in database(blobs)
+	    public     #contains files from application public folder
+	    db         #contains schema and data files
+	      db-files #contains files stored in database(blobs)
 	               # for file paths from camera callback etc: Rho::RhoApplication::get_blob_path(relative_file_path); 
 	               # to create file path for blob: Rho::RhoApplication::get_blob_folder()
-	  lib          #contains rho framework library files. Blackberry does not has this folder, library files are stored in jar
-	  RhoLog.txt   #application log
+	    lib        #contains rho framework library files. Blackberry does not has this folder, library files are stored in jar
+	    RhoLog.txt #application log
 
 ### Read\write file example
 	:::ruby	
@@ -1729,10 +1743,7 @@ Also you can set special iOS attribute "do not bakup" to any files or folders re
 
 
 #### Windows Mobile
-Device/simulator files folder root - Program Files/<app name>/rho
-
-#### Desktop win32 simulator
-To use client with the HTTP proxy you should pass its URL as the first command line argument `-http_proxy_url=http://<login>:<passwod>@<host>:<port>` or add it to rhoconfig.txt.
+Device/simulator files folder root - Program Files/&lt;app name>/rho
 
 ## Shutdown hook
 Like any application written in Ruby, rhodes can register a shutdown hook. Shutdown hook is routine registered for execution when the program exits. It useful for cleanup on exit, saving program states, etc. To create you own shutdown hook you should add at_exit block to the file application.rb. 

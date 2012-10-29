@@ -175,4 +175,17 @@ void rho_webview_set_cookie(const char *u, const char *c)
 void rho_webview_save(const char* format, const char* path, int tab_index)
 {
     RAWLOG_ERROR("rho_webview_save is not implemented at iOS");
+<<<<<<< HEAD
 }
+=======
+}
+
+VALUE rho_webview_get_current_url(int tab_index) {
+    NSString* str = [[[Rhodes sharedInstance] mainView] get_current_url:tab_index];
+    if (str == nil) {
+        return rho_ruby_create_string("");
+    }
+    return rho_ruby_create_string([str UTF8String]);
+}
+
+>>>>>>> 0b2712ea6c067773a2bceb6da99852e03c0b1e73

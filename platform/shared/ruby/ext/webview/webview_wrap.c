@@ -1851,7 +1851,6 @@ extern void rho_webview_save(const char* format, const char* path, int tab_index
 #define save rho_webview_save
 
 
-
 #include <limits.h>
 #if !defined(SWIG_NO_LLONG_MAX)
 # if !defined(LLONG_MAX) && defined(__GNUC__) && defined (__LONG_LONG_MAX__)
@@ -2285,7 +2284,6 @@ fail:
   if (alloc2 == SWIG_NEWOBJ) free((char*)buf2);
   return Qnil;
 }
-
 
 
 /* -------- TYPE CONVERSION AND EQUIVALENCE RULES (BEGIN) -------- */

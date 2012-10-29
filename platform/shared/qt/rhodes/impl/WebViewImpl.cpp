@@ -115,5 +115,14 @@ void rho_webview_save(const char* format, const char* path, int tab_index)
 {
     RAWLOG_ERROR("rho_webview_save is not implemented");
 }
+<<<<<<< HEAD
+=======
+    
+void VALUE rho_webview_get_current_url(int tab_index)
+{
+    RAWLOG_ERROR("rho_webview_get_current_url is not implemented");
+}
+    
+>>>>>>> 0b2712ea6c067773a2bceb6da99852e03c0b1e73
 
 } //extern "C"

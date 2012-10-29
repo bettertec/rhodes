@@ -135,7 +135,8 @@ static RhoRawSensors* ourRhoSensors = nil;
             if (period < 200) {
                 period = 200;
             }
-            updatePeriod = 200;
+            need_resetup_update = YES;
+            updatePeriod = period;
         }
     }
     if ([RAW_SENSORS_CALLBACK_URL compare:property_name options:NSCaseInsensitiveSearch] == NSOrderedSame) {
@@ -150,7 +151,8 @@ static RhoRawSensors* ourRhoSensors = nil;
 }
 
 - (void) getSensorData {
-    [self fireCallback];
+    [self performSelectorOnMainThread:@selector(fireCallback) withObject:nil waitUntilDone:NO];
+    //[self fireCallback];
 }
 
 - (void) startPlatformUpdatesCommand {
@@ -212,13 +214,13 @@ static RhoRawSensors* ourRhoSensors = nil;
     }
     [motionManager stopAccelerometerUpdates];
     [motionManager stopDeviceMotionUpdates];
-    acceleration_x = 0;
-    acceleration_y = 0;
-    acceleration_z = 0;
+    //acceleration_x = 0;
+    //acceleration_y = 0;
+    //acceleration_z = 0;
     
-    magnetometer_x = 0;
-    magnetometer_y = 0;
-    magnetometer_z = 0;
+    //magnetometer_x = 0;
+    //magnetometer_y = 0;
+    //magnetometer_z = 0;
 }
 
 - (void) stopPlatformUpdates {

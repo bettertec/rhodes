@@ -59,12 +59,17 @@ extern "C" HINSTANCE rho_wmimpl_get_appinstance();
 extern "C" int rho_sys_check_rollback_bundle(const char* szRhoPath);
 extern "C" void registerRhoExtension();
 extern "C" void rho_webview_navigate(const char* url, int index);
-extern "C" int rho_wm_is_web_app();
 
 #ifdef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
 class CEng;
 extern rho::IBrowserEngine* rho_wmimpl_get_webkitBrowserEngine(HWND hwndParent, HINSTANCE rhoAppInstance);
 extern "C" CEng* rho_wmimpl_get_webkitbrowser(HWND hParentWnd, HINSTANCE hInstance);
+#else
+extern "C" void rho_wm_impl_SetApplicationLicenseObj(void* pAppLicenseObj)
+{
+    if (pAppLicenseObj)
+        delete pAppLicenseObj;
+}
 #endif // APP_BUILD_CAPABILITY_WEBKIT_BROWSER
 #ifdef APP_BUILD_CAPABILITY_SHARED_RUNTIME
 extern "C" {
@@ -76,7 +81,7 @@ extern "C" {
 	bool rho_wmimpl_get_fullscreen();
 	void rho_wmimpl_set_is_version2(const char* path);
 	bool rho_wmimpl_get_is_version2();
-
+    const wchar_t* rho_wmimpl_sharedconfig_getvalue(const wchar_t* szName);
 #if !defined( APP_BUILD_CAPABILITY_WEBKIT_BROWSER ) && !defined(APP_BUILD_CAPABILITY_MOTOROLA)
     bool rho_wmimpl_get_is_version2(){ return 1;}
     void rho_wmimpl_set_is_version2(const char* path){}
@@ -91,6 +96,7 @@ extern "C" {
     const char* rho_wmimpl_get_logpath(){ return ""; }
     int rho_wmimpl_is_loglevel_enabled(int nLogLevel){ return true; }
 	const int* rho_wmimpl_get_loglevel(){ return NULL; }
+    const wchar_t* rho_wmimpl_sharedconfig_getvalue(const wchar_t* szName){return 0;}
 #endif
 
 	const unsigned int* rho_wmimpl_get_logmaxsize();
@@ -160,7 +166,7 @@ class CRhodesModule : public CAtlExeModuleT< CRhodesModule >
 {
     static HINSTANCE m_hInstance;
     CMainWindow m_appWindow;
-    rho::String m_strRootPath, m_strRhodesPath, m_logPort, m_strRuntimePath;//, m_strDebugHost, m_strDebugPort;*/
+    rho::String m_strRootPath, m_strRhodesPath, m_logPort, m_strRuntimePath, m_strAppName;//, m_strDebugHost, m_strDebugPort;*/
 	int m_nRestarting;
 #ifndef RHODES_EMULATOR
 	HANDLE m_hMutex;
@@ -189,9 +195,10 @@ public :
     void RunMessageLoop( ) throw( );
     const rho::String& getRhoRootPath();
     const rho::String& getRhoRuntimePath();
-    void parseHttpProxyURI(const rho::String &http_proxy);
-
+    const rho::String& getAppName();
 };
+
+void parseHttpProxyURI(const rho::String &http_proxy);
 
 static String g_strCmdLine;
 HINSTANCE CRhodesModule::m_hInstance;
@@ -373,7 +380,7 @@ extern "C" void rho_sys_impl_exit_with_errormessage(const char* szTitle, const c
 
 extern "C" void rho_scanner_TEST(HWND hwnd);
 extern "C" void rho_scanner_TEST2();
-extern "C" int rho_wm_impl_CheckLicense();
+extern "C" void rho_wm_impl_CheckLicense();
 
 // This method is called immediately before entering the message loop.
 // It contains initialization code for the application.
@@ -406,7 +413,8 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
 
 	if (hWnd)
 	{
-		SetForegroundWindow( HWND( DWORD(hWnd) | 0x01 ) );
+        SendMessage( hWnd, PB_WINDOW_RESTORE, NULL, TRUE);
+        SetForegroundWindow( hWnd );
 		return S_FALSE;
 	}
 
@@ -479,11 +487,20 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
 #ifdef OS_WINDOWS_DESKTOP
 	if (m_strHttpProxy.length() > 0) {
 		parseHttpProxyURI(m_strHttpProxy);
-	} else {
+	} else
+#endif
+	{
 		if (RHOCONF().isExist("http_proxy_url")) {
 			parseHttpProxyURI(RHOCONF().getString("http_proxy_url"));
+#if defined(OS_WINDOWS_DESKTOP) || defined(RHODES_EMULATOR)
+		} else {
+			// it's important to call this method from here to perform
+			// a proper initialization of proxy implementation for Win32
+			GetAppWindow().setProxy();
+#endif
 		}
 	}
+
 #ifdef RHODES_EMULATOR
     if (RHOSIMCONF().getString("debug_host").length() > 0)
         SetEnvironmentVariableA("RHOHOST", RHOSIMCONF().getString("debug_host").c_str() );
@@ -491,7 +508,6 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
         SetEnvironmentVariableA("rho_debug_port", RHOSIMCONF().getString("debug_port").c_str() );
 #endif
 
-#endif
     //::SetThreadPriority(GetCurrentThread(),10);
 
 	//Check for bundle directory is exists.
@@ -561,9 +577,7 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
     m_appWindow.ShowWindow(nShowCmd);
 
 #ifndef RHODES_EMULATOR
-    int nRes = rho_wm_impl_CheckLicense();
-    if ( !nRes )
-        ::MessageBoxW(0, L"Please provide RhoElements license key.", L"Motorola License", MB_ICONERROR | MB_OK);
+    rho_wm_impl_CheckLicense();
 #endif
 
 #else
@@ -592,10 +606,15 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
     m_appWindow.initBrowserWindow();
 #endif
 
-    if (rho_wm_is_web_app())
-    {				
-		// This code is moved to rho::CRhoWKBrowserEngine::ProcessOnTopMostWnd()
-/*#if defined(APP_BUILD_CAPABILITY_MOTOROLA)
+    bool bRE1App = false;
+#if defined(APP_BUILD_CAPABILITY_SHARED_RUNTIME)
+    if (!rho_wmimpl_get_is_version2())
+        bRE1App = true;
+#endif
+
+    if (bRE1App)
+    {
+#if defined(APP_BUILD_CAPABILITY_MOTOROLA)
         registerRhoExtension();
 #endif
 	    m_appWindow.Navigate2(_T("about:blank")
@@ -604,8 +623,7 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
 #endif
         );
         
-        rho_webview_navigate( RHOCONF().getString("start_path").c_str(), 0 );*/
-
+        rho_webview_navigate( RHOCONF().getString("start_path").c_str(), 0 );
 /*    	m_appWindow.Navigate2( convertToStringW( RHOCONF().getString("start_path") ).c_str()
 #if defined(OS_WINDOWS_DESKTOP)
             , -1
@@ -617,11 +635,11 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
         RHODESAPP().startApp();
 
         // Navigate to the "loading..." page
-	    /*m_appWindow.Navigate2(_T("about:blank")
+	    m_appWindow.Navigate2(_T("about:blank")
     #if defined(OS_WINDOWS_DESKTOP)
             , -1
     #endif
-        );*/
+        );
     }
     // Show the main application window
     //m_appWindow.ShowWindow(nShowCmd);
@@ -671,26 +689,6 @@ HRESULT CRhodesModule::PreMessageLoop(int nShowCmd) throw()
     return S_OK;
 }
 
-extern "C" int rho_wm_is_web_app()
-{
-    bool bRE1App = false;
-#if defined(APP_BUILD_CAPABILITY_SHARED_RUNTIME)
-    if (!rho_wmimpl_get_is_version2())
-        bRE1App = true;
-#endif
-
-    return bRE1App; 
-}
-
-extern "C" void rho_wm_registerRhoExtension()
-{
-    //Initialize RhoElements Extension
-#if defined(APP_BUILD_CAPABILITY_MOTOROLA)
-    registerRhoExtension();
-#endif
-}
-
-
 void CRhodesModule::RunMessageLoop( ) throw( )
 {
 #if defined(OS_WINDOWS_DESKTOP)
@@ -732,7 +730,37 @@ const rho::String& CRhodesModule::getRhoRootPath()
 {
     if ( m_strRootPath.length() == 0 )
         m_strRootPath = getRhoRuntimePath();
+
     return m_strRootPath;
+}
+
+const rho::String& CRhodesModule::getAppName()
+{
+    if ( m_strAppName.length() == 0 )
+    {
+#if defined(APP_BUILD_CAPABILITY_SHARED_RUNTIME)
+        bool bRE1App = false;
+        if (!rho_wmimpl_get_is_version2())
+            bRE1App = true;
+        if ( bRE1App )
+            m_strAppName = convertToStringA( rho_wmimpl_sharedconfig_getvalue( L"General\\Name" ) );
+        else
+        {
+            String path = getRhoRootPath();
+            String_replace(path, '/', '\\');
+
+            int nEnd = path.find_last_of('\\');
+            nEnd = path.find_last_of('\\', nEnd-1)-1;
+
+            int nStart = path.find_last_of('\\', nEnd) +1;
+            m_strAppName = path.substr( nStart, nEnd-nStart+1);
+        }
+#else
+        m_strAppName = get_app_build_config_item("name");
+#endif
+    }
+
+    return m_strAppName;
 }
 
 const rho::String& CRhodesModule::getRhoRuntimePath()
@@ -813,21 +841,17 @@ void rho_platform_restart_application()
 typedef bool (WINAPI *PCSD)();
 
 #ifdef APP_BUILD_CAPABILITY_MOTOROLA
-extern "C" void rho_wm_impl_CheckLicenseWithBarcode(HWND hParent);
+extern "C" void rho_wm_impl_CheckLicenseWithBarcode(HWND hParent, HINSTANCE hLicenseInstance);
 #endif
+extern "C" void rho_wm_impl_SetApplicationLicenseObj(void* pAppLicenseObj);
 
 typedef LPCWSTR (WINAPI *PCL)(HWND, LPCWSTR, LPCWSTR, LPCWSTR);
 typedef int (WINAPI *FUNC_IsLicenseOK)();
+typedef void* (WINAPI *FUNC_GetAppLicenseObj)();
 
-extern "C" int rho_wm_impl_CheckLicense()
+extern "C" void rho_wm_impl_CheckLicense()
 {
-//#ifdef OS_WINDOWS_DESKTOP
-//    return;
-//#else
-
-#ifdef APP_BUILD_CAPABILITY_MOTOROLA
-    rho_wm_impl_CheckLicenseWithBarcode(getMainWnd());
-#else
+    int nRes = 0;
     HINSTANCE hLicenseInstance = LoadLibrary(L"license_rc.dll");
     if(hLicenseInstance)
     {
@@ -847,57 +871,57 @@ extern "C" int rho_wm_impl_CheckLicense()
             StringW strCompanyW;
             common::convertToStringW( get_app_build_config_item("motorola_license_company"), strCompanyW );
 
+            bool bRE1App = false;
+        #if defined(APP_BUILD_CAPABILITY_SHARED_RUNTIME)
+            if (!rho_wmimpl_get_is_version2())
+                bRE1App = true;
+
+            if ( bRE1App )
+            {
+                LPCTSTR szLicense = rho_wmimpl_sharedconfig_getvalue( L"LicenseKey" );
+                if ( szLicense )
+                    strLicenseW = szLicense;
+
+                LPCTSTR szLicenseComp = rho_wmimpl_sharedconfig_getvalue( L"LicenseKeyCompany" );
+                if ( szLicenseComp )
+                    strCompanyW = szLicenseComp;
+            }
+        #endif
+
             StringW strAppNameW;
-#if defined(APP_BUILD_CAPABILITY_SHARED_RUNTIME)
+//#if defined(APP_BUILD_CAPABILITY_SHARED_RUNTIME)
             strAppNameW = RHODESAPP().getAppNameW();
-#else
-            common::convertToStringW( get_app_build_config_item("name"), strAppNameW );
-#endif
+//#else
+//            common::convertToStringW( get_app_build_config_item("name"), strAppNameW );
+//#endif
             szLogText = pCheckLicense( getMainWnd(), strAppNameW.c_str(), strLicenseW.c_str(), strCompanyW.c_str() );
         }
 
         if ( szLogText && *szLogText )
             LOGC(INFO, "License") + szLogText;
 
-        return pIsOK ? pIsOK() : 0;
+        nRes = pIsOK ? pIsOK() : 0;
+    }
+
+#ifdef APP_BUILD_CAPABILITY_MOTOROLA
+    if ( nRes == 0 )
+    {
+        rho_wm_impl_CheckLicenseWithBarcode(getMainWnd(),hLicenseInstance);
+        return;
     }
 #endif
 
-    return 0;
-//#endif
-}
-
-extern "C" int rho_wm_impl_CheckSymbolDevice()
-{
-#ifdef OS_WINDOWS_DESKTOP
-    //return false;
-	return true;
-#else 
-    int res = -1;
-    HINSTANCE hLicenseInstance = LoadLibrary(L"license_rc.dll");
-	if(!hLicenseInstance)
-	{
-		MessageBox(NULL, L"license_rc.dll is absent. Application will be closed"
-						   , L"Rhodes", MB_SETFOREGROUND | MB_TOPMOST | MB_ICONSTOP | MB_OK);
-		return 0;
-	}
-	/*if(hLicenseInstance)
-	{
-		PCSD pCheckSymbolDevice = (PCSD) GetProcAddress(hLicenseInstance, L"CheckSymbolDevice");
-		if(pCheckSymbolDevice) 
-			res = pCheckSymbolDevice();
-	}
-
-	if(res == -1)
-	{
-		MessageBox(NULL, L"license_rc.dll is absent. Application will be closed"
-						   , L"Rhodes", MB_SETFOREGROUND | MB_TOPMOST | MB_ICONSTOP | MB_OK);
-		return 0;
-	}*/
-
-    return 1;
+#ifdef APP_BUILD_CAPABILITY_WEBKIT_BROWSER
+    if ( nRes )
+    {
+        FUNC_GetAppLicenseObj pGetAppLicenseObj = (FUNC_GetAppLicenseObj) GetProcAddress(hLicenseInstance, L"GetAppLicenseObj");
+        if ( pGetAppLicenseObj )
+            rho_wm_impl_SetApplicationLicenseObj( pGetAppLicenseObj() );
+    }
 #endif
 
+    if ( !nRes )
+        ::PostMessage( getMainWnd(), WM_SHOW_LICENSE_WARNING, 0, 0);
 }
 
 static inline char *
@@ -909,6 +933,11 @@ translate_char(char *p, int from, int to)
 	p = CharNextA(p);
     }
     return p;
+}
+
+extern "C" const char* rho_native_get_appname()
+{
+    return _AtlModule.getAppName().c_str();
 }
 
 extern "C" const char* rho_native_rhopath() 
@@ -1203,19 +1232,34 @@ HBITMAP SHLoadImageFile(  LPCTSTR pszFileName )
 
 #endif
 
-void CRhodesModule::parseHttpProxyURI(const rho::String &http_proxy)
+extern "C" void rho_sys_unset_http_proxy()
+{
+#if defined(OS_WINDOWS_DESKTOP) || defined(RHODES_EMULATOR)
+	_AtlModule.GetAppWindow().setProxy();
+#endif
+	RHOCONF().removeProperty("http_proxy_host", false);
+	RHOCONF().removeProperty("http_proxy_port", false);
+	RHOCONF().removeProperty("http_proxy_login", false);
+	RHOCONF().removeProperty("http_proxy_password", false);
+	RAWLOG_INFO("Unsetting HTTP proxy");
+}
+
+void parseHttpProxyURI(const rho::String &http_proxy)
 {
 	// http://<login>:<passwod>@<host>:<port>
 	const char *default_port = "8080";
 
+	if (http_proxy.length() == 0)
+		rho_sys_unset_http_proxy();
+
 	if (http_proxy.length() < 8) {
-		LOG(ERROR) + "invalid http proxy url";
+		RAWLOG_ERROR("invalid http proxy url");
 		return;
 	}
 
 	int index = http_proxy.find("http://", 0, 7);
 	if (index == string::npos) {
-		LOG(ERROR) + "http proxy url should starts with \"http://\"";
+		RAWLOG_ERROR("http proxy url should starts with \"http://\"");
 		return;
 	}
 	index = 7;
@@ -1301,20 +1345,23 @@ void CRhodesModule::parseHttpProxyURI(const rho::String &http_proxy)
 		}
 	}
 
-	LOG(INFO) + "Setting up HTTP proxy:";
-	LOG(INFO) + "URI: " + http_proxy;
-	LOG(INFO) + "HTTP proxy login    = " + login;
-	LOG(INFO) + "HTTP proxy password = " + password;
-	LOG(INFO) + "HTTP proxy host     = " + host;
-	LOG(INFO) + "HTTP proxy port     = " + port;
+	RAWLOG_INFO("Setting up HTTP proxy:");
+	RAWLOG_INFO1("URI: %s", http_proxy.c_str());
+	RAWLOG_INFO1("HTTP proxy login    = %s", login.c_str());
+	RAWLOG_INFO1("HTTP proxy password = %s", password.c_str());
+	RAWLOG_INFO1("HTTP proxy host     = %s", host.c_str());
+	RAWLOG_INFO1("HTTP proxy port     = %s", port.c_str());
 
 	if (host.length()) {
+#if defined(OS_WINDOWS_DESKTOP) || defined(RHODES_EMULATOR)
+		_AtlModule.GetAppWindow().setProxy(host, port, login, password);
+#endif
 		RHOCONF().setString ("http_proxy_host", host, false);
 
 		if (port.length()){
 			RHOCONF().setString ("http_proxy_port", port, false);
 		} else {
-			LOG(WARNING) + "there is no proxy port defined";
+			RAWLOG_WARNING("there is no proxy port defined");
 		}
 
 		if (login.length())
@@ -1324,7 +1371,12 @@ void CRhodesModule::parseHttpProxyURI(const rho::String &http_proxy)
 			RHOCONF().setString ("http_proxy_password", password, false);
 
 	} else {
-		LOG(ERROR) + "empty host name in HTTP-proxy URL";
+		RAWLOG_ERROR("empty host name in HTTP-proxy URL");
 	}
+}
 
+extern "C" void rho_sys_set_http_proxy_url(const char* url)
+{
+	String m_strHttpProxy = url;
+    parseHttpProxyURI(m_strHttpProxy);
 }

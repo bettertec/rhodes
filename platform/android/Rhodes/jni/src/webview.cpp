@@ -127,3 +127,32 @@ RHO_GLOBAL void rho_webview_set_cookie(const char *url, const char *cookie)
     jhstring cookieObj = rho_cast<jhstring>(cookie);
     env->CallStaticVoidMethod(cls, mid, urlObj.get(), cookieObj.get());
 }
+
+RHO_GLOBAL void rho_webview_save(const char* format, const char* path, int index)
+{
+    JNIEnv *env = jnienv();
+    static jclass cls = getJNIClass(RHODES_JAVA_CLASS_WEB_VIEW);
+    if (!cls) return;
+    static jmethodID mid = getJNIClassStaticMethod(env, cls, "saveCurrentPage", "(Ljava/lang/String;Ljava/lang/String;I)V");
+    if (!mid) return;
+
+    jhstring jhFormat = rho_cast<jhstring>(format);
+    jhstring jhPath   = rho_cast<jhstring>(path);
+
+    env->CallStaticVoidMethod(cls, mid, jhFormat.get(), jhPath.get(), index);
+}
+
+RHO_GLOBAL VALUE rho_webview_get_current_url(int tab_index) {
+    JNIEnv *env = jnienv();
+    jclass cls = getJNIClass(RHODES_JAVA_CLASS_WEB_VIEW);
+    if (!cls) return rho_ruby_create_string("");
+    jmethodID mid = getJNIClassStaticMethod(env, cls, "get_current_url", "(I)Ljava/lang/String;");
+    if (!mid) return rho_ruby_create_string("");
+
+    jstring jurl = (jstring)env->CallStaticObjectMethod(cls, mid, tab_index);
+
+    std::string msg = rho_cast<std::string>(env, jurl);
+    return rho_ruby_create_string(msg.c_str());
+
+}
+

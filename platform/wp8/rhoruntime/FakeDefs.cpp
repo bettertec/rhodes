@@ -35,6 +35,14 @@ extern "C" const char* rho_webview_current_location(int index)
     return "";//RHODESAPP().getCurrentUrl(index).c_str();
 }
 
+<<<<<<< HEAD
+=======
+extern "C" const char* rho_webview_get_current_url(int index)
+{
+    return "";//RHODESAPP().getCurrentUrl(index).c_str();
+}
+
+>>>>>>> 0b2712ea6c067773a2bceb6da99852e03c0b1e73
 //void rho_webview_set_menu_items(VALUE valMenu) 
 //{
 //    //rho_rhodesapp_setViewMenu(valMenu); 

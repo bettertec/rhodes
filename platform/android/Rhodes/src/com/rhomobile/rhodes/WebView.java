@@ -256,4 +256,30 @@ public class WebView {
             Logger.E(TAG, e);
         }
     }
+
+    public static void saveCurrentPage(final String format, final String path, final int index) {
+        try {
+            PerformOnUiThread.exec(new Runnable() {
+                @Override public void run() {
+                    RhodesActivity.safeGetInstance().getMainView().saveCurrentPage(format, path, index);
+                }
+            });
+        }
+        catch (Exception e) {
+            Logger.E(TAG, e);
+        }
+    }
+    
+    public static String get_current_url(int tab_index) {
+        try {
+            MainView mainView = RhodesActivity.safeGetInstance().getMainView();
+            return mainView != null ? mainView.get_current_url(tab_index) : "";
+        }
+        catch (Exception e) {
+            Logger.E(TAG, e);
+        }
+
+        return "";
+    	
+    }
 }

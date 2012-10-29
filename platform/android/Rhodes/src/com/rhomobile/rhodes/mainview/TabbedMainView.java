@@ -1025,4 +1025,13 @@ public class TabbedMainView implements MainView {
     public void stopNavigate(int index) {
         getTabMainView(index).stopNavigate(0);
     }
+
+    @Override
+    public void saveCurrentPage(String format, String path, int index) {
+        getTabMainView(index).saveCurrentPage(format, path, 0);
+    }
+    
+    public String get_current_url(int tab_index) {
+            return getTabMainView(tab_index).get_current_url(tab_index);
+    }     
 }
