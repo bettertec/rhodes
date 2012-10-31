@@ -30,17 +30,20 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.Vector;
 
+import android.R;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.res.Resources;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
@@ -61,7 +64,6 @@ import android.widget.TextView;
 import com.rhomobile.rhodes.AndroidR;
 import com.rhomobile.rhodes.BaseActivity;
 import com.rhomobile.rhodes.Logger;
-import com.rhomobile.rhodes.R;
 import com.rhomobile.rhodes.RhodesService;
 import com.rhomobile.rhodes.file.RhoFileApi;
 
@@ -69,8 +71,8 @@ public class PopupActivity extends BaseActivity {
 
     private static final String TAG = PopupActivity.class.getSimpleName();
 
-    private static final String INTENT_EXTRA_PREFIX = RhodesService.INTENT_EXTRA_PREFIX
-            + ".popup";
+    private static final String INTENT_EXTRA_PREFIX = RhodesService.INTENT_EXTRA_PREFIX + ".popup";
+    private static final String RED_BUTTON = "red";
 
     private static Dialog currentAlert = null;
     private static TextView s_textView = null;
@@ -83,10 +85,12 @@ public class PopupActivity extends BaseActivity {
 
         public String id;
         public String title;
+        public String color;
 
-        public CustomButton(String i, String t) {
+        public CustomButton(String i, String t, String c) {
             id = i;
             title = t;
+            color = c;
         }
     };
 
@@ -142,10 +146,8 @@ public class PopupActivity extends BaseActivity {
         String iconName = extras.getString(INTENT_EXTRA_PREFIX + ".icon");
         String callback = extras.getString(INTENT_EXTRA_PREFIX + ".callback");
         boolean addInput = extras.getBoolean(INTENT_EXTRA_PREFIX + ".input");
-        String inputPlaceholder = extras.getString(INTENT_EXTRA_PREFIX
-                + ".inputPlaceholder");
-        boolean loadingIndicator = extras.getBoolean(INTENT_EXTRA_PREFIX
-                + ".loading");
+        String inputPlaceholder = extras.getString(INTENT_EXTRA_PREFIX + ".inputPlaceholder");
+        boolean loadingIndicator = extras.getBoolean(INTENT_EXTRA_PREFIX + ".loading");
 
         ArrayList<String> buttonIds = new ArrayList<String>();
         Object idsObj = extras.get(INTENT_EXTRA_PREFIX + ".buttons.ids");
@@ -173,6 +175,19 @@ public class PopupActivity extends BaseActivity {
                     buttonTitles.add(titleObj.toString());
             }
         }
+        ArrayList<String> buttonColors = new ArrayList<String>();
+        Object colorsObj = extras.get(INTENT_EXTRA_PREFIX + ".buttons.colors");
+        if (colorsObj != null) {
+            if (colorsObj instanceof String[]) {
+                String[] colors = (String[]) colorsObj;
+                for (int i = 0; i < colors.length; ++i)
+                    buttonColors.add(colors[i]);
+            } else if (colorsObj instanceof ArrayList<?>) {
+                ArrayList<?> colors = (ArrayList<?>) colorsObj;
+                for (Object colorObj : colors)
+                    buttonColors.add(colorObj.toString());
+            }
+        }
 
         Vector<CustomButton> buttons = new Vector<CustomButton>();
         if (buttonIds.size() != buttonTitles.size()) {
@@ -182,8 +197,7 @@ public class PopupActivity extends BaseActivity {
         }
 
         for (int i = 0; i < buttonIds.size(); ++i)
-            buttons.addElement(new CustomButton(buttonIds.get(i), buttonTitles
-                    .get(i)));
+            buttons.addElement(new CustomButton(buttonIds.get(i), buttonTitles.get(i), buttonColors.get(i)));
 
         Resources res = getResources();
         Drawable icon = null;
@@ -196,34 +210,29 @@ public class PopupActivity extends BaseActivity {
                 icon = res.getDrawable(AndroidR.drawable.alert_info);
             else {
                 String iconPath = RhoFileApi.normalizePath("apps/" + iconName);
-                Bitmap bitmap = BitmapFactory.decodeStream(RhoFileApi
-                        .open(iconPath));
+                Bitmap bitmap = BitmapFactory.decodeStream(RhoFileApi.open(iconPath));
                 if (bitmap != null)
                     icon = new BitmapDrawable(bitmap);
             }
         }
 
-        createDialog(title, message, icon, buttons, callback, addInput,
-                inputPlaceholder, loadingIndicator);
-        
+        createDialog(title, message, icon, buttons, callback, addInput, inputPlaceholder, loadingIndicator);
+
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
-    
-    public void onConfigurationChanged(Configuration newConfig)
-    {
+
+    public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
 
-    synchronized private void createDialog(String title, String message,
-            Drawable icon, Vector<CustomButton> buttons, String callback,
-            boolean addInput, String inputPlaceholder, boolean loadingIndicator) {
+    synchronized private void createDialog(String title, String message, Drawable icon, Vector<CustomButton> buttons,
+            String callback, boolean addInput, String inputPlaceholder, boolean loadingIndicator) {
         Context ctx = this;
 
-        Logger.T(TAG, "Creating dialog{ title: " + title + ", message: "
-                + message + ", buttons cnt: " + buttons.size() + ", callback: "
-                + callback + ", addInput: " + addInput + ", inputPlaceholder"
-                + inputPlaceholder + ", loading: " + loadingIndicator);
+        Logger.T(TAG, "Creating dialog{ title: " + title + ", message: " + message + ", buttons cnt: " + buttons.size()
+                + ", callback: " + callback + ", addInput: " + addInput + ", inputPlaceholder" + inputPlaceholder
+                + ", loading: " + loadingIndicator);
 
         int nTopPadding = 10;
 
@@ -245,21 +254,18 @@ public class PopupActivity extends BaseActivity {
 
         LinearLayout linearMain = new LinearLayout(ctx);
         linearMain.setOrientation(LinearLayout.VERTICAL);
-        linearMain.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.FILL_PARENT));
+        linearMain.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.FILL_PARENT));
         linearMain.setPadding(10, nTopPadding, 10, 10);
 
         ScrollView mainScroll = new ScrollView(ctx);
-        mainScroll.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.MATCH_PARENT));
+        mainScroll.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
         mainScroll.addView(linearMain);
 
         LinearLayout top = new LinearLayout(ctx);
         top.setOrientation(LinearLayout.HORIZONTAL);
         top.setGravity(Gravity.CENTER);
         top.setPadding(10, nTopPadding, 10, 10);
-        top.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT));
+        top.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
         linearMain.addView(top);
 
         if (loadingIndicator == true) {
@@ -269,8 +275,7 @@ public class PopupActivity extends BaseActivity {
             TextView textView = new TextView(ctx);
             s_textView = textView;
             textView.setText(message);
-            textView.setLayoutParams(new LayoutParams(
-                    LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+            textView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
             textView.setGravity(Gravity.LEFT);
             top.addView(textView);
         }
@@ -279,18 +284,15 @@ public class PopupActivity extends BaseActivity {
         middle.setOrientation(LinearLayout.HORIZONTAL);
         middle.setGravity(Gravity.CENTER);
         middle.setPadding(10, nTopPadding, 10, 10);
-        middle.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT));
+        middle.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
         linearMain.addView(middle);
 
         if (addInput == true) {
             editText = new EditText(ctx);
-            editText.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
-                    LayoutParams.FILL_PARENT));
+            editText.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
             editText.requestFocus();
             editText.setRawInputType(InputType.TYPE_CLASS_NUMBER);
-            dialog.getWindow().setSoftInputMode(
-                    WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
+            dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
             if (inputPlaceholder != null) {
                 editText.setHint(inputPlaceholder);
             }
@@ -298,11 +300,9 @@ public class PopupActivity extends BaseActivity {
         }
 
         LinearLayout bottom = new LinearLayout(ctx);
-        bottom.setOrientation(buttons.size() > 2 ? LinearLayout.VERTICAL
-                : LinearLayout.HORIZONTAL);
+        bottom.setOrientation(buttons.size() > 2 ? LinearLayout.VERTICAL : LinearLayout.HORIZONTAL);
         bottom.setGravity(Gravity.CENTER);
-        bottom.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT,
-                LayoutParams.WRAP_CONTENT));
+        bottom.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
         linearMain.addView(bottom);
 
         dialog.setContentView(mainScroll);
@@ -316,12 +316,14 @@ public class PopupActivity extends BaseActivity {
             final CustomButton btn = buttons.elementAt(i);
             Button button = new Button(ctx);
             button.setText(btn.title);
-            button.setOnClickListener(new ShowDialogListener(callback, btn.id,
-                    btn.title, dialog));
-            button.setLayoutParams(new LinearLayout.LayoutParams(
-                    lim > 2 ? LayoutParams.MATCH_PARENT
-                            : LayoutParams.WRAP_CONTENT,
-                    LayoutParams.WRAP_CONTENT, 1));
+
+            button.setOnClickListener(new ShowDialogListener(callback, btn.id, btn.title, dialog));
+            button.setLayoutParams(new LinearLayout.LayoutParams(lim > 2 ? LayoutParams.MATCH_PARENT
+                    : LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 1));
+
+            if (btn.color.trim().equalsIgnoreCase(RED_BUTTON)) {
+                createCustomColoredButton(button, lim, 0xFFB22222, 0xFF722222);
+            }
             bottom.addView(button);
         }
 
@@ -358,11 +360,13 @@ public class PopupActivity extends BaseActivity {
         boolean loadingIndicator = false;
         ArrayList<String> buttonIds = new ArrayList<String>();
         ArrayList<String> buttonTitles = new ArrayList<String>();
+        ArrayList<String> buttonColors = new ArrayList<String>();
 
         if (params instanceof String) {
             message = (String) params;
             buttonIds.add("OK");
             buttonTitles.add("OK");
+            buttonColors.add("default");
         } else if (params instanceof Map<?, ?>) {
             Map<Object, Object> hash = (Map<Object, Object>) params;
 
@@ -405,20 +409,27 @@ public class PopupActivity extends BaseActivity {
                 for (int i = 0; i < btns.size(); ++i) {
                     String itemId = null;
                     String itemTitle = null;
+                    String itemColor = null;
 
                     Object btnObj = btns.elementAt(i);
                     if (btnObj instanceof String) {
                         itemId = (String) btnObj;
                         itemTitle = (String) btnObj;
+                        itemColor = (String) btnObj;
                     } else if (btnObj instanceof Map<?, ?>) {
                         Map<Object, Object> btnHash = (Map<Object, Object>) btnObj;
                         Object btnIdObj = btnHash.get("id");
                         if (btnIdObj != null && (btnIdObj instanceof String))
                             itemId = (String) btnIdObj;
                         Object btnTitleObj = btnHash.get("title");
-                        if (btnTitleObj != null
-                                && (btnTitleObj instanceof String))
+                        if (btnTitleObj != null && (btnTitleObj instanceof String))
                             itemTitle = (String) btnTitleObj;
+                        Object btnColorObj = btnHash.get("color");
+                        if (btnColorObj != null && (btnColorObj instanceof String)) {
+                            itemColor = (String) btnColorObj;
+                        } else {
+                            itemColor = "default";
+                        }
                     }
 
                     if (itemId == null || itemTitle == null) {
@@ -428,6 +439,7 @@ public class PopupActivity extends BaseActivity {
 
                     buttonIds.add(itemId);
                     buttonTitles.add(itemTitle);
+                    buttonColors.add(itemColor);
                 }
             }
 
@@ -442,21 +454,19 @@ public class PopupActivity extends BaseActivity {
         intent.putExtra(INTENT_EXTRA_PREFIX + ".callback", callback);
         intent.putExtra(INTENT_EXTRA_PREFIX + ".buttons.ids", buttonIds);
         intent.putExtra(INTENT_EXTRA_PREFIX + ".buttons.titles", buttonTitles);
+        intent.putExtra(INTENT_EXTRA_PREFIX + ".buttons.colors", buttonColors);
         intent.putExtra(INTENT_EXTRA_PREFIX + ".input", addInput);
-        intent.putExtra(INTENT_EXTRA_PREFIX + ".inputPlaceholder",
-                inputPlaceholder);
+        intent.putExtra(INTENT_EXTRA_PREFIX + ".inputPlaceholder", inputPlaceholder);
         intent.putExtra(INTENT_EXTRA_PREFIX + ".loading", loadingIndicator);
         ctx.startActivity(intent);
-        //test
+        // test
     }
 
-    public static void showStatusDialog(String title, String message,
-            String hide) {
+    public static void showStatusDialog(String title, String message, String hide) {
         showStatusDialog(RhodesService.getInstance(), title, message, hide);
     }
 
-    public static void showStatusDialog(Context ctx, String title,
-            String message, String hide) {
+    public static void showStatusDialog(Context ctx, String title, String message, String hide) {
         if (currentAlert != null) {
             s_textView.setText(message);
             return;
@@ -467,12 +477,11 @@ public class PopupActivity extends BaseActivity {
         // Intent.FLAG_ACTIVITY_NO_USER_ACTION*/);
         intent.putExtra(INTENT_EXTRA_PREFIX + ".title", title);
         intent.putExtra(INTENT_EXTRA_PREFIX + ".message", message);
-        intent.putExtra(INTENT_EXTRA_PREFIX + ".buttons.ids",
-                new String[] { hide });
-        intent.putExtra(INTENT_EXTRA_PREFIX + ".buttons.titles",
-                new String[] { hide });
+        intent.putExtra(INTENT_EXTRA_PREFIX + ".buttons.ids", new String[] { hide });
+        intent.putExtra(INTENT_EXTRA_PREFIX + ".buttons.titles", new String[] { hide });
+        intent.putExtra(INTENT_EXTRA_PREFIX + ".buttons.colors", new String[] { hide });
         ctx.startActivity(intent);
-        
+
     }
 
     public synchronized static void hidePopup() {
@@ -480,5 +489,31 @@ public class PopupActivity extends BaseActivity {
             return;
         currentAlert.dismiss();
         currentAlert = null;
+    }
+
+    private static void createCustomColoredButton(Button button, int lim, int color1, int color2) {
+
+        // define button background gradient for red buttons
+        GradientDrawable gd = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[] { color1, color2 });
+        GradientDrawable gd2 = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[] { color2, color1 });
+        StateListDrawable drawables = new StateListDrawable();
+        int stateFocused = android.R.attr.state_focused;
+        int statePressed = android.R.attr.state_pressed;
+        drawables.addState(new int[] { -stateFocused, -statePressed }, gd);
+        drawables.addState(new int[] { stateFocused, -statePressed }, gd);
+        drawables.addState(new int[] { stateFocused, statePressed }, gd2);
+        drawables.addState(new int[] { -stateFocused, statePressed }, gd2);
+
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(lim > 2 ? LayoutParams.MATCH_PARENT
+                : LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, 1);
+        if (lim > 2) {
+            params.setMargins(6, 3, 6, 3);
+        } else {
+
+        }
+        button.setBackgroundDrawable(drawables);
+        button.setLayoutParams(params);
     }
 }
