@@ -8,6 +8,9 @@ extern VALUE rho_sys_makephonecall(const char* callname, int nparams, char** par
 extern VALUE rho_sys_get_property(char* property);
 #define get_property rho_sys_get_property
 
+extern void rho_sys_appfullyinitialized();
+#define appfullyinitialized rho_sys_appfullyinitialized
+
 extern VALUE rho_sys_has_network();
 #define has_network rho_sys_has_network
 
@@ -157,6 +160,7 @@ extern void rho_sys_unset_http_proxy();
 
 extern VALUE syscall(const char* callname, int nparams, char** param_names, char** param_values);
 extern VALUE get_property(char* property);
+extern void appfullyinitialized();
 extern VALUE has_network();
 extern VALUE get_locale();
 extern int get_screen_width();

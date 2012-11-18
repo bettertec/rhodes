@@ -161,6 +161,17 @@ RHO_GLOBAL int rho_sysimpl_get_property(char* szPropName, VALUE* resValue)
     return 0;
 }
 
+RHO_GLOBAL void rho_sysimpl_appfullyinitialized()
+{
+	RAWLOG_INFO("callback rho_sysimpl_appfullyinitialized() called");
+    JNIEnv *env = jnienv();
+    jclass cls = getJNIClass(RHODES_JAVA_CLASS_RHODES_SERVICE);
+    if (!cls) return;
+    //jmethodID mid = getJNIClassStaticMethod(env, cls, "activityStarted", "()V");
+    jmethodID mid = getJNIClassStaticMethod(env, cls, "handleAppFullyInitialized", "()V");
+    if (!mid) return;
+    env->CallStaticVoidMethod(cls, mid);
+}
 
 RHO_GLOBAL int rho_sys_set_sleeping(int sleeping) {
     JNIEnv *env = jnienv();

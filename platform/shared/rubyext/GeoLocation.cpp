@@ -136,9 +136,13 @@ void CGeoLocation::callGeoCallback(const CGeoNotification& oNotify, const char* 
 	    strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
 	    strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
 	    strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
+	    
+	    #if defined(OS_ANDROID)
+	    
         const char* fullString = rho_geo_location_string();
         if (fullString)
         	strBody += fullString;
+        #endif
     }
 
     if ( oNotify.m_strParams.length() > 0 )

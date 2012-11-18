@@ -27,7 +27,6 @@ public class GoogleWebView implements IRhoWebView {
     private static Boolean mInitialized = false;
 
     private android.webkit.WebView mWebView;
-	//private HackedWebView mWebView;
     private ViewGroup mContainerView;
 
     public GoogleWebView(Activity activity) {
@@ -37,30 +36,6 @@ public class GoogleWebView implements IRhoWebView {
             }
         }
         mWebView = new android.webkit.WebView(activity);
-		//mWebView = new HackedWebView(activity);
-		
-		/*mWebView.getSettings().setLightTouchEnabled(true);
-		mWebView.setFocusable(true);
-		mWebView.setFocusableInTouchMode(true);
-		
-		
-		mWebView.requestFocus(View.FOCUS_DOWN);
-		Logger.I(TAG, "Adding Google HackedWebView onTouch from Caller");
-		mWebView.setOnTouchListener(new View.OnTouchListener() {
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				Logger.I(GoogleWebView.class.getSimpleName(), "Processing Google HackedWebView onTouch from Caller: " + event.toString());
-				switch (event.getAction()) {
-					case MotionEvent.ACTION_DOWN:
-					case MotionEvent.ACTION_UP:
-						if (!v.hasFocus()) {
-							v.requestFocus();
-						}
-						break;
-				}
-				return false;
-			}
-		});*/
     }
 
     private static void initWebStuff(Activity activity) {

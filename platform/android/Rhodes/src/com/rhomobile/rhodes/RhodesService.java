@@ -1501,6 +1501,11 @@ public class RhodesService extends Service {
 			Log.d(TAG, "activityStarted (2): sActivitiesActive=" + sActivitiesActive);
 	}
 	
+	public static void handleAppFullyInitialized() {
+		Logger.T(TAG, "handleAppFullyInitialized() was called");
+		RhodesApplication.stateChanged(RhodesApplication.AppState.AppFullyInitialized);
+	}
+	
 	public static void activityStopped() {
 		if (DEBUG)
 			Log.d(TAG, "activityStopped (1): sActivitiesActive=" + sActivitiesActive);

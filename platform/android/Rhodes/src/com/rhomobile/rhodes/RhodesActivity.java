@@ -77,6 +77,8 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
 	
 	private MainView mMainView;
 	
+	private MainView stackedMainView;
+	
 	private RhoMenu mAppMenu;
 
 	private long uiThreadId = 0;
@@ -163,7 +165,7 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
             });
             securityAlert.show();
             return;
-        }        
+        }
     }
 
     public IRhoWebView createWebView(int tabIndex) {
@@ -211,7 +213,6 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
 						mHandler.postDelayed(this, 100);
 						return;
 					}
-				
 					RhodesService.callUiCreatedCallback();
 				}
 			});
@@ -251,9 +252,9 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
 
     @Override
     public void onStart() {
+        Logger.T(TAG, "onStart");
         super.onStart();
 
-        Logger.D(TAG, "onStart");
         mIsInsideStartStop = true;
 
         RhodesApplication.stateChanged(RhodesApplication.UiState.MainActivityStarted);
@@ -363,11 +364,16 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
 
     @Override
     public void onSplashScreenGone(SplashScreen splashScreen) {
+    	Logger.T(TAG, "onSplashScreenGone was called");
         ViewGroup parent = (ViewGroup)splashScreen.getSplashView().getParent();
         parent.removeView(splashScreen.getSplashView());
-        mMainView = splashScreen.getBackendView();
+        Logger.T(TAG, "new mainView is " + splashScreen.getBackendView().toString() + ", was before: " + mMainView.toString());
+        //mMainView = splashScreen.getBackendView();
+        
+        // set the content view here, because it hasn't been done in setWebView
+        setContentView(stackedMainView.getView());
     }
-
+    
     @Override
     public void onSplashScreenNavigateBack() {
         moveTaskToBack(true);
@@ -408,13 +414,24 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
 
     public void setMainView(MainView v) {
         if (v != null) {
-            mMainView = v;
-            setContentView(v.getView());
+        	Logger.T(TAG, "setting new mainView " + v.getView().toString() + ", and the the old one is " + (mMainView != null && mMainView.getView() != null ? mMainView.getView().toString() : "null"));
+        	if (mMainView == null) {
+        		mMainView = v;
+                setContentView(v.getView());
+        	} else {
+        		stackedMainView = v;
+        		mMainView = v;
+                //setContentView(v.getView());
+        	}
         }
     }
 
 	public MainView getMainView() {
-		return mMainView;
+		if (stackedMainView != null) {
+			return stackedMainView;
+		} else {
+			return mMainView;
+		}
 	}	
 
 	@Override

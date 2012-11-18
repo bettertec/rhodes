@@ -44,6 +44,7 @@ using namespace rho::common;
 extern "C"
 {
 extern int rho_sysimpl_get_property(char* szPropName, VALUE* resValue);
+extern void rho_sysimpl_appfullyinitialized();
 extern VALUE rho_sys_has_network();
 extern VALUE rho_sys_get_locale();
 extern int rho_sys_get_screen_width();
@@ -153,6 +154,11 @@ VALUE rho_sys_get_property(char* szPropName)
     RAWLOG_ERROR1("Unknown Rho::System property : %s", szPropName);
 
     return rho_ruby_get_NIL();
+}
+
+void rho_sys_appfullyinitialized()
+{
+	rho_sysimpl_appfullyinitialized();
 }
 
 void rho_sys_set_push_notification(const char *url, const char* params, const char* types)

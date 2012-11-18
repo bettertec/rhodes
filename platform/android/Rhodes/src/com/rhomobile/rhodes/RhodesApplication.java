@@ -304,7 +304,8 @@ public class RhodesApplication extends Application{
             super.run();
             
             if(mState == null) throw new IllegalStateException("AppEventObserver state is not initialized");
-            
+
+            Logger.T(TAG, "Setting AppState to: " + mState.TAG);
             RhodesApplication.stateChanged(mState);
         }
     }
@@ -356,7 +357,7 @@ public class RhodesApplication extends Application{
             for (Observer observer: mObservers) {
                 complete &= observer.isReady();
                 if (!complete) {
-                    Logger.D(TAG, observer.toString());
+                    Logger.T(TAG, observer.toString());
                     break;
                 }
             }
@@ -405,6 +406,10 @@ public class RhodesApplication extends Application{
             @Override
             public boolean canHandle(AppState state) { return (state == this) || (state == AppStarted); }
         },
+        AppFullyInitialized("AppFullyInitialized") {
+            @Override
+            public boolean canHandle(AppState state) { return (state == this) || (state == AppStarted); }
+        },
         AppDeactivated("AppDeactivated") {
             @Override
             public boolean canHandle(AppState state) { return (state == this) || (state == AppStarted); }
@@ -424,7 +429,7 @@ public class RhodesApplication extends Application{
         {
             Collection<StateHandler> handlers = null;// = new Vector<StateHandler>();
 
-            Logger.T(TAG, "Starting commit. Current AppState: " + sAppState.TAG);
+            Logger.T(TAG, "Starting commit. Current AppState: " + sAppState.TAG + ", new AppState: " + this.TAG);
             if(mImpl.isComplete()) {
                 if((this == AppActivated) && (sAppState == Undefined)) {
                     appActivatedFlag = true;
@@ -445,6 +450,8 @@ public class RhodesApplication extends Application{
         public synchronized void addHandler(StateHandler handler) { mImpl.addHandler(handler); }
         public synchronized AppEventObserver addObserver(String tag, boolean once) {
             AppEventObserver observer = new AppEventObserver(tag, this, once);
+
+            Logger.T(TAG, "Creating new AppEventObserver with AppState: " + this.TAG);
             mImpl.addObserver(observer);
             return observer;
         }
@@ -552,8 +559,8 @@ public class RhodesApplication extends Application{
 
     public static void stateChanged(AppState state)
     {
+        Logger.T(TAG, "New AppState: " + sAppState.TAG);
         AppState.handleState(state);
-        Logger.I(TAG, "New AppState: " + sAppState.TAG);
     }
     public static void stateChanged(UiState state)
     {
