@@ -158,7 +158,9 @@ VALUE rho_sys_get_property(char* szPropName)
 
 void rho_sys_appfullyinitialized()
 {
-	rho_sysimpl_appfullyinitialized();
+    #if defined(OS_ANDROID)
+        rho_sysimpl_appfullyinitialized();
+    #endif
 }
 
 void rho_sys_set_push_notification(const char *url, const char* params, const char* types)

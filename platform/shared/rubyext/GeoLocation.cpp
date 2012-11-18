@@ -123,9 +123,11 @@ void CGeoLocation::callGeoCallback(const CGeoNotification& oNotify, const char* 
             strBody += "&latitude=" + convertToStringA(rho_geo_latitude());
             strBody += "&longitude=" + convertToStringA(rho_geo_longitude());
             strBody += "&accuracy=" + convertToStringA(rho_geo_accuracy());
+            #if defined(OS_ANDROID)
         	const char* fullString = rho_geo_location_string();
 	        if (fullString)
 	        	strBody += fullString;
+            #endif
         } else {
             strBody += "&available=0&known_position=0&latitude=0.0&longitude=0.0&accuracy=0.0";
         }
