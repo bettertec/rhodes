@@ -666,6 +666,9 @@ static Rhodes *instance = NULL;
  
 	CGRect rrr = [application statusBarFrame];
 	
+    NSHTTPCookieStorage *cookieStorage = [NSHTTPCookieStorage sharedHTTPCookieStorage];
+    [cookieStorage setCookieAcceptPolicy:NSHTTPCookieAcceptPolicyAlways];
+    
     NSLog(@"Init cookies");
     cookies = [[NSMutableDictionary alloc] initWithCapacity:0];
     
