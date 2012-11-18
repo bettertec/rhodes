@@ -102,6 +102,7 @@ import android.os.PowerManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.WindowManager;
+import android.view.ViewConfiguration;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.RemoteViews;
@@ -860,6 +861,10 @@ public class RhodesService extends Service {
 			}
             else if (name.equalsIgnoreCase("is_motorola_device")) {
                 return isMotorolaDevice();
+            }
+            else if (name.equalsIgnoreCase("has_hard_menu_key")) {
+            	Context ctx = RhodesActivity.getContext();
+            	return ViewConfiguration.get(ctx).hasPermanentMenuKey();
             }
 		}
 		catch (Exception e) {
