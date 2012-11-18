@@ -8,7 +8,9 @@ module System
   def self.syscall(rest)
   end  
   def self.get_property(rest)
-  end  
+  end
+  def self.appfullyinitialized(rest)
+  end
   def self.has_network(rest)
   end  
   def self.get_locale(rest)

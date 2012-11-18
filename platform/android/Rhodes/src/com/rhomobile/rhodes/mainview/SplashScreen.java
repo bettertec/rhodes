@@ -169,7 +169,9 @@ public class SplashScreen implements MainView{
 
    @Override
     public void setWebView(IRhoWebView view, int index) {
+	   Logger.T(TAG, "setWebView in Splashscreen, new view:" + view.getView().toString() + ", index: " + index);
        mBackendView.setWebView(view, index);
+	   //((SimpleMainView) mBackendView).stackNewWebView(view);
     }
 
 	@Override
@@ -185,7 +187,7 @@ public class SplashScreen implements MainView{
 	@Override
 	public void navigate(final String url, final int index) {
 
-        Logger.D(TAG, "navigate: url=" + url);
+        Logger.T(TAG, "navigate: url=" + url);
 
         mBackendView.navigate(url, index);
 
@@ -198,10 +200,31 @@ public class SplashScreen implements MainView{
                 delay = 0;
         }
 
-        Logger.D(TAG, "DELAY for SplashScreen = " + String.valueOf(delay));
+        Logger.T(TAG, "DELAY for SplashScreen = " + String.valueOf(delay) + " of SC " + this.toString());
         final SplashScreen curView = this;
+        
+        RhodesApplication.runWhen(
+        	RhodesApplication.AppState.AppFullyInitialized,
+            new RhodesApplication.StateHandler(true) {
+                 @Override public void run() {
+                     PerformOnUiThread.exec(new Runnable() {
+                         public void run() {
+                            try {
+                                if (mNavigateIndex != 0) {
+                                    throw new IllegalStateException("Non zero tab index(" + mNavigateIndex + ") to navigate from Splash Screen");
+                                }
+                                Logger.T(TAG, "Calling onSplashScreenGone by AppFullyInitialized of SC " + this.toString());
+                                mSplashScreenListener.onSplashScreenGone(curView);
+                            } catch (Throwable e) {
+                                Logger.E(TAG, e.toString());
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+            }
+        });
 
-        final long threadDelay = delay;
+        final long threadDelay = 10000; //overwritten
         mSleepThread = new Thread(new Runnable() {
             @Override
             public void run() {
@@ -216,9 +239,11 @@ public class SplashScreen implements MainView{
                                             if (mNavigateIndex != 0) {
                                                 throw new IllegalStateException("Non zero tab index(" + mNavigateIndex + ") to navigate from Splash Screen");
                                             }
+                                            Logger.T(TAG, "Calling onSplashScreenGone by AppActivted with timeout of SC " + this.toString());
                                             mSplashScreenListener.onSplashScreenGone(curView);
                                         } catch (Throwable e) {
-                                            Logger.E(TAG, e);
+                                            Logger.E(TAG, e.toString());
+                                            e.printStackTrace();
                                         }
                                     }
                                 });
