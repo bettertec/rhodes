@@ -47,6 +47,7 @@ import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.InputType;
+import android.text.method.PasswordTransformationMethod;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
@@ -148,6 +149,7 @@ public class PopupActivity extends BaseActivity {
         boolean addInput = extras.getBoolean(INTENT_EXTRA_PREFIX + ".input");
         String inputPlaceholder = extras.getString(INTENT_EXTRA_PREFIX + ".inputPlaceholder");
         boolean loadingIndicator = extras.getBoolean(INTENT_EXTRA_PREFIX + ".loading");
+        boolean inputPassword = extras.getBoolean(INTENT_EXTRA_PREFIX + ".inputPassword");
 
         ArrayList<String> buttonIds = new ArrayList<String>();
         Object idsObj = extras.get(INTENT_EXTRA_PREFIX + ".buttons.ids");
@@ -216,7 +218,8 @@ public class PopupActivity extends BaseActivity {
             }
         }
 
-        createDialog(title, message, icon, buttons, callback, addInput, inputPlaceholder, loadingIndicator);
+        createDialog(title, message, icon, buttons, callback, addInput, inputPlaceholder, loadingIndicator,
+                inputPassword);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
@@ -227,12 +230,12 @@ public class PopupActivity extends BaseActivity {
     }
 
     synchronized private void createDialog(String title, String message, Drawable icon, Vector<CustomButton> buttons,
-            String callback, boolean addInput, String inputPlaceholder, boolean loadingIndicator) {
+            String callback, boolean addInput, String inputPlaceholder, boolean loadingIndicator, boolean inputPassword) {
         Context ctx = this;
 
         Logger.T(TAG, "Creating dialog{ title: " + title + ", message: " + message + ", buttons cnt: " + buttons.size()
                 + ", callback: " + callback + ", addInput: " + addInput + ", inputPlaceholder" + inputPlaceholder
-                + ", loading: " + loadingIndicator);
+                + ", loading: " + loadingIndicator + ",inputPassword: " + inputPassword);
 
         int nTopPadding = 10;
 
@@ -292,6 +295,9 @@ public class PopupActivity extends BaseActivity {
             editText.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
             editText.requestFocus();
             editText.setRawInputType(InputType.TYPE_CLASS_NUMBER);
+            if (inputPassword == true) {
+                editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+            }
             dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
             if (inputPlaceholder != null) {
                 editText.setHint(inputPlaceholder);
@@ -358,6 +364,7 @@ public class PopupActivity extends BaseActivity {
         String inputPlaceholder = null;
         boolean addInput = false;
         boolean loadingIndicator = false;
+        boolean inputPassword = false;
         ArrayList<String> buttonIds = new ArrayList<String>();
         ArrayList<String> buttonTitles = new ArrayList<String>();
         ArrayList<String> buttonColors = new ArrayList<String>();
@@ -390,6 +397,12 @@ public class PopupActivity extends BaseActivity {
             Object inputObj = hash.get("input");
             if (inputObj != null && (inputObj instanceof String)) {
                 addInput = Boolean.parseBoolean((String) inputObj);
+            }
+
+            // added for inputPassword option
+            Object inputPasswordObj = hash.get("inputPassword");
+            if (inputPasswordObj != null && (inputPasswordObj instanceof String)) {
+                inputPassword = Boolean.parseBoolean((String) inputPasswordObj);
             }
 
             // added for input placeholder
@@ -458,6 +471,7 @@ public class PopupActivity extends BaseActivity {
         intent.putExtra(INTENT_EXTRA_PREFIX + ".input", addInput);
         intent.putExtra(INTENT_EXTRA_PREFIX + ".inputPlaceholder", inputPlaceholder);
         intent.putExtra(INTENT_EXTRA_PREFIX + ".loading", loadingIndicator);
+        intent.putExtra(INTENT_EXTRA_PREFIX + ".inputPassword", inputPassword);
         ctx.startActivity(intent);
         // test
     }
