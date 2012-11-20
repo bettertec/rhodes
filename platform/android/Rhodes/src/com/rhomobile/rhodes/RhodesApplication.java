@@ -440,7 +440,11 @@ public class RhodesApplication extends Application{
                     handlers = mImpl.commitHandlers();
                     mImpl.commitObservers();
                     
-                    sAppState = this;
+                    if (this != AppFullyInitialized) {
+                    	sAppState = this;
+                    } else {
+                        Logger.T(TAG, "Not actually changing appState because: " + sAppState.TAG);
+                    }
                 }
             }
             Logger.T(TAG, "After AppState commit: " + sAppState.TAG);
@@ -559,7 +563,7 @@ public class RhodesApplication extends Application{
 
     public static void stateChanged(AppState state)
     {
-        Logger.T(TAG, "New AppState: " + sAppState.TAG);
+        Logger.T(TAG, "New AppState: " + state.TAG);
         AppState.handleState(state);
     }
     public static void stateChanged(UiState state)

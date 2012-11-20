@@ -370,7 +370,7 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
         Logger.T(TAG, "new mainView is " + splashScreen.getBackendView().toString() + ", was before: " + mMainView.toString());
         //mMainView = splashScreen.getBackendView();
         
-        // set the content view here, because it hasn't been done in setWebView
+        // set the content view here, because it hasn't been done in setMainView
         setContentView(stackedMainView.getView());
     }
     
