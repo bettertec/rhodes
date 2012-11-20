@@ -77,6 +77,7 @@ static BOOL is_current_alert_status = NO;
     //add for loading-ind
     BOOL loadingIndicator = false;
     BOOL addInput = false;
+    BOOL inputTypePassword = false;//input type should be password
     NSString *inputPlaceholder = @"";
     
 	is_current_alert_status = NO;
@@ -114,6 +115,9 @@ static BOOL is_current_alert_status = NO;
             // added for native input
             else if(strcasecmp(name, "input") == 0){
                 addInput = true;
+            }
+            else if(strcasecmp(name, "input_password") == 0){
+                inputTypePassword = true;
             }
             else if(strcasecmp(name, "inputPlaceholder") == 0){
                 inputPlaceholder = [NSString stringWithUTF8String:value->v.string];
@@ -244,6 +248,10 @@ static BOOL is_current_alert_status = NO;
         UIView *paddingView = [[[UIView alloc] initWithFrame:CGRectMake(0, 0, 5, 20)] autorelease];
         currentTextInput.leftView = paddingView;
         currentTextInput.leftViewMode = UITextFieldViewModeAlways;
+        
+        if(inputTypePassword == true){
+            currentTextInput.secureTextEntry = YES;
+        }
         
         [alert addSubview:currentTextInput];
 
