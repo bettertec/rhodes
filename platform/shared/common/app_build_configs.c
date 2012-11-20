@@ -7,11 +7,13 @@
 static const char* keys[] = { ""
 ,"android_title"
 ,"name"
+,"android_title"
 };
 
 static const char* values[] = { ""
 ,"0"
 ,"BetterTaxi"
+,"0"
 };
 
 #define APP_BUILD_CONFIG_COUNT 3
