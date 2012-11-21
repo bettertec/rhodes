@@ -294,9 +294,12 @@ public class PopupActivity extends BaseActivity {
             editText = new EditText(ctx);
             editText.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
             editText.requestFocus();
-            editText.setRawInputType(InputType.TYPE_CLASS_NUMBER);
+            Log.w("Password", "inputPassword: " + inputPassword);
             if (inputPassword == true) {
-                editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                // editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+                editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            } else {
+                editText.setRawInputType(InputType.TYPE_CLASS_NUMBER);
             }
             dialog.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE);
             if (inputPlaceholder != null) {
@@ -400,7 +403,7 @@ public class PopupActivity extends BaseActivity {
             }
 
             // added for inputPassword option
-            Object inputPasswordObj = hash.get("inputPassword");
+            Object inputPasswordObj = hash.get("input_password");
             if (inputPasswordObj != null && (inputPasswordObj instanceof String)) {
                 inputPassword = Boolean.parseBoolean((String) inputPasswordObj);
             }
