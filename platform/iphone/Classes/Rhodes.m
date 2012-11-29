@@ -418,6 +418,7 @@ static Rhodes *instance = NULL;
 }
 
 - (void)openFullScreenNativeView:(UIView*)view {
+    RAWLOG_ERROR("openFullScreenNativeView");
     if (!rho_rhodesapp_check_mode())
         return;
 	[self hideSplash];
@@ -461,6 +462,7 @@ static Rhodes *instance = NULL;
 }
 
 - (void)hideSplash {
+    NSLog(@"hideSplash method");
     if (splashViewController) {
         [splashViewController hideSplash];
         [splashViewController release];

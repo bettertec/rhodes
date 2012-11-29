@@ -196,7 +196,7 @@ static BOOL is_current_alert_status = NO;
     if(addInput){
         message = [message stringByAppendingString:@"\n\n\n"];
     }else if(loadingIndicator){
-        message = @"\n\n";//[message stringByAppendingString:@"\n\n"];
+        message = @"\n\n\n";//[message stringByAppendingString:@"\n\n"];
     }
     
     UIAlertView *alert = [[[UIAlertView alloc]
