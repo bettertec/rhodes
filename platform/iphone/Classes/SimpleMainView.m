@@ -865,11 +865,7 @@ static BOOL makeHiddenUntilLoadContent = YES;
 
 - (void)executeJs:(NSString*)js tab:(int)index {
 	[SimpleMainView disableHiddenOnStart];
-	if (self.view.hidden) {
-		[[Rhodes sharedInstance] hideSplash];
-		self.view.hidden = NO;
-		[self.view.superview bringSubviewToFront:self.view];
-    }
+
     RAWLOG_INFO1("Executing JS: %s", [js UTF8String]);
     [webView stringByEvaluatingJavaScriptFromString:js];
 }
@@ -1062,9 +1058,11 @@ static BOOL makeHiddenUntilLoadContent = YES;
 	[sharedCache release];
 	
 	if (self.view.hidden) {
-		[[Rhodes sharedInstance] hideSplash];
-		self.view.hidden = NO;
-		[self.view.superview bringSubviewToFront:self.view];
+        RAWLOG_INFO1("remove splashscreen because webview fully loaded", nil);
+		//self.view.hidden = NO;
+        
+        //make sure that the splash-screen will be removed after some time
+		[[Rhodes sharedInstance] performSelector:@selector(hideSplash) withObject:nil afterDelay:5.0];
     }
 	if (self.nativeViewView == nil) {
 		if ([self.webView superview] == nil) {
@@ -1072,7 +1070,7 @@ static BOOL makeHiddenUntilLoadContent = YES;
 		}
 		if (self.webView.hidden) {
 			self.webView.hidden = NO;
-			[self.webView.superview bringSubviewToFront:self.webView];
+			//[self.webView.superview bringSubviewToFront:self.webView];
 		}
 	}
 	
@@ -1123,14 +1121,13 @@ static BOOL makeHiddenUntilLoadContent = YES;
 	if (self.view.hidden) {
 		[[Rhodes sharedInstance] hideSplash];
 		self.view.hidden = NO;
-		[self.view.superview bringSubviewToFront:self.view];
     }
 	if ([self.webView superview] == nil) {
 		[self.view addSubview:self.webView];
 	}
 	if (self.webView.hidden) {
 		self.webView.hidden = NO;
-		[self.webView.superview bringSubviewToFront:self.webView];
+		//[self.webView.superview bringSubviewToFront:self.webView];
     }
 	self.isBackgroundSetted = YES;
 	self.url_after_set_background = nil;

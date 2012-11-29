@@ -83,7 +83,6 @@ static int started = 0;
 			started = 1;
 			break;
 		case TABBAR_TYPE: {
-			[[Rhodes sharedInstance] hideSplash];
 			view = [[TabbedMainView alloc] initWithMainView:mainView parent:w bar_info:parameters];
 			started = 1;
 			[r setMainView:view];
@@ -91,7 +90,6 @@ static int started = 0;
 		}
 			break;
 		case VTABBAR_TYPE: {
-			[[Rhodes sharedInstance] hideSplash];
 			BOOL is_iPad = NO;
 			{
 				NSString *model = [[UIDevice currentDevice] model]; // "iPad ..."
