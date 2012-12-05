@@ -309,6 +309,7 @@ public class RhodesService extends Service {
 
         mNM = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
 
+
         LocalFileProvider.revokeUriPermissions(this);
 
         Logger.I("Rhodes", "Loading...");

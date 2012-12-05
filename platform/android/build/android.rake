@@ -32,7 +32,7 @@ require 'tempfile'
 
 
 USE_OWN_STLPORT = false
-#USE_TRACES = # see androidcommon.h
+#USE_TRACES = # see androidcommon.rb
 
 def get_market_version(apilevel)
   AndroidTools.get_market_version(apilevel)
@@ -62,7 +62,7 @@ ANDROID_PERMISSIONS = {
   'bluetooth' => ['BLUETOOTH_ADMIN', 'BLUETOOTH'],
   'calendar' => ['READ_CALENDAR', 'WRITE_CALENDAR'],
   'sdcard' => 'WRITE_EXTERNAL_STORAGE',
-  'push' => proc do add_gcm_push end,
+  'push' => nil,
   'motorola' => ['SYSTEM_ALERT_WINDOW', 'BROADCAST_STICKY', proc do |manifest| add_motosol_sdk(manifest) end],
   'motoroladev' => ['SYSTEM_ALERT_WINDOW', 'BROADCAST_STICKY', proc do |manifest| add_motosol_sdk(manifest) end],
   'webkit_browser' => nil,
@@ -71,10 +71,6 @@ ANDROID_PERMISSIONS = {
 }
 
 ANDROID_CAPS_ALWAYS_ENABLED = ['network_state']
-
-def add_gcm_push
-  $app_config["extensions"] << 'gcm-push' unless $app_config["extensions"].index('gcm-push')
-end
 
 def add_motosol_sdk(manifest)
   uses_scanner = REXML::Element.new 'uses-library'
@@ -89,6 +85,18 @@ def add_motosol_sdk(manifest)
     app.add uses_scanner
     app.add uses_msr
   end  
+end
+
+def set_app_icon_android
+  iconappname = File.join($app_path, "icon", "icon.png")
+
+  ['drawable', 'drawable-hdpi', 'drawable-mdpi', 'drawable-ldpi'].each do |dpi|
+    drawable = File.join($appres, dpi)
+    iconresname = File.join(drawable, "icon.png")
+    rm_f iconresname
+    cp iconappname, iconresname if File.exist? drawable
+  end
+
 end
 
 def set_app_name_android(newname)
@@ -428,6 +436,15 @@ namespace "config" do
   end #task 'config:android'
   
   namespace 'android' do
+
+    # 'config:android:app_config' task is invoked directly by common Rakefile
+    # just after build config has been read and before processing extensions
+    task :app_config do
+      if $app_config['capabilities'].index('push')
+        $app_config['extensions'] << 'gcm-push' unless $app_config['extensions'].index('gcm-push')
+      end
+    end
+  
     task :extensions => ['config:android', 'build:bundle:noxruby'] do
     
       $ext_android_rhodes_activity_listener = []
@@ -1229,6 +1246,7 @@ namespace "build" do
       generator.installLocation = 'auto'
       generator.minSdkVer = $min_sdk_level
       generator.maxSdkVer = $max_sdk_level
+      generator.screenOrientation = $android_orientation unless $android_orientation.nil?
 
       generator.usesLibraries['com.google.android.maps'] = true if $use_google_addon_api
 
@@ -1333,6 +1351,7 @@ namespace "build" do
     
     task :resources => [:rhobundle, :extensions] do
       set_app_name_android($appname)
+      set_app_icon_android
     end
 
     #desc "Build Rhodes for android"
@@ -1364,6 +1383,9 @@ namespace "build" do
             cp_r res, $tmpdir
           end
       end
+
+      #copy icon again in case an extension overwrites them (like rhoelementsext...)
+      set_app_icon_android
 
       if $config_xml
         puts "Copying custom config.xml"

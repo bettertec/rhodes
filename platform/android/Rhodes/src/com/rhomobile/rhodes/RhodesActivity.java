@@ -140,30 +140,6 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
         notifyUiCreated();
         RhodesApplication.stateChanged(RhodesApplication.UiState.MainActivityCreated);
 
-        if (!isPassMotoLicence()) {
-            Logger.E(TAG, "############################");
-            Logger.E(TAG, " ");
-            Logger.E(TAG, "ERROR: motorola_license is INVALID !");
-            Logger.E(TAG, " ");
-            Logger.E(TAG, "############################");
-            AlertDialog.Builder b = new AlertDialog.Builder(this);
-            b.setCancelable(true);
-            b.setOnCancelListener(new DialogInterface.OnCancelListener() {
-                public void onCancel(DialogInterface dialog) {
-                    // RhodesService.exit();
-                }
-            });
-            AlertDialog securityAlert = b.create();
-            securityAlert.setMessage("Please provide RhoElements license key.");
-            securityAlert.setButton("OK", new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface arg0, int arg1) {
-                    // RhodesService.exit();
-                }
-
-            });
-            securityAlert.show();
-            return;
-        }
     }
 
     public IRhoWebView createWebView(int tabIndex) {
@@ -520,6 +496,7 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
         // }
     }
 
+<<<<<<< HEAD
     private boolean isPassMotoLicence() {
         if (Capabilities.MOTOROLA_ENABLED) {
             return true;
@@ -544,4 +521,19 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
 
+=======
+
+	public static Context getContext() {
+		RhodesActivity ra = RhodesActivity.getInstance();
+		if (ra == null)
+			throw new IllegalStateException("No rhodes activity instance at this moment");
+		return ra;
+	}
+	
+	@Override
+	public void onActivityResult(int requestCode, int resultCode, Intent data) {
+		RhoBluetoothManager.onActivityResult(requestCode, resultCode, data);
+	}
+	
+>>>>>>> e1ecc5d98519147ca68ea245b059312bf43f6fd1
 }

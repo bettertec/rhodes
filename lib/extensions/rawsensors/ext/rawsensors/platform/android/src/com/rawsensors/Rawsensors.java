@@ -95,13 +95,14 @@ public class Rawsensors {
     private Thread mUpdateThread = null;
     
     private final static String false_string = "false";
+    private final static String disabled_string = "disabled";
 	
 	public static void setProperty(String property_name, String value) {
 		try {
 		boolean need_resetup_thread = false;
 		if (RAWSENSORS_SERVICE_ACCELEROMETER.equals(property_name) ) {
 			need_resetup_thread = true;
-			if (false_string.equals(value)) {
+			if (false_string.equalsIgnoreCase(value) || disabled_string.equalsIgnoreCase(value)) {
 				getInstance().mEnableAccelerometer = false;
 			}
 			else {
@@ -110,7 +111,7 @@ public class Rawsensors {
 		}
 		if (RAWSENSORS_SERVICE_MAGNETOMETER.equals(property_name) ) {
 			need_resetup_thread = true;
-			if (false_string.equals(value)) {
+			if (false_string.equalsIgnoreCase(value) || disabled_string.equalsIgnoreCase(value)) {
 				getInstance().mEnableMagnetometer = false;
 			}
 			else {
@@ -127,11 +128,15 @@ public class Rawsensors {
 		}
 		if (RAWSENSORS_SERVICE_ALL.equals(property_name) ) {
 			need_resetup_thread = true;
-			if (false_string.equals(value)) {
-				getInstance().mEnableAll = false;
+			if (false_string.equalsIgnoreCase(value) || disabled_string.equalsIgnoreCase(value)) {
+				//getInstance().mEnableAll = false;
+				getInstance().mEnableAccelerometer = false;
+				getInstance().mEnableMagnetometer = false;
 			}
 			else {
-				getInstance().mEnableAll = true;
+				//getInstance().mEnableAll = true;
+				getInstance().mEnableAccelerometer = true;
+				getInstance().mEnableMagnetometer = true;
 			}
 		}
 		if (RAWSENSORS_CALLBACK_URL.equals(property_name) ) {
@@ -186,7 +191,7 @@ public class Rawsensors {
 			return getInstance().mUpdatePeriod;
 		}
 		if (RAWSENSORS_SERVICE_ALL.equals(property_name) ) {
-			if (getInstance().mEnableAll) {
+			if (getInstance().mEnableAccelerometer && getInstance().mEnableMagnetometer) {
 				return 1;
 			}
 			return 0;

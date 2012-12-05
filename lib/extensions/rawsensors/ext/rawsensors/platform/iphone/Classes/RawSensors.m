@@ -84,7 +84,7 @@ static RhoRawSensors* ourRhoSensors = nil;
         return rho_ruby_create_integer(updatePeriod);
     }
     if ([RAW_SENSORS_SERVICE_ALL compare:property_name options:NSCaseInsensitiveSearch] == NSOrderedSame) {
-        if (enableAll) {
+        if (enableAccelerometer && enableMagnetometer) {
             return rho_ruby_create_boolean(1);
         }
         else {
@@ -103,7 +103,8 @@ static RhoRawSensors* ourRhoSensors = nil;
     BOOL need_resetup_update = NO;
     if ([RAW_SENSORS_SERVICE_ACCELEROMETER compare:property_name options:NSCaseInsensitiveSearch] == NSOrderedSame) {
         need_resetup_update = YES;
-        if ([@"false" compare:value options:NSCaseInsensitiveSearch] == NSOrderedSame) {
+        if (([@"false" compare:value options:NSCaseInsensitiveSearch] == NSOrderedSame)
+            || ([@"disabled" compare:value options:NSCaseInsensitiveSearch] == NSOrderedSame)) {
             enableAccelerometer = NO;
         }
         else {
@@ -112,7 +113,8 @@ static RhoRawSensors* ourRhoSensors = nil;
     }
     if ([RAW_SENSORS_SERVICE_MAGNETOMETER compare:property_name options:NSCaseInsensitiveSearch] == NSOrderedSame) {
         need_resetup_update = YES;
-        if ([@"false" compare:value options:NSCaseInsensitiveSearch] == NSOrderedSame) {
+        if (([@"false" compare:value options:NSCaseInsensitiveSearch] == NSOrderedSame)
+            || ([@"disabled" compare:value options:NSCaseInsensitiveSearch] == NSOrderedSame)) {
             enableMagnetometer = NO;
         }
         else {
@@ -121,11 +123,16 @@ static RhoRawSensors* ourRhoSensors = nil;
     }
     if ([RAW_SENSORS_SERVICE_ALL compare:property_name options:NSCaseInsensitiveSearch] == NSOrderedSame) {
         need_resetup_update = YES;
-        if ([@"false" compare:value options:NSCaseInsensitiveSearch] == NSOrderedSame) {
-            enableAll = NO;
+        if (([@"false" compare:value options:NSCaseInsensitiveSearch] == NSOrderedSame)
+            || ([@"disabled" compare:value options:NSCaseInsensitiveSearch] == NSOrderedSame)) {
+            //enableAll = NO;
+            enableAccelerometer = NO;
+            enableMagnetometer = NO;
         }
         else {
-            enableAll = YES;
+            //enableAll = YES;
+            enableAccelerometer = YES;
+            enableMagnetometer = YES;
         }
     }
     if ([RAW_SENSORS_UPDATE_PERIOD compare:property_name options:NSCaseInsensitiveSearch] == NSOrderedSame) {
@@ -140,7 +147,7 @@ static RhoRawSensors* ourRhoSensors = nil;
         }
     }
     if ([RAW_SENSORS_CALLBACK_URL compare:property_name options:NSCaseInsensitiveSearch] == NSOrderedSame) {
-        if ((value != nil) && ([value length] > 0)) {
+        if ((value != nil) /*&& ([value length] > 0)*/) {
             callbackURL = value;
         }
     }

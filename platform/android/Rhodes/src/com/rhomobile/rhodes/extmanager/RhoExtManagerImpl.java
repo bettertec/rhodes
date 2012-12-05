@@ -4,6 +4,8 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Hashtable;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
@@ -30,6 +32,7 @@ public class RhoExtManagerImpl implements IRhoExtManager {
     private boolean mLogInfo = false;
     private boolean mLogUser = false;
     private boolean mLogDebug = false;
+    private boolean mFirstNavigate = true;
 
     private IRhoExtData makeDefExtData(View view) {
         return new RhoExtDataImpl(view, RhodesActivity.safeGetInstance().getMainView().activeTab());
@@ -218,6 +221,73 @@ public class RhoExtManagerImpl implements IRhoExtManager {
     public boolean onNewConfigValue(String name, String value) {
         return false;
     }
+
+    private String mLicenseToken;
+    private String mLicenseCompany;
+    private String mAppName;
+    private LicenseStatus mLicenseStatus = LicenseStatus.LICENSE_MISSED;
+
+    public void setLicenseCredentials(String token, String company, String appName) {
+        Logger.T(TAG, "New license credentials");
+        Logger.D(TAG, "License token: " + token);
+        Logger.D(TAG, "License company: " + company);
+        Logger.D(TAG, "App name: " + appName);
+
+        mLicenseToken = token;
+        mLicenseCompany = company;
+        mAppName = appName;
+        
+        mLicenseStatus = checkLicence();
+    }
+
+    public LicenseStatus getLicenseStatus() {
+        return mLicenseStatus;
+    }
+
+    private LicenseStatus checkLicence() {
+        //if (!onStartNewConfig()) {
+        //    Logger.I(TAG, "");
+        //    mLicenseToken = getBuildConfigItem("motorola_license");
+        //    mLicenseCompany = getBuildConfigItem("motorola_license_company");
+        //    mAppName = getBuildConfigItem("name");
+        //}
+        
+        if (mLicenseToken == null || mLicenseToken.length() == 0) {
+            return LicenseStatus.LICENSE_MISSED;
+        }
+        if (RhodesService.isMotorolaLicencePassed(mLicenseToken, mLicenseCompany, mAppName)) {
+            return LicenseStatus.LICENSE_PASSED;
+        }
+        else {
+            return LicenseStatus.LICENSE_FAILED;
+        }
+    }
+
+    void readLicenseCredentials() {
+        Logger.T(TAG, "Reading Motorola license credentials from build config");
+        setLicenseCredentials(
+                getBuildConfigItem("motorola_license"),
+                getBuildConfigItem("motorola_license_company"),
+                getBuildConfigItem("name"));
+    }
+
+    void showLicenseAlert() {
+                Logger.E(TAG, "##########################################");
+                Logger.E(TAG, "#                                        #");
+                Logger.E(TAG, "# ERROR: RhoElements License is INVALID! #");
+                Logger.E(TAG, "#                                        #");
+                Logger.E(TAG, "##########################################");
+                AlertDialog.Builder b = new AlertDialog.Builder(ContextFactory.getUiContext());
+                b.setNeutralButton("OK", new DialogInterface.OnClickListener(){
+                      public void onClick(DialogInterface arg0, int arg1) {}
+                });
+                b.setMessage("Please, provide correct RhoElements license.");    
+
+                AlertDialog securityAlert = b.create();
+                securityAlert.show();
+    }
+
+
     //-----------------------------------------------------------------------------------------------------------------
     // Rhodes implementation related methods are below
 
@@ -292,7 +362,26 @@ public class RhoExtManagerImpl implements IRhoExtManager {
         }
     }
 
+    private boolean isFirstNavigate() { 
+            return mFirstNavigate;
+    }
+
+    private void firstNavigate() {
+            mFirstNavigate = false;
+    }
+
+
     public void onBeforeNavigate(View view, String url) {
+	if (isFirstNavigate() ) {
+		if (getLicenseStatus() == LicenseStatus.LICENSE_MISSED) {
+			readLicenseCredentials();
+			if (checkLicence() == LicenseStatus.LICENSE_FAILED) {
+				showLicenseAlert();
+			}
+		}
+		firstNavigate();
+	}
+	
         synchronized (mExtensions) {
             for (IRhoExtension ext : mExtensions.values()) {
                 ext.onBeforeNavigate(this, url, makeDefExtData(view));

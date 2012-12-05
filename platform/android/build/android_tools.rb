@@ -208,7 +208,7 @@ module_function :is_device_running
 def  run_emulator(options = {})
   system("\"#{$adb}\" start-server")
 
-  rm_f $applog_path if !$applog_path.nil?
+  FileUtils.rm_f $applog_path if !$applog_path.nil?
   logcat_process()
   
   unless is_emulator_running
@@ -345,7 +345,7 @@ def load_app_and_run(device_flag, apkfile, pkgname)
   while count < 20
     theoutput = ""
     begin
-      status = Timeout::timeout(30) do
+      status = Timeout::timeout(300) do
         puts "CMD: #{cmd}"
         IO.popen(argv) do |pipe|
           child = pipe.pid
@@ -417,6 +417,7 @@ def kill_adb_and_emulator
   else
     `killall -9 adb`
     `killall -9 emulator-arm`
+    `killall -9 emulator64-arm`
     `killall -9 emulator`
   end
 end

@@ -558,6 +558,7 @@ namespace "device" do
       build_platform = 'wm6'
       build_platform = 'wm653' if $sdk == "Windows Mobile 6.5.3 Professional DTK (ARMV4I)"
       build_platform = 'ce5' if $sdk == "MC3000c50b (ARMV4I)"
+      build_platform = 'ce7' if $sdk == "WT41N0c70PSDK (ARMV4I)"
 
       icon_dest = $srcdir + '/icon'
       rm_rf icon_dest
@@ -895,7 +896,7 @@ namespace "run" do
 
         cd $startdir + "/res/build-tools"
         detool = "detool.exe"    
-        args   = [ 'emu', "\"#{$wm_emulator}\"", '"'+$appname.gsub(/"/,'\\"')+'"', '"'+$srcdir.gsub(/"/,'\\"')+'"', '"'+($startdir + "/" + $vcbindir + "/#{$sdk}" + "/rhodes/Release/" + $appname + ".exe").gsub(/"/,'\\"')+'"' , $port]
+        args   = [ 'emu', "\"#{$wm_emulator}\"", '"'+$appname.gsub(/"/,'\\"')+'"', '"'+$srcdir.gsub(/"/,'\\"')+'"', '"'+($startdir + "/" + $vcbindir + "/#{$sdk}" + "/rhodes/Release/" + $appname + ".exe").gsub(/"/,'\\"')+'"' , $port,  '"'+$startdir + "/res/build-tools/license_rc.dll" + '"']
         puts "\nStarting application on the WM6 emulator\n\n"
         log_file = gelLogPath
 
@@ -951,8 +952,8 @@ namespace "run" do
             else
                 waiting_count = 0
             end
-            if waiting_count > 240
-                puts "spec application hung (240 seconds timeout)"
+            if waiting_count > 600
+                puts "spec application hung (600 seconds timeout)"
                 end_spec = true
             end
             sleep(1) unless end_spec

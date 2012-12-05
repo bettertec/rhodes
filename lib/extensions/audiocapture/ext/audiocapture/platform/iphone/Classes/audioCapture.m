@@ -16,6 +16,14 @@ static RhoAudioCapture* ourRhoAudioCapture = nil;
     if (ourRhoAudioCapture == nil) {
         ourRhoAudioCapture = [[RhoAudioCapture alloc] init];
         ourRhoAudioCapture.duration = 20000;
+        
+        NSString *folder = [NSString stringWithUTF8String:rho_rhodesapp_getblobsdirpath()];
+        
+        NSFileManager *fileManager = [NSFileManager defaultManager];
+        if (![fileManager fileExistsAtPath:folder])
+            [fileManager createDirectoryAtPath:folder attributes:nil];
+        
+        ourRhoAudioCapture.destination = [folder stringByAppendingPathComponent:@"audiocapture.wav"];
     }
     return ourRhoAudioCapture;
 }
@@ -36,7 +44,7 @@ static RhoAudioCapture* ourRhoAudioCapture = nil;
 
 - (void) setProperty:(NSString*)property_name value:(NSString*)value {
     if ([AUDIO_CAPTURE_SAVE_EVENT compare:property_name options:NSCaseInsensitiveSearch] == NSOrderedSame) {
-        if ((value != nil) && ([value length] > 0)) {
+        if ((value != nil) /*&& ([value length] > 0)*/) {
             callbackURL = value;
         }
     }
@@ -141,7 +149,7 @@ static RhoAudioCapture* ourRhoAudioCapture = nil;
     }
     
     // start recording
-    [recorder recordForDuration:(NSTimeInterval) (duration/1000)];
+    [recorder recordForDuration:(NSTimeInterval) ((double)duration/1000.0)];
     
     isSaveFile = YES;
     
