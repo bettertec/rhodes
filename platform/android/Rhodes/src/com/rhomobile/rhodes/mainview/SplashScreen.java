@@ -214,10 +214,11 @@ public class SplashScreen implements MainView {
                     public void run() {
                         try {
                             if (mNavigateIndex != 0) {
-                                throw new IllegalStateException("Non zero tab index(" + mNavigateIndex
-                                        + ") to navigate from Splash Screen");
+                                //throw new IllegalStateException("Non zero tab index(" + mNavigateIndex
+                                //        + ") to navigate from Splash Screen");
+                                mNavigateIndex = 0;
                             }
-                            Logger.T(TAG, "Calling onSplashScreenGone by AppFullyInitialized of SC " + this.toString());
+                            Logger.E(TAG, "Calling onSplashScreenGone by AppFullyInitialized of SC " + this.toString());
                             mSplashScreenListener.onSplashScreenGone(curView);
                         } catch (Throwable e) {
                             Logger.E(TAG, e.toString());
@@ -227,25 +228,18 @@ public class SplashScreen implements MainView {
                 });
             }
         });
-
-        final long threadDelay = 10000; // overwritten
+        
+        Logger.D(TAG, "start onSplashScreenGone in 10 s");
+        final long threadDelay = 8000; // overwritten
         mSleepThread = new Thread(new Runnable() {
             @Override
             public void run() {
                 SystemClock.sleep(threadDelay);
-                RhodesApplication.runWhen(RhodesApplication.AppState.AppActivated, new RhodesApplication.StateHandler(
-                        true) {
-                    @Override
-                    public void run() {
+                Logger.E(TAG, "Calling onSplashScreenGone after " + threadDelay + "ms");
                         PerformOnUiThread.exec(new Runnable() {
                             public void run() {
+                                    Logger.E(TAG, "calling onSplashScreenGone after delay DO");
                                 try {
-                                    if (mNavigateIndex != 0) {
-                                        throw new IllegalStateException("Non zero tab index(" + mNavigateIndex
-                                                + ") to navigate from Splash Screen");
-                                    }
-                                    Logger.T(TAG, "Calling onSplashScreenGone by AppActivted with timeout of SC "
-                                            + this.toString());
                                     mSplashScreenListener.onSplashScreenGone(curView);
                                 } catch (Throwable e) {
                                     Logger.E(TAG, e.toString());
@@ -253,11 +247,8 @@ public class SplashScreen implements MainView {
                                 }
                             }
                         });
-                    }
-                });
             }
         });
-        mSleepThread.start();
     }
 
     @Override

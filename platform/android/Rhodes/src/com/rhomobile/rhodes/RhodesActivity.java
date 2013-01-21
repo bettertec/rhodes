@@ -496,12 +496,8 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
         // }
     }
 
-<<<<<<< HEAD
     private boolean isPassMotoLicence() {
-        if (Capabilities.MOTOROLA_ENABLED) {
-            return true;
-        }
-        return RhodesService.isMotorolaLicencePassed();
+        return true;
     }
 
     public static Context getContext() {
@@ -521,19 +517,4 @@ public class RhodesActivity extends BaseActivity implements SplashScreen.SplashS
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     }
 
-=======
-
-	public static Context getContext() {
-		RhodesActivity ra = RhodesActivity.getInstance();
-		if (ra == null)
-			throw new IllegalStateException("No rhodes activity instance at this moment");
-		return ra;
-	}
-	
-	@Override
-	public void onActivityResult(int requestCode, int resultCode, Intent data) {
-		RhoBluetoothManager.onActivityResult(requestCode, resultCode, data);
-	}
-	
->>>>>>> e1ecc5d98519147ca68ea245b059312bf43f6fd1
 }

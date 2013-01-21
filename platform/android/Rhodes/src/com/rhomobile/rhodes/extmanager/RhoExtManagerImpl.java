@@ -245,22 +245,7 @@ public class RhoExtManagerImpl implements IRhoExtManager {
     }
 
     private LicenseStatus checkLicence() {
-        //if (!onStartNewConfig()) {
-        //    Logger.I(TAG, "");
-        //    mLicenseToken = getBuildConfigItem("motorola_license");
-        //    mLicenseCompany = getBuildConfigItem("motorola_license_company");
-        //    mAppName = getBuildConfigItem("name");
-        //}
-        
-        if (mLicenseToken == null || mLicenseToken.length() == 0) {
-            return LicenseStatus.LICENSE_MISSED;
-        }
-        if (RhodesService.isMotorolaLicencePassed(mLicenseToken, mLicenseCompany, mAppName)) {
-            return LicenseStatus.LICENSE_PASSED;
-        }
-        else {
-            return LicenseStatus.LICENSE_FAILED;
-        }
+       return LicenseStatus.LICENSE_PASSED;
     }
 
     void readLicenseCredentials() {

@@ -939,6 +939,8 @@ public class TabbedMainView implements MainView {
 				mIsReallyOnScreen = true;
 			}
 		});
+        
+        RhodesService.handleAppFullyInitialized();
 		
 		
 	}
